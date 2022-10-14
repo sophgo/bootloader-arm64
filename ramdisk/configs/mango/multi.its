@@ -1,0 +1,98 @@
+/*
+ * U-Boot uImage source file with multiple kernels, ramdisks and FDT blobs
+ */
+
+/dts-v1/;
+
+/ {
+	description = "Various kernels, ramdisks and FDT blobs";
+	#address-cells = <2>;
+
+	images {
+		kernel {
+			description = "bitmain kernel";
+			data = /incbin/("./Image");
+			type = "kernel";
+			arch = "arm64";
+			os = "linux";
+			compression = "none";
+			load = <0x0 0x00080000>;
+			entry = <0x0 0x00080000>;
+			/*
+			hash {
+				algo = "sha1";
+			};
+			*/
+		};
+
+		ramdisk {
+			description = "bitmain ramdisk";
+			data = /incbin/("./rootfs.cpio");
+			type = "ramdisk";
+			arch = "arm64";
+			os = "linux";
+			compression = "none";
+			load = <00000000>;
+			entry = <00000000>;
+			/*
+			hash {
+				algo = "sha1";
+			};
+			*/
+		};
+
+		fdt-pcb0 {
+			description = "for Palladium";
+			data = /incbin/("./mango_pld.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			/*
+			hash {
+				algo = "sha1";
+			};
+			*/
+		};
+
+		fdt-pcb1 {
+			description = "for FPGA";
+			data = /incbin/("./mango_fpga.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			/*
+			hash {
+				algo = "sha1";
+			};
+			*/
+		};
+	};
+
+	configurations {
+		default = "config-pcb0";
+
+		config-pcb0 {
+			description = "for Palladium";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb0";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb1 {
+			description = "for FPGA";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb1";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+	};
+};

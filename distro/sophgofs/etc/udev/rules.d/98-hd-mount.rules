@@ -1,0 +1,8 @@
+KERNEL!="sd[a-z][0-9]", GOTO="media_by_label_auto_mount_end"
+
+# # Mount the device
+ACTION=="add", SUBSYSTEM=="block", RUN+="automount.sh"
+ACTION=="remove", SUBSYSTEM=="block", RUN+="automount.sh"
+
+# # Exit
+LABEL="media_by_label_auto_mount_end"

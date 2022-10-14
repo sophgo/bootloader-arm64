@@ -1,0 +1,17 @@
+[Unit]
+Description=Sophon Led Socket Server Service
+After=network.target.service
+
+[Service]
+User=root
+ExecStart=/usr/bin/python3 -u /usr/sbin/led_server.py
+ExecReload=/bin/kill -HUP $MAINPID
+WorkingDirectory=/usr/sbin/
+KillMode=control-group
+Restart=on-failure
+RestartPreventExitStatus=200
+Type=simple
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

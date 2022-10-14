@@ -1,0 +1,18 @@
+[Unit]
+Description=Soph Monitor Fan and Temp for SE5X
+After=ledSocketServer.service
+Conflicts=bmSE6Monitor.service
+
+[Service]
+User=root
+ExecStart=/bin/bash /usr/sbin/bm_monitor.sh
+ExecReload=/bin/kill -HUP $MAINPID
+WorkingDirectory=/usr/sbin/
+KillMode=control-group 
+Restart=on-failure
+RestartPreventExitStatus=255
+Type=simple
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

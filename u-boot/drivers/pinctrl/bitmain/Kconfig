@@ -1,0 +1,18 @@
+config PINCTRL_BITMAIN
+	bool
+
+config PINCTRL_BM1684
+	bool "Bitmain BM1684 pinctrl driver"
+	depends on ARCH_BM1684 && PINCTRL_FULL
+	select PINCTRL_BITMAIN
+	help
+	  Support pin multiplexing and pin configuration control on
+	  Bitmain's BM1684 SoC.
+
+config PINCTRL_MANGO
+	bool "Sophgo MANGO pinctrl driver"
+	depends on ARCH_MANGO && PINCTRL_FULL
+	select PINCTRL_BITMAIN
+	help
+	  Support pin multiplexing and pin configuration control on
+	  Sophgo's MANGO SoC.

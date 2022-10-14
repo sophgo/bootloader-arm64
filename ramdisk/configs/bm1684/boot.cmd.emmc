@@ -1,0 +1,33 @@
+echo BM1684 boot script
+
+# check misc partition for OTA
+mmcbcbx boot-recovery mmc 0 recovery is_recovery
+mmcbcbx ota mmc 0 load_partition ota_path
+if test $is_recovery = boot-recovery;then load ${devtype} ${devnum}:${load_partition} ${scriptaddr} /${ota_path}/boot.scr; source ${scriptaddr};fi
+
+# set kernel cmdline
+setenv bootargs console=$consoledev,$baudrate $othbootargs
+
+# try to load extra command, get memory model
+setenv extra_script extra-${board_type}.scr
+
+if test -e ${devtype} ${devnum}:${distro_bootpart} ${extra_script}; then
+echo 'loading' ${extra_script}
+load ${devtype} ${devnum}:${distro_bootpart} ${scriptaddr} ${extra_script}
+source ${scriptaddr}
+fi
+
+# choose config in itb
+if test "x${memory_model}" = "x"; then
+setenv config_sel config-pcb${board_type}
+else
+setenv config_sel config-pcb${board_type}-mm${memory_model}
+fi
+
+echo "booting #${config_sel}"
+load ${devtype} ${devnum}:${distro_bootpart} ${ramdisk_addr_r} emmcboot.itb
+bootm ${ramdisk_addr_r}#${config_sel}
+
+echo "emmcboot.itb boot error, use emmcboot.itb.bak"
+load ${devtype} ${devnum}:${distro_bootpart} ${ramdisk_addr_r} emmcboot.itb.bak
+bootm ${ramdisk_addr_r}#${config_sel}

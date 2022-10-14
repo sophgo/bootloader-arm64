@@ -1,0 +1,8 @@
+menu title Select the boot mode
+prompt 1
+default nfs
+timeout 20
+label nfs
+        kernel Image
+        fdt bm1684_asic.dtb
+

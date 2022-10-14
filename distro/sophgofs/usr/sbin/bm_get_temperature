@@ -1,0 +1,7 @@
+#!/bin/bash
+
+chip=`cat /sys/class/thermal/thermal_zone0/temp`
+board=`cat /sys/class/thermal/thermal_zone1/temp`
+chip_temp=`expr $chip / 1000`
+board_temp=`expr $board / 1000`
+echo "board temperature: $board_temp'C; chip temperature: $chip_temp'C"

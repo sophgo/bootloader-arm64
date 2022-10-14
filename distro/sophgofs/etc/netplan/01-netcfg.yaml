@@ -1,0 +1,18 @@
+network:
+        version: 2
+        renderer: networkd
+        ethernets:
+                eth0:
+                        dhcp4: yes
+                        addresses: []
+                        optional: yes
+                        dhcp-identifier: mac
+                eth1:
+                        dhcp4: no
+                        addresses: [192.168.150.1/24]
+                        optional: yes
+                enp3s0:
+                        dhcp4: yes
+                        addresses: []
+                        dhcp-identifier: mac
+                        optional: yes

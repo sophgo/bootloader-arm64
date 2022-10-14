@@ -1,0 +1,72 @@
+#!/bin/bash
+
+
+if [ $# -lt 4  ] ; then
+	echo "bm_set_ip net_device ip netmask gateway dns"
+	echo "eg: bm_set_ip eth0 192.168.1.100 255.255.255.0 192.168.1.1 192.168.1.1"
+	echo "gateway and dns allow empty. pls follow below example"
+	echo "eg: bm_set_ip eth0 192.168.1.100 255.255.255.0 '' '' "
+	exit -1
+fi
+
+
+device=$1
+ip=$2
+netmask=$3
+gateway=$4
+dns=$5
+
+is_ubuntu=$(cat /etc/os-release | grep Ubuntu |wc -l)
+
+
+if [ $is_ubuntu -gt 1 ];then
+	echo "ubuntu"
+	device_path="/etc/netplan/01-netcfg.yaml"
+	#device_path="01-netcfg.yaml"
+	eth_num=$(grep -inr "$device:" $device_path | awk -F : '{print $1}')
+	num=$(($eth_num+5))
+	if [ ! $eth_num = "" ];then
+		for ((i=1; i<=6; i++))
+		do
+			num=$(($eth_num+$i))
+			c_str=$(sed -n "${num}p" $device_path | awk -F : '{print$1}')
+			echo $c_str
+			if [[ $c_str =~ "dhcp" ]] || [[ $c_str =~ "addresses" ]] || [[ $c_str =~ "gateway4" ]] || [[ $c_str =~ "nameservers" ]] || [[ $c_str =~ "optional" ]];then
+				d_str="${num}d"
+			else
+				break;
+			fi
+		done
+		echo "$eth_num,$d_str"
+		sudo sed -i "$eth_num,$d_str" $device_path
+		sudo sync
+	fi
+	echo "add network config"
+	echo "                ${device}:" | sudo tee -a $device_path
+	echo "                        dhcp4: no" | sudo tee -a  $device_path
+	echo "                        addresses: [${ip}/24]" | sudo tee -a  $device_path
+        if [ "$gateway" != "" ];then
+                echo "                        gateway4: $gateway" | sudo tee -a  $device_path
+        fi
+	echo "                        nameservers:" | sudo tee -a  $device_path
+	echo "                                addresses: [${dns}]" | sudo tee -a  $device_path
+	echo "                        optional: yes" | sudo tee -a  $device_path
+	sudo sync
+	sudo netplan apply
+
+else
+	echo "debian"
+	device_path="/etc/network/interfaces.d/$device"
+
+	echo  "auto $device" | sudo tee $device_path
+	echo  "iface $device inet static" |sudo tee -a $device_path
+	echo  "        address $ip" |sudo tee -a $device_path
+	echo  "        netmask $netmask" |sudo tee -a $device_path
+	if [ $device == "eth0"  ];then
+		echo  "        gateway $gateway" |sudo tee -a $device_path
+	fi
+	echo "        dns-nameservers $dns" |sudo tee -a $device_path
+
+	sudo ip addr flush dev $device
+	sudo service networking restart
+fi
