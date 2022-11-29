@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <utils_def.h>
 #include <i2c.h>
+#include <common/debug.h>
 
 #define CMD_BUF_MAX 512
 
@@ -295,7 +296,7 @@ static int designware_i2c_xfer(struct dw_i2c *i2c, struct i2c_msg *msg,
 {
 	uint16_t cmd_buf[CMD_BUF_MAX];
 	uint8_t data_buf[CMD_BUF_MAX];
-	int i, j, k, l, err;
+	int i, j, k, l, err, wait;
 	uint32_t status;
 	struct i2c_regs *regs;
 
@@ -326,6 +327,7 @@ static int designware_i2c_xfer(struct dw_i2c *i2c, struct i2c_msg *msg,
 	}
 
 	j = 0;
+	wait = 0;
 	for (i = 0; i < k || j < l;) {
 
 		/* check tx abort */
@@ -354,6 +356,12 @@ static int designware_i2c_xfer(struct dw_i2c *i2c, struct i2c_msg *msg,
 		if ((status & IC_STATUS_RFNE) && (j < l)) {
 			data_buf[j] = readl(&regs->ic_cmd_data);
 			++j;
+		}
+		wait++;
+		udelay(10);
+		if (wait > 5000) { // 50ms
+			ERROR("i2c xfer timeout %d\n", __LINE__);
+			return -1;
 		}
 	}
 

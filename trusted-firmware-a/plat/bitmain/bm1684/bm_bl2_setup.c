@@ -68,13 +68,16 @@ static int bm_get_board_info(void)
 				  HW_TYPE_REG, &mcu_type);
 	if (err) {
 		ERROR("read board type failed with error %d\n", err);
-		assert(0);
+		mcu_type = MCU_BM1684_SC7_HP300;
 	}
-	err = i2c_smbus_read_byte(MCU_I2C_DEV, MCU_DEV_ADDR,
-				  HW_VERSION_REG, &hw_ver);
-	if (err) {
-		ERROR("read hardware version failed with error %d\n", err);
-		assert(0);
+
+	if (mcu_type != MCU_BM1684_SC7_HP300) {
+		err = i2c_smbus_read_byte(MCU_I2C_DEV, MCU_DEV_ADDR,
+					  HW_VERSION_REG, &hw_ver);
+		if (err) {
+			ERROR("read hardware version failed with error %d\n", err);
+			assert(0);
+		}
 	}
 
 	if (bm_get_chip_id() == CHIP_BM1684) {
@@ -166,13 +169,17 @@ static int bm_get_board_info(void)
 			if (hw_ver == 0x00)
 				type = BM1684X_EVB_V0_0;
 			break;
+		case MCU_BM1684_SC7_HP300:
+			type = BM1684X_SC7_HP300_EP;
+			break;
 		default:
 			ERROR("unknown board type %u\n", mcu_type);
 			assert(0);
 		}
 
 		if ((mmio_read_32(BOOT_ARGS_REG) & PCIE_EP_LINKED) &&
-		    !(mmio_read_32(BOOT_ARGS_REG) & SOC_EP))
+		    !(mmio_read_32(BOOT_ARGS_REG) & SOC_EP) &&
+			(type != BM1684X_SC7_HP300_EP))
 			type = BM1684X_EP;
 	}
 #endif

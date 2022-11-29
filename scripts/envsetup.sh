@@ -9,6 +9,7 @@ CHIP=${CHIP:-bm1684}
 DEBUG=${DEBUG:-0} # for ATF
 DISTRO=${DISTRO:-focal} # Ubuntu 20.04
 KERNEL_VARIANT=${KERNEL_VARIANT:-normal} # normal, mininum, debug
+PRODUCT=${PRODUCT:-0}
 
 # workaround for using old debian repo
 UBUNTU_LEGACY=${UBUNTU_LEGACY:-0}
@@ -385,9 +386,19 @@ function build_debs()
 	echo make BSP qt5 deb...
 	pushd $DISTRO_DEB/qt5
 	local version=$(echo $(cat $DISTRO_DEB/qt5/DEBIAN/control | grep Version) | cut -d ' ' -f 2)
+
 	dpkg-deb -b $DISTRO_DEB/qt5  $ROOTFS_DST_DIR/sophgo-bsp-qt5_${version}_arm64.deb
 	install_debs "$ROOTFS_DST_DIR/sophgo-bsp-qt5_*_arm64.deb"
 	popd
+
+	if [ "$PRODUCT" == "se6" ]; then
+		echo make se6 product deb...
+		pushd $DISTRO_DEB/sophgose6
+		local version=$(echo $(cat $DISTRO_DEB/sophgose6/DEBIAN/control | grep Version) | cut -d ' ' -f 2)
+		dpkg-deb -b $DISTRO_DEB/sophgose6  $ROOTFS_DST_DIR/sophgo-se6_${version}_arm64.deb
+		install_debs "$ROOTFS_DST_DIR/sophgo-se6_*_arm64.deb"
+		popd
+	fi
 }
 
 function clean_debs()
@@ -615,7 +626,7 @@ function build_distro()
 	pushd $DISTRO_DIR/$DISTRO
 # following lines must not be started with space or tab.
 # Ubuntu 20.04 is diffent in some ways than Debian 10.
-sudo chroot . qemu-aarch64-static /bin/bash << "EOT"
+sudo chroot . /bin/bash << "EOT"
 adduser --gecos linaro --disabled-login linaro
 echo "linaro:linaro" | chpasswd
 usermod -a -G sudo linaro
@@ -755,7 +766,7 @@ function build_sdimage()
 	pushd $OUTPUT_DIR/ext4
 	sudo bash -c  "echo /dev/mapper/$fat32part > efidev"
 # following lines must not be started with space or tab.
-sudo chroot . qemu-aarch64-static /bin/bash << "EOT"
+sudo chroot . /bin/bash << "EOT"
 efidev=$(cat efidev)
 grub-install $efidev
 dpkg -i /home/linaro/bsp-debs/linux-image-*.deb
@@ -909,7 +920,7 @@ function build_rootp()
 	pushd $OUTPUT_DIR/rootfs
 # following lines must not be started with space or tab.
 # install bsp images first, so it won't run flash_update
-sudo chroot . qemu-aarch64-static /bin/bash << "EOT"
+sudo chroot . /bin/bash << "EOT"
 /debs/install.sh
 
 dpkg -i /home/linaro/bsp-debs/sophgo-bsp-images_*.deb
@@ -923,6 +934,9 @@ dpkg -i /home/linaro/bsp-debs/sophon-mw-soc-sophon-opencv*.deb
 
 dpkg -i /home/linaro/bsp-debs/sophgo-hdmi_*.deb
 dpkg -i /home/linaro/bsp-debs/sophgo-system_*.deb
+
+dpkg -i /home/linaro/bsp-debs/sophgo-se6_*.deb
+
 rm -rf /debs
 exit
 EOT
@@ -964,6 +978,34 @@ sdcard
 tftp
 tgz
 )
+
+function revert_package()
+{
+        mkdir -p $OUTPUT_DIR/package_update/update/sdcard
+	cp -r $SCRIPTS_DIR/revert_package.sh $OUTPUT_DIR/package_update/update/sdcard
+	sdcard_file="$OUTPUT_DIR/sdcard.tgz"
+
+	if [ -f "$sdcard_file" ]; then
+		echo "the sdcard.tgz exists."
+		pushd $OUTPUT_DIR
+		tar -zxf sdcard.tgz -m -C ./package_update/
+		cp -r ./package_update/sdcard/* ./package_update/update/sdcard/
+		cp -r ./package_update/sdcard/*.bin $OUTPUT_DIR/
+		cd ./package_update/update/sdcard
+        	./revert_package.sh boot data opt rootfs rootfs_rw recovery
+
+		cd ../
+		sudo rm -rf ./*.tgz
+		mv ./sdcard/*.tgz ./
+		sudo rm -rf ./sdcard
+		cp -r ./* $OUTPUT_DIR/
+		popd
+		echo "revert package finished!"
+	else
+		echo "sdcard.tgz does not exist."
+		echo "please copy sdcard.tgz to install/soc_bm1684/ and try again."
+	fi
+}
 
 function build_update()
 {
@@ -1019,6 +1061,26 @@ function build_update()
 	pushd $OUTPUT_DIR/$1
 	md5sum * > md5.txt
 	popd
+
+	if [ "$PRODUCT" == "se6" ] && [ "$UPDATE_TYPE" == "tftp" ]; then
+		echo "for se6 control board package"
+		echo $OUTPUT_DIR
+		rm -f $OUTPUT_DIR/recovery.tgz
+		rm -rf $OUTPUT_DIR/se6_ctl_sdcard
+
+		mv $OUTPUT_DIR/sdcard $OUTPUT_DIR/sdcard-bak
+		pushd $OUTPUT_DIR
+		tar -czvf recovery.tgz recovery.itb tftp
+		popd
+
+		pushd $IMAGE_TOOL_DIR/
+		./bm_make_package.sh sdcard ./partition32G_ro.xml $OUTPUT_DIR
+		popd
+
+		mv $OUTPUT_DIR/sdcard $OUTPUT_DIR/se6_ctl_sdcard
+		mv $OUTPUT_DIR/sdcard-bak $OUTPUT_DIR/sdcard
+	fi
+
 }
 
 function clean_update
@@ -1098,6 +1160,7 @@ echo "with: DEBUG=$DEBUG, KERNEL=$KERNEL_VARIANT"
 echo "to: $OUTPUT_DIR"
 echo "distro: $DISTRO_BASE_PKT $DISTRO_OVERLAY_DIR "
 echo "ubuntu legacy is $UBUNTU_LEGACY"
+echo "product is $PRODUCT"
 
 # include riscv environment
 RV_SCRIPT_DIR=$TOP_DIR/bootloader-riscv/scripts

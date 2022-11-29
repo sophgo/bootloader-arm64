@@ -942,8 +942,10 @@ void bm_ddr_init_asic(void)
 
 	err = i2c_smbus_read_byte(MCU_I2C_DEV, MCU_DEV_ADDR,
 				  DDR_TYPE_REG, &is_lpddr4);
-	if (err)
+	if (err) {
 		ERROR("read board type failed with error %d\n", err);
+		is_lpddr4 = is_lpddr4 && (!is_evb);
+	}
 
 	is_lpddr4 = is_lpddr4 && (!is_evb); // assume EVB always using LPDDR4X
 

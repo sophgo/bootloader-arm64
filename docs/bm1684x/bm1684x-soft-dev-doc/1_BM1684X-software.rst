@@ -299,22 +299,9 @@ c. OTA升级
 
 按如下步骤可进行OTA升级:
 
-1. 使用sdcard的升级包作为ota升级包, 将升级包里的所有内容拷贝到/data/ota目录底下
+1. 登录到Ubuntu操作系统，使用mkdir -p /data/ota创建升级目录。使用sdcard的升级包作为ota升级包, 将升级包里的所有内容拷贝到/data/ota目录底下
 
-2. 把local_update.sh脚本拷贝到盒子/data/ota目录下
-
-3. 盒子上执行如下命令：
-
-   .. code-block:: bash
-
-      sudo -i
-      ./local_update.sh md5.txt
-
-   如果遇到local_update.sh 没有执行权限，使用如下命令增加权限：
-
-   .. code-block:: bash
-
-      chmod +x local_update.sh
+2. 把下面脚本内容拷贝到local_update.sh里，将local_update.sh脚本拷贝到盒子/data/ota目录下
 
 .. code-block:: shell
    :name: local_update
@@ -360,6 +347,22 @@ c. OTA升级
 
        sudo reboot
    fi
+
+3. 盒子上执行如下命令：
+
+   .. code-block:: bash
+
+      sudo -i
+      cd /data/ota
+      ./local_update.sh md5.txt
+
+   如果遇到local_update.sh 没有执行权限，使用如下命令增加权限：
+
+   .. code-block:: bash
+
+      chmod +x local_update.sh
+
+
 
 
 |image11|\ 替换MCU固件：核心板上有一颗MCU负责 |Product| 的上电时序等重要工作，它的固件只能通过下面的命令升级，不能通过SD卡升级。这颗MCU的固件如果烧写错误，会造成 |Product| 无法上电，此时就只能通过专用的烧写器进行修复了，因此请谨慎操作，通常也并不需要对它进行升级。命令：sudo
@@ -651,6 +654,10 @@ Linux的thermal框架会使用这个温度做管理：
       ISL68127 output current: 2900mA
       ISL68127 temperature 1: 58°C
       ISL68127 output power: 2W → CPU/Video等功耗
+
+第一组信息为tpu，第二组信息为cpu。
+
+pmbus 读取的是给tpu和cpu供电的芯片传感器的温度，所以更接近核心板温度，如果需要读取温度相关，请参考4.2和4.3。
 
 使用GPIO
 ------------
@@ -1055,6 +1062,47 @@ b. 将deb包直接放到overlay/soc_bm1684_asic_newos/root/post_install/debs目�
       build_update tftp    // 重新编译tftp刷机包
 
 
+定制化软件包
+--------------------
+
+您可以通过以下操作获取您所需要的特定的软件包:
+
+1. 从官网获取sdcard.tgz基础软件包。
+
+2. 您需要参考文件结构一节准备相关文件，将sdcard.tgz软件包复制到install/soc_bm1684目录下，如果没有该目录，可以先执行以下命令
+
+   .. code-block:: bash
+
+      mkdir -p install/soc_bm1684
+      cp -rf {your_path}/sdcard.tgz install/soc_bm1684/  // {your_path}是您获取的sdcard.tgz基础软件包的本地路径
+
+      source bootloader-arm64/scripts/envsetup.sh
+      revert_package
+
+
+3. 执行完命令之后会在install/soc_bm1684/下生成boot.tgz，data.tgz，opt.tgz，recovery.tgz，rootfs.tgz，rootfs_rw.tgz六个软件包，并且在install/soc_bm1684/package_update/目录下生成sdcard和update两个文件夹，这里的sdcard文件夹是sdcard.tgz软件包解压出来的文件，update文件夹保存了执行revert_package命令之后初始打包的六个软件包。
+
+   boot.tgz软件包主要用于kernel。
+
+   data.tgz软件包主要用于data分区。
+
+   opt.tgz软件包包括运行时的lib库。
+
+   recovery.tgz软件包主要用于用户恢复出厂设置。
+
+   rootfs.tgz软件包可以用来制作您所需要的文件系统，参照修改Ubuntu 20.04 一节中的利用qemu虚拟机方式进行修改部分的环境准备第4步及其之后的操作更新rootfs.tgz包，注意使用的rootfs.tgz原始包是install/soc_bm1684/下的rootfs.tgz。
+
+   rootfs_rw.tgz软件包文件系统overlay区，包括了所有系统安装的 app，lib，脚本，服务，/etc下的设置， 更新后都会清除。
+
+4. 如果您要修改分区信息，您需要修改bootloader-arm64/scripts/下的partition32G.xml文件。
+
+5. 将修改后的*.tgz包替换掉install/soc_bm1684/下的同名*.tgz包，然后根据需要重新编译刷机包。
+
+   .. code-block:: bash
+
+      build_update sdcard  // 重新编译sdcard刷机包
+      build_update tftp    // 重新编译tftp刷机包
+
 在 |Product| 上编译内核模块
 -------------------------------
 
@@ -1146,6 +1194,370 @@ tree，并非kernel使用的device tree：
 
    关注 Selecting config 这一行，
    即可知道这块板子对应的device tree源文件是在u-boot/arch/arm/dts/ 目录下的 **bitmain-bm1684x-evb-v0.0.dts**.
+
+修改板卡预制的内存布局
+-----------------------------
+
+本工具需要运行在PC机上，不可在板卡上直接运行推荐使用Ubuntu 20.04系统，Python 3.8版本环境。
+如果您想直接修改当前板卡上的内存布局，请获取工具包，路径在http://219.142.246.77:65000/fsdownload/5ajzpas1H/BSP%20SDK的memory_layout_modification_tool目录下，仅用到这个文件夹，不需要其它完整的源码和交叉编译工具链等。其中包含如下文件：
+
+├── dtc  → device tree compiler
+
+├── dumpimage  → itb解包工具
+
+├── gen_mm_dts.py  → 生成memory layout描述的脚本
+
+├── gen_mm_dts.sh  →  配合同名python脚本使用的expect脚本
+
+├── gui_new_update_itb_its.py  → 修改内存界面工具脚本
+
+├── mkimage  → itb打包工具
+
+├── new_update_itb_its.py  → 修改内存命令行脚本
+
+├── new_update_itb_its.sh  → 配合同名python脚本使用的expect脚本
+
+└── reassemble.sh  →  打包itb的脚本
+
+您直接用到的是new_update_itb_its.py和gui_new_update_itb_its.py脚本；其中new_update_itb_its.py是以命令行的方式进行修改内存布局操作，没有窗口界面；而gui_new_update_itb_its.py运行后会显示一个修改内存布局操作界面，适合带有桌面的Ubuntu系统。这两个脚本的具体操作步骤如下：
+
+（一）new_update_itb_its.py脚本操作步骤：
+
+   1.从板卡的/boot目录下copy出emmcboot.itb和multi.its两个文件放到脚本同级目录下(即mm_layout/目录下)。
+
+   2.在mm_layout目录下，使用Python运行new_update_itb_its.py文件：
+
+      .. code-block:: bash
+
+         python3 new_update_itb_its.py
+
+   它会解开emmcboot.itb，然后提示您选择要修改哪个device tree；进入到所需要修改dtb文件的选择页面；标准版SM5对应的文件为bm1684_asic_modm.dtb。
+
+   .. image:: ./_static/image42.png
+      :width: 2.85in
+      :height: 3.49in
+
+   您可以通过在板卡上执行以下命令获取板卡对应的dtb文件名称：
+
+   .. code-block:: bash
+
+      cat /proc/device-tree/info/file-name
+
+   3.输入所需要修改的板卡的dtb文件的序号，之后会列出当前这份device tree里的内存状况，并进入内存布局的功能操作选择流程：
+
+   .. image:: ./_static/image43.png
+      :width: 5.02in
+      :height: 2.67in
+
+   如上图，先列出了所有DDR channel的物理内存大小。然后列出了每个DDR channel上除去固定分配区域后还有多少可以调整的。接下来就会逐个列出NPU、VPP、VPU三个区域所在DDR channel起始地址和大小；同时显示能够对内存布局的进行的操作。
+
+   0）update  →  表示修改内存布局，注意这里不能调整区域所在的DDR channel，不能删除或增加区域，只能修改大小，且大小不能超过上面开列的每个DDR channel的可用空间。
+
+   1）delete  →  表示删除已有的内存区，例如删除NPU、VPP、VPU区域。
+
+   2）add  →  表示增加板卡里没有的内存区，注意这里只能增加NPU、VPP、VPU区域，若device tree内已经存在该内存区域，则不能进行增加内存操作，且增加的内存大小不能超过上面开列的每个DDR channel的可用空间(例如 device tree内存在NPU区域，则无法再增加NPU内存区域)。
+
+   3）finish all operation and generate new files  →  表示结束对内存布局的功能操作，生成新的emmcboot.itb文件。注意选择update、delete、add等操作之后，需要选择finish all operation and generate new files 操作才会退出程序。
+
+   输入您所需要的内存操作序号后执行相应的操作，上述各操作的详细流程如下：
+
+      3.1 update操作步骤：
+
+      .. image:: ./_static/image59.png
+         :height: 2.01in
+         :width: 3.08in
+
+      如上图，输入0之后进入修改内存布局操作流程，然后会列出可供修改的内存区域名称及其序号。
+
+         3.1.1 选择您所需要修改的内存区域的序号：
+
+            .. image:: ./_static/image60.png
+               :height: 1.27in
+               :width: 4.42in
+
+            选择您需要修改的内存区后，会让您输入该ion区域的新分配的内存大小（10进制和16进制都可以，16进制数以0x开头），并且列出了能够分配的最大内存大小。
+
+         3.1.2 输入您所需要修改的内存大小：
+
+            .. image:: ./_static/image61.png
+               :height: 0.76in
+               :width: 4.73in
+
+            输入所需要修改的内存大小后，会询问您是否需要继续进行修改内存区域操作。
+
+         3.1.3 选择您是否需要继续修改内存：
+
+            yes:(表示继续修改内存区域)
+
+            .. image:: ./_static/image62.png
+               :height: 1.55in
+               :width: 3.61in
+
+            选择yes后会继续进行修改内存操作，回到3.1.1步骤继续修改内存；注意，如果您继续修改内存选择了相同的ion区域操作会覆盖之前对该区域的操作，以最新的操作为准；如果您继续修改内存选择了不同的ion区域操作会记录之前的所有修改操作，执行所有的修改内存操作。
+
+            no:(表示结束修改内存区域操作)
+
+            .. image:: ./_static/image63.png
+               :height: 1.91in
+               :width: 3.80in
+
+            选择no后会退出修改内存操作，显示您更新了哪个区域提示信息，回到3步骤继续选择对内存的功能操作；注意,如果您想结束所有的操作，需要选择3结束内存布局的功能操作，生成新的emmcboot.itb文件。
+
+      3.2 delete操作步骤：
+
+      .. image:: ./_static/image64.png
+         :height: 2.22in
+         :width: 4.01in
+
+      如上图，输入1之后进入删除内存操作流程，然后列出可供删除的内存区域名称及序号。
+
+         3.2.1 选择您需要删除的内存区域序号：
+
+            .. image:: ./_static/image65.png
+               :height: 1.21in
+               :width: 3.22in
+
+            选择所需要删除的内存区域之后，会询问您是否需要继续进行删除内存区域操作。
+
+         3.2.2 选择您是否需要继续删除内存区域：
+
+            yes:(表示继续删除内存区域)
+
+            .. image:: ./_static/image66.png
+               :height: 1.47in
+               :width: 3.29in
+
+            选择yes之后会继续进行删除内存操作，回到3.2.1步骤继续删除内存；注意，如果您继续删除内存区域，之前删除过的区域不可再删除，可供删除的内存区域也不再显示之前删除过的内存区。
+
+            no:(表示结束删除内存区域操作)
+
+            .. image:: ./_static/image67.png
+               :height: 1.97in
+               :width: 3.89in
+
+            选择no后会退出删除内存区域操作，显示您删除了哪个区域提示信息，回到3步骤继续选择对内存的功能操作；注意,如果您想结束所有的操作，需要选择3结束内存布局的功能操作，生成新的emmcboot.itb文件。
+
+      3.3 add操作步骤：
+
+      .. image:: ./_static/image68.png
+         :height: 2.05in
+         :width: 3.28in
+
+      注意：如果device tree内已经存在NPU、VPU、VPP内存区域，则不能进行增加内存操作，提示您“npu、vpu、vpp already exist, can not add memory!“信息，并回到步骤3继续选择对内存的功能操作。
+
+      .. image:: ./_static/image69.png
+         :height: 1.74in
+         :width: 3.44in
+
+      如果device tree内不全存在NPU、VPU、VPP内存区域，则能进行增加内存操作，并显示可供增加的内存区域。
+
+         3.3.1 选择您所需要增加的内存区域的序号：
+
+            .. image:: ./_static/image70.png
+               :height: 1.05in
+               :width: 4.43in
+
+            选择您需要增加的内存区后，会让您输入该ion区域的新分配的内存大小（10进制和16进制都可以，16进制数以0x开头），并且列出了能够增加的最大内存大小。
+
+         3.3.2 输入您所需要增加的内存区域的大小：
+
+            .. image:: ./_static/image71.png
+               :height: 1.32in
+               :width: 4.09in
+
+            输入所需要增加的内存大小后，会询问您是否需要继续进行增加内存区域操作。
+
+         3.3.3 选择您是否需要继续增加内存区域
+
+            yes:(表示继续增加内存区域)
+
+            .. image:: ./_static/image72.png
+               :height: 1.15in
+               :width: 2.95in
+
+            选择yes之后会继续进行增加内存区域操作，回到3.3.1步骤继续增加内存；注意，如果您继续增加内存区域，之前增加过的区域不可再增加，可供增加的内存区域也不再显示之前增加过的内存区。
+
+            no:(表示结束增加内存区域操作)
+
+            .. image:: ./_static/image73.png
+               :height: 2.03in
+               :width: 3.68in
+
+            选择no后会退出增加内存区域操作，显示您增加了哪个区域提示信息，回到3步骤继续选择对内存的功能操作；注意,如果您想结束所有的操作，需要选择3结束内存布局的功能操作，生成新的emmcboot.itb文件。
+
+      3.4 finish all operation and generate new files 操作步骤
+
+         .. image:: ./_static/image74.png
+            :height: 1.57in
+            :width: 5.96in
+
+         | ......
+
+         .. image:: ./_static/image75.png
+            :height: 1.22in
+            :width: 5.96in
+
+      如上图，输入3之后结束所有的操作，提示您“all finished!”信息，生成新的emmcboot.itb文件。
+
+（二）gui_new_update_itb_its.py脚本操作步骤：
+
+   1.从板卡的/boot目录下copy出emmcboot.itb和multi.its两个文件放到脚本同级目录下(即mm_layout/目录下)。
+
+   2.在mm_layout目录下，使用Python（Python3.0以上版本，建议使用Python3.8）运行gui_new_update_itb_its.py文件：
+
+      .. code-block:: bash
+
+         python3 gui_new_update_itb_its.py
+
+   .. image:: ./_static/image76.png
+      :height: 3.46in
+      :width: 4.47in
+
+   运行该脚本之后会显示一个操作界面，它会解开emmcboot.itb，然后显示您要修改哪个device tree的相关信息，标准版SM5对应的文件为bm1684_asic_modm.dtb；您在进行相关操作之前需要先选择您所需要修改的dtb文件序号才可继续进行操作，您可以通过在板卡上执行以下命令获取板卡对应的dtb文件名称：
+
+   .. code-block:: bash
+
+      cat /proc/device-tree/info/file-name
+
+   3.选择所需要修改的板卡的dtb文件序号，之后会激活相关功能的操作按钮，并提示您选择了哪个文件。
+
+   .. image:: ./_static/image77.png
+      :height: 3.79in
+      :width: 4.88in
+
+   如上图，当您选择所需要操作的dtb文件之后，相关的功能操作按钮已经激活，有修改内存大小、删除内存分区、增加内存分区和确定修改内存四个功能按钮，当您进入修改内存相关操作的子页面时，主页面将暂时停止使用，子页面关闭后可继续使用；同时左上角的功能菜单中还有清空当前输出面板信息的功能。
+
+   0）修改内存大小  →  表示修改内存布局，注意这里不能调整区域所在的DDR channel，不能删除或增加区域，只能修改大小，且大小不能超过所属DDR channel的可用空间。
+
+   1）删除内存分区  →  表示删除已有的内存区，例如删除NPU、VPP、VPU区域。
+
+   2）增加内存分区  →  表示增加板卡里没有的内存区，注意这里只能增加NPU、VPP、VPU区域，若device tree内已经存在该内存区域，则不能进行增加内存操作，且增加的内存大小不能超过所属DDR channel的可用空间(例如 device tree内存在NPU区域，则无法再增加NPU内存区域)。
+
+   3）确定修改内存  →  表示确定修改内存布局的操作，注意在进行修改、增加、删除内存等操作之后，需要点击确定修改内存操作才会生成新的emmcboot.itb文件，且当您想要切换所修改的dtb文件时，也需要先点击此按钮。
+
+   点击您所需要的内存操作按钮后将会执行相应的功能，上述各功能操作的详细流程如下：
+
+      3.1 修改内存大小操作步骤：
+
+      .. image:: ./_static/image78.png
+         :height: 2.12in
+         :width: 2.82in
+
+      如上图，点击修改内存大小按钮后进入修改内存大小的子页面，在该页面可以选择修改内存区域的名称，可以拉动滑条设置所修改内存的大小，也可以手动输入和点击上下按钮设置所修改的内存大小，但是不能超过该内存区所属的DDR channel的可用空间大小。
+
+         3.1.1 选择您所需要修改的内存区域名称：
+
+            .. image:: ./_static/image79.png
+               :height: 2.02in
+               :width: 2.69in
+
+            选择所修改的内存区域名称后，滑条会自动设置所能修改的最大内存大小。
+
+         3.1.2 设置所修改内存的大小，单位是MB：
+
+            .. image:: ./_static/image80.png
+               :height: 2.24in
+               :width: 2.98in
+
+            如上图，拉动滑条后，内存大小输入区会显示相应的大小，也可以在该输入区输入所设置的新内存区域的大小，还可通过输入区右边的上下箭头微调大小；在输入区设置好大小后滑条也会调节到相应的位置，注意这里不能给所修改的内存区域设置0MB的新大小。
+
+         3.1.3  点击确定或者取消的操作按钮
+
+            点击确定按钮后， 会弹出确认选择框，点击OK即可完成修改内存大小操作，回到主界面，点击确定修改内存按钮后完成本次修改内存大小操作，您也可以点击其余功能操作按钮，最后执行确定修改操作；若您对之前的内存大小调节操作有不满意的地方可以点击Cancel按钮返回修改内存大小子界面，重新设置相关信息。
+
+            .. image:: ./_static/image81.png
+               :height: 1.23in
+               :width: 2.25in
+
+            点击取消按钮后，会返回主界面，取消本次修改内存大小操作。
+
+      3.2 删除内存分区操作步骤：
+
+      .. image:: ./_static/image82.png
+         :height: 2.10in
+         :width: 2.80in
+
+      如上图，点击删除内存分区按钮后进入删除内存区域的子页面，在该页面可以选择删除内存区域的名称。
+
+         3.2.1 选择您所需要删除的内存区域名称：
+
+            .. image:: ./_static/image83.png
+               :height: 2.18in
+               :width: 2.94in
+
+         3.2.2 点击确定或者取消的操作按钮
+
+            点击确定按钮后， 会弹出确认选择框，点击OK即可完成删除内存区域操作，回到主界面，点击确定修改内存按钮后完成本次删除内存分区操作，您也可以点击其余功能操作按钮，最后执行确定修改操作；若您对之前的删除内存操作有不满意的地方可以点击Cancel按钮返回删除内存区域子界面，重新设置相关信息。
+
+            .. image:: ./_static/image84.png
+               :height: 1.23in
+               :width: 2.25in
+
+            击取消按钮后，会返回主界面，取消本次删除内存区域操作。
+
+      3.3 增加内存分区操作步骤：
+
+      .. image:: ./_static/image85.png
+         :height: 2.17in
+         :width: 2.89in
+
+      如上图，点击增加内存分区按钮后进入增加内存区域子页面，在该页面可以选择增加内存区域的名称以及所属的DDR channel，可以拉动滑条设置所增加内存的大小，也可以手动输入和点击上下按钮设置所增加的内存大小，但是不能超过该内存区所属的DDR channel的可用空间大小。注意，如果device tree内已经存在NPU、VPU、VPP内存区域，则不能进行增加内存操作。
+
+         3.3.1 选择您所需要增加的内存区域名称：
+
+            .. image:: ./_static/image86.png
+               :height: 2.34in
+               :width: 3.11in
+
+         3.3.2 选择所选内存区域的所属DDR区：
+
+            .. image:: ./_static/image87.png
+               :height: 2.37in
+               :width: 3.16in
+
+            选择所属的DDR区后，滑条会自动设置所能增加的最大内存大小。
+
+         3.3.3 设置所增加内存的大小，单位是MB：
+
+            .. image:: ./_static/image88.png
+               :height: 2.44in
+               :width: 3.22in
+
+            如上图，拉动滑条后，内存大小输入区会显示相应的大小，也可以在该输入区输入所设置的新内存区域的大小，还可通过输入区右边的上下箭头微调大小；在输入区设置好大小后滑条也会调节到相应的位置，注意这里不能给所增加的内存区域设置0MB的新大小。
+
+         3.3.4 点击确定或者取消的操作按钮
+
+            点击确定按钮后， 会弹出确认选择框，点击OK即可完成增加内存分区操作，回到主界面，点击确定修改内存按钮后完成本次增加内存分区操作，您也可以点击其余功能操作按钮，最后执行确定修改操作；若您对之前的内存大小调节操作有不满意的地方可以点击Cancel按钮返回增加内存分区子界面，重新设置相关信息。
+
+            .. image:: ./_static/image89.png
+               :height: 1.23in
+               :width: 2.25in
+
+            点击取消按钮后，会返回主界面，取消本次增加内存分区操作。
+
+      3.4 确定修改内存操作步骤：
+
+      点击确定修改内存按钮后会在output目录下生成新的emmcboot.itb文件，结束之前对所选dtb文件的功能操作，您可以回到步骤2后选择其他dtb文件进行功能操作。
+
+   4.最后界面关闭或者点击确定修改内存按钮后会在output目录下生成新的emmcboot.itb文件。将它替换回板卡的/boot目录下，执行sudo reboot操作即可；另外，在output目录下会保留原始的dts和dtb文件供您比较。
+
+注意事项：
+
+（1）如果遇到shell提示"dtc not found"，在Ubuntu系统上可以通过执行以下命令解决:
+
+      .. code-block:: bash
+
+         sudo apt install device-tree-compiler
+
+   或者，mm_layout文件夹里也提供了一个dtc执行文件，请把这个文件夹加入到shell的PATH变量即可，在shell里执行：
+
+      .. code-block:: bash
+
+         PATH=$PATH:/path/to/mm_layout/folder
+
+   然后再执行new_update_itb_dts.py或者gui_new_update_itb_its.py脚本。
+
+（2）目前只能对NPU、VPU、VPP三个内存区域进行操作，其中NPU在DDR0上、VPU在DDR1上、VPP在DDR2上。
 
 1684x kdump-crash使用说明
 -----------------------------

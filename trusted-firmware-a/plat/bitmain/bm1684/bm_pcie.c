@@ -328,6 +328,10 @@ void bm_pcie_status_init(void)
 				mmio_setbits_32(BOOT_ARGS_REG, PCIE_EP_LINKED);
 			if (pcie_check == 0x3)
 				mmio_setbits_32(BOOT_ARGS_REG, SOC_EP);
+		} else {
+			// iic read failed set to pcie mode
+			NOTICE("force set the card to pcie ep mode\n");
+			mmio_setbits_32(BOOT_ARGS_REG, PCIE_EP_LINKED);
 		}
 	}
 #if defined(CONFIG_ARCH_BM1686_PLD) && defined(HAS_PCIE)

@@ -387,6 +387,7 @@ static void select_board(void)
 	case BM1684X_EVB_V0_0:
 		env_set("dtb_name", "bm1684x_evb_v0.0.dtb");
 		break;
+	case BM1684X_SC7_HP300_EP:
 	case BM1684X_EP:
 		env_set("dtb_name", "bm1684x_ep.dtb");
 		env_set("disable_wdt", "enable");
@@ -472,6 +473,7 @@ static const char * const board_names[] = {
 	[BM1684X_FPGA] = "bitmain-bm1684x-fpga",
 	[BM1684X_EVB_V0_0] = "bitmain-bm1684x-evb-v0.0",
 	[BM1684X_EP] = "bitmain-bm1684x-evb-v0.0",
+	[BM1684X_SC7_HP300_EP] = "bitmain-bm1684x-sc7-ep",
 };
 
 int board_fit_config_name_match(const char *name)

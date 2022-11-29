@@ -50,6 +50,7 @@ enum {
 	BM1684X_FPGA = 129,
 	BM1684X_EVB_V0_0 = 130,
 	BM1684X_EP = 131,
+	BM1684X_SC7_HP300_EP = 132,
 };
 #endif
 

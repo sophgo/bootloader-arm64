@@ -755,5 +755,16 @@
 				sign-images = "fdt", "ramdisk", "kernel";
 			};
 		};
+		config-pcb132 {
+			description = "for BM1684X PCIe SC7 HP300 End Point";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb131";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
 	};
 };
