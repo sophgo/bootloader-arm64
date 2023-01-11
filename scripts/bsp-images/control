@@ -1,6 +1,6 @@
 Package: sophgo-bsp-images
 Source: sophgo-bsp-images
-Version: 2.0.0
+Version: 2.1.0
 Architecture: arm64
 Maintainer: sophgo
 Priority: optional

@@ -817,19 +817,12 @@ BM1684X 板载了16GB DDR，可以分为三类：
    heap（即三块预留的内存区域），如名字所示，分别供TPU、VPU、VPP使用。以上示例中只打印了每个heap使用信息的开头，如果完整地cat
    summary文件，可以看到其中分配的每块buffer的地址和大小信息。
 
-Sophon SDK3介绍
-================
-
-有关Sophon SDK3详细介绍及示例代码，请查看如下链接：
-
-   https://sophgo-doc.gitbook.io/sophonsdk3/
-
 
 系统定制
 ============
 
 因为 |Product| 的底板可以由您自行设计，我们提供了一个BSP SDK以便您对内核和Ubuntu
-20.04系统进行定制，然后生成自己的SD卡或tftp刷机包。由于3.0.0版本后我们修改了bootloader的代码，导致无法使用tftp从3.0.0及以前的版本升级到0.2.3及以后的版本，这种情况下请使用sd卡刷机升级。因为 |Product| 核心板是制成品，故bootloader并未开放，如果需要定制请联系技术支持。
+20.04系统进行定制，然后生成自己的SD卡或tftp刷机包。由于从V22.09.02开始我们修改了bootloader的代码，导致无法使用tftp从3.0.0及以前的版本升级到V22.09.02及以后的版本，这种情况下请使用sd卡刷机升级。因为 |Product| 核心板是制成品，故bootloader并未开放，如果需要定制请联系技术支持。
 
 如果您只是希望部署自己的业务软件，并不涉及硬件修改，那么出于解耦的考虑，更推荐您把自己的业务软件打包成一个deb安装包。比如包含您的业务软件执行程序、依赖库、开机自启动服务等等，deb安装包里还可以放一个安装时自动执行的脚本，在安装时做一些配置文件修改替换之类的操作。这样您可以单独安装、卸载、升级您的业务软件，避免与我们系统包版本的依赖问题，对产品部署后的批量更新等操作也更友好。deb安装包的制作可以参考Debian\ `官方文档 <https://wiki.debian.org/Packaging/Intro>`__\ ，或其他网上资料。
 
@@ -837,26 +830,24 @@ Sophon SDK3介绍
 ------------
 
 BSP
-SDK包含两部分，请参考Sophon SDK3介绍章节的下载地址，一部分为gitee网站上发布的源码文件，另一部分基本不会改动的二进制文件，为避免影响git效率，是通过百度网盘发布的。请参考源码文件的README.md中的描述将两部分合并，将看到如下文件：
+SDK包含两部分：一部分为github网站（https://github.com/sophgo）上发布的源码文件，bootloarder-arm64和linux-arm64；另一部分基本不会改动的二进制文件，为避免影响git效率，是通过NAS发布的。请参考bootloarder-arm64源码文件的README中的描述将两部分合并，将看到如下文件：
 
    ::
 
       top
       ├── bootloader-arm64
-      │   └── scripts
-      │       └── envsetup.sh → 编译脚本入口
+      │   ├── scripts
+      │   │    └── envsetup.sh → 编译脚本入口
       │   ├── trusted-firmware-a → TF-A源代码
       │   ├── u-boot → u-boot源代码
-      │   └── ramdisk
-      │       └── build → ramdisk的cpio文件和u-boot启动脚本文件
-      ├── debian
-      │   ├── distro_focal_20220328.tgz → Ubuntu 20.04底包
-      │   └── overlay → 对Ubuntu 20.04底包的修改文件
+      │   ├── ramdisk
+      │   │   └── build → ramdisk的cpio文件和u-boot启动脚本文件
+      │   └── distro → Ubuntu 20.04的定制部分
+      ├── distro
+      │   └── distro_focal.tgz → Ubuntu 20.04的原始底包
       ├── gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu → 交叉编译工具链
-      ├── linux-bitmain → kernel源代码
-      └── install
-          └── soc_bm1684
-              └── opt.tgz → bmnnsdk2 runtime
+      └── linux-arm64 → kernel源代码
+
 
 交叉编译
 ------------
@@ -1293,13 +1284,17 @@ tree，并非kernel使用的device tree：
                :height: 1.55in
                :width: 3.61in
 
-            选择yes后会继续进行修改内存操作，回到3.1.1步骤继续修改内存；注意，如果您继续修改内存选择了相同的ion区域操作会覆盖之前对该区域的操作，以最新的操作为准；如果您继续修改内存选择了不同的ion区域操作会记录之前的所有修改操作，执行所有的修改内存操作。
+            选择yes后会继续进行修改内存操作，回到3.1.1步骤继续修改内存；注意，如果您继续修改内存选择了相同的ion区域操作会覆盖之前对该区域的操作，以最新的操作为准；如果您继续修改内存选择了不同的ion区域操作会记录之前的所有修改操作，执行所有的修改内存操作，如果您的更新的内存区域的起始地址不是所属DDR channel的可用起始基地址，系统会提示您相应的warning，并把所更新的内存区域的起始地址重置到所属DDR channel的可用起始基地址。
 
             no:(表示结束修改内存区域操作)
 
             .. image:: ./_static/image63.png
                :height: 1.91in
                :width: 3.80in
+
+            .. image:: ./_static/image92.png
+               :height: 0.22in
+               :width: 5.76in
 
             选择no后会退出修改内存操作，显示您更新了哪个区域提示信息，回到3步骤继续选择对内存的功能操作；注意,如果您想结束所有的操作，需要选择3结束内存布局的功能操作，生成新的emmcboot.itb文件。
 
@@ -1471,6 +1466,12 @@ tree，并非kernel使用的device tree：
 
             点击取消按钮后，会返回主界面，取消本次修改内存大小操作。
 
+            .. image:: ./_static/image93.png
+               :height: 1.27in
+               :width: 3.47in
+
+            如果您执行确定修改操作后，您的更新的内存区域的起始地址不是所属DDR channel的可用起始基地址，系统会提示您相应的warning，并把所更新的内存区域的起始地址重置到所属DDR channel的可用起始基地址。
+
       3.2 删除内存分区操作步骤：
 
       .. image:: ./_static/image82.png
@@ -1558,6 +1559,34 @@ tree，并非kernel使用的device tree：
    然后再执行new_update_itb_dts.py或者gui_new_update_itb_its.py脚本。
 
 （2）目前只能对NPU、VPU、VPP三个内存区域进行操作，其中NPU在DDR0上、VPU在DDR1上、VPP在DDR2上。
+
+选择板卡预制的内存布局
+-----------------------------
+
+BM1684当前默认的内存布局可能不适合部分yolo等较大模型的精度测试，所以我们提供了一种定制的内存布局，让操作系统能够扩大
+使用的内存，方便客户进行精度测试。
+首先需要确认当前板卡使用的pcb_version，可以通过
+
+      .. code-block:: bash
+
+         cat /proc/device-tree/info/file-name
+
+获取当前板卡使用的device-tree的名字，然后打开/boot/multi.its文件，搜索当前板卡的device-tree名字，找到当前device-tree对应
+的fdt-pcb后面的数字，这个数字就是pcb_version号。
+获取到pcb_version号后，可以通过如下方式进行切换内存布局，下述方式以pcb_version为7为例，如果使用其他型号的板卡，请自己将extra-后面的数字换成真正的pcb_verison。
+
+
+      .. code-block:: bash
+
+         sudo apt update
+         sudo apt install u-boot-tools
+         echo "set memory_model 0" > extra-7.cmd
+         mkimage -A arm64 -O linux -T script -C none -a 0 -e 0 -n \
+             "Distro Boot Script" -d extra-7.cmd extra-7.scr
+         sudo cp extra-7.scr /boot
+         sudo reboot
+
+如上会选中u-boot中pcb_version变量为7的板卡的第0个预制的内存布局，如果想要恢复此板卡默认的内存布局，删除/boot/extra-7.scr后重启即可。
 
 1684x kdump-crash使用说明
 -----------------------------

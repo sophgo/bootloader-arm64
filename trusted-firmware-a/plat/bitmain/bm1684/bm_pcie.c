@@ -324,7 +324,8 @@ void bm_pcie_status_init(void)
 
 		if (!err) {
 			// 1: SoC mode; 2: PCIe mode; 3: mixed mode
-			if (pcie_check == 0x2 || pcie_check == 0x3)
+			// SC5H pcie_check is always 0xff
+			if (pcie_check == 0x2 || pcie_check == 0x3 || pcie_check == 0xff)
 				mmio_setbits_32(BOOT_ARGS_REG, PCIE_EP_LINKED);
 			if (pcie_check == 0x3)
 				mmio_setbits_32(BOOT_ARGS_REG, SOC_EP);
