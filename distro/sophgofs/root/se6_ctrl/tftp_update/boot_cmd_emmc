@@ -1,5 +1,0 @@
-set ipaddr 192.168.1.100
-tftp 0x310000000 192.168.1.255:boot.scr                                     
-set serverip 192.168.1.255;set reset_after 1
-source 0x310000000
-
