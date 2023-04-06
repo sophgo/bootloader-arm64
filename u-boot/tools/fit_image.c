@@ -659,6 +659,17 @@ static int fit_import_data(struct image_tool_params *params, const char *fname)
 	fdt_pack(fdt);
 
 	new_size = fdt_totalsize(fdt);
+#ifdef CONFIG_ARCH_BITMAIN
+	/*
+	 * we have too many entries in bm1684's multi.its,
+	 * and each of them needs hash values, which requires
+	 * extra space. otherwise you may get following error
+	 * when making itb:
+	 * Can't set hash 'value' property for 'hash' node(FDT_ERR_NOSPACE)
+	 * Can't set hash value for 'hash' hash node in 'fdt-pcb130' image node
+	 */
+	new_size += 1024;
+#endif
 	debug("Size expanded from %x to %x\n", fit_size, new_size);
 
 	fd = open(fname, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, 0666);

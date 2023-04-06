@@ -5,5 +5,5 @@
 	<partition label="ROOTFS"     size_in_kb="2621440" readonly="true"   format="2" />
 	<partition label="ROOTFS_RW"  size_in_kb="6291456" readonly="false"  format="2" />
 	<partition label="OPT"        size_in_kb="2097152" readonly="false"  format="2" />
-	<partition label="DATA"       size_in_kb="3276800" readonly="false"  format="2" />
+	<partition label="DATA"       size_in_kb="4194304" readonly="false"  format="2" />
 </physical_partition>

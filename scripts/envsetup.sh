@@ -4,10 +4,11 @@
 #     qemu
 #     bm1684
 #     mango
+# build kylinos =   DISTRO=kylinos;source /bootloaer-arm64/scripts/envsetup.sh
 
 CHIP=${CHIP:-bm1684}
 DEBUG=${DEBUG:-0} # for ATF
-DISTRO=${DISTRO:-focal} # Ubuntu 20.04
+DISTRO=${DISTRO:-focal} # focal = Ubuntu 20.04; kylinos
 KERNEL_VARIANT=${KERNEL_VARIANT:-normal} # normal, mininum, debug
 PRODUCT=${PRODUCT:-0}
 
@@ -427,8 +428,13 @@ function create_ramdisk_folders()
 	if [ "$2" == "emmc" ]; then
 		rm $RAMDISK_BUILD_DIR/target/init
 		mv $RAMDISK_BUILD_DIR/target/init_emmc.sh $RAMDISK_BUILD_DIR/target/init
+	elif [ "$2" == "emmc_ro" ]; then
+		rm $RAMDISK_BUILD_DIR/target/init
+		mv $RAMDISK_BUILD_DIR/target/init_emmc_ro.sh $RAMDISK_BUILD_DIR/target/init
 	elif [ "$2" == "pcie" ]; then
 		cp -r --remove-destination $RAMDISK_DIR/target/overlay/${PROJECT_NAME}_pcie/* $RAMDISK_BUILD_DIR/target/
+	elif [ "$2" == "mix" ]; then
+		cp -r --remove-destination $RAMDISK_DIR/target/overlay/${PROJECT_NAME}_mix/* $RAMDISK_BUILD_DIR/target/
 	fi
 
 	# create config folder
@@ -445,7 +451,9 @@ mini
 
 RAMDISK_FAVORS=(
 emmc
+emmc_ro
 pcie
+mix
 recovery
 )
 
@@ -504,7 +512,7 @@ function build_ramdisk()
 	$KERNEL_BUILD_DIR/usr/gen_init_cpio ramdisk_${RAMDISK_TYPE}_${RAMDISK_FAVOR}_files.txt > ramdisk_${RAMDISK_TYPE}_${RAMDISK_FAVOR}.cpio
 	$UBOOT_BUILD_DIR/tools/mkimage -f multi.its ramdisk_${RAMDISK_TYPE}_${RAMDISK_FAVOR}.itb
 
-	if [ "$RAMDISK_FAVOR" == "emmc" ] ; then
+	if [ "$RAMDISK_FAVOR" == "emmc" -o "$RAMDISK_FAVOR" == "emmc_ro" ] ; then
 		cp ./ramdisk_${RAMDISK_TYPE}_${RAMDISK_FAVOR}.itb $OUTPUT_DIR/emmcboot.itb
 		$UBOOT_BUILD_DIR/tools/mkimage -A arm64 -O linux -T script -C none -a 0 -e 0 -n "eMMC Boot Script" -d ../configs/boot.cmd.emmc $OUTPUT_DIR/boot.scr.emmc
 	elif [ "$RAMDISK_FAVOR" == "recovery" ] ; then
@@ -533,6 +541,22 @@ function build_bsp()
 
 	build_kernel &&
 	build_ramdisk uclibc emmc &&
+	build_ramdisk glibc recovery &&
+	build_bootp &&
+
+	build_debs &&
+	build_rootp &&
+	build_update tgz &&
+	build_update sdcard &&
+	build_update tftp
+}
+
+function build_bsp_ro()
+{
+	build_fip &&
+
+	build_kernel &&
+	build_ramdisk uclibc emmc_ro &&
 	build_ramdisk glibc recovery &&
 	build_bootp &&
 
@@ -871,6 +895,12 @@ function build_bootp()
 	cp spi_flash.bin ./boot/spi_flash.bin.bak
 	cp multi.its ./boot/multi.its.bak
 	cp boot.scr.emmc ./boot/boot.scr.emmc.bak
+
+	if [ "$PRODUCT" == "se6" ]; then
+		echo "set memory_model 0" > extra-14.cmd
+		mkimage -A arm64 -O linux -T script -C none -a 0 -e 0 -n "Distro Boot Script" -d extra-14.cmd extra-14.scr
+		cp extra-14.scr ./boot
+	fi
 	cd ./boot
 	tar -czvf ../boot.tgz *
 	cd ..
@@ -897,8 +927,10 @@ function build_rootp()
 	echo copy distro rootfs files from $DISTRO_BASE_PKT
 	zcat $DISTRO_BASE_PKT | sudo tar -C $OUTPUT_DIR/rootfs -x -f -
 
+	sudo mkdir -p $OUTPUT_DIR/rootfs/home/linaro
+
 	echo copy linux debs...
-	cp -r $DEB_INSTALL_DIR $OUTPUT_DIR/rootfs/home/linaro/
+	sudo cp -r $DEB_INSTALL_DIR $OUTPUT_DIR/rootfs/home/linaro/
 
 	echo copy overlay file to rootfs
 	if [ $UBUNTU_LEGACY -eq 1 ]; then
@@ -932,10 +964,26 @@ dpkg -i /home/linaro/bsp-debs/sophon-soc-libsophon*.deb
 dpkg -i /home/linaro/bsp-debs/sophon-mw-soc-sophon-ffmpeg*.deb
 dpkg -i /home/linaro/bsp-debs/sophon-mw-soc-sophon-opencv*.deb
 
-dpkg -i /home/linaro/bsp-debs/sophgo-hdmi_*.deb
-dpkg -i /home/linaro/bsp-debs/sophgo-system_*.deb
+os_release=$(lsb_release -i | awk  '{print $3}')
+echo "os is $os_release"
+if [ "$os_release" = "Kylin" ]; then
+	echo "add linaro user for kylin os!!!"
+	adduser --gecos linaro --disabled-login linaro
+	echo "linaro:linaro" | chpasswd
+	usermod -a -G sudo linaro
+	chown linaro.linaro -R /home/linaro
+fi
+if [ -f /home/linaro/bsp-debs/sophgo-se6_*.deb  ]; then
+	echo "install se6 deb"
+	dpkg -i /home/linaro/bsp-debs/sophgo-se6_*.deb
+else
+	if [ "$os_release" != "Kylin" ]; then
+		echo "not se6 product ,install hdmi and system deb"
+		dpkg -i /home/linaro/bsp-debs/sophgo-hdmi_*.deb
+		dpkg -i /home/linaro/bsp-debs/sophgo-system_*.deb
+	fi
+fi
 
-dpkg -i /home/linaro/bsp-debs/sophgo-se6_*.deb
 
 rm -rf /debs
 exit
@@ -954,7 +1002,7 @@ EOT
 		cd ./${libpath}
 		sudo bash -c "echo ${libpath} > ./data/buildinfo.txt"
 		sudo tar -zcf $OUTPUT_DIR/system.tgz *
-  fi
+	fi
 	sudo rm -rf $OUTPUT_DIR/rootfs/opt/*
 	popd
 
@@ -1055,30 +1103,53 @@ function build_update()
 		popd
 	fi
 	echo packing update image...
-	./bm_make_package.sh $UPDATE_TYPE ./partition32G.xml $OUTPUT_DIR
+	# se6 core board don't use kylinos
+	if [ $DISTRO == "kylinos" ]; then
+		if [ "$PRODUCT" == "se6" ] && [ "$UPDATE_TYPE" == "tftp" ]; then
+			./bm_make_package.sh $UPDATE_TYPE ./partition32G.xml $OUTPUT_DIR
+		else
+			./bm_make_package.sh $UPDATE_TYPE ./partition32G_kylinos.xml $OUTPUT_DIR
+		fi
+	else
+		./bm_make_package.sh $UPDATE_TYPE ./partition32G.xml $OUTPUT_DIR
+	fi
 	popd
 
 	pushd $OUTPUT_DIR/$1
+	cp $SCRIPTS_DIR/local_update.sh .
 	md5sum * > md5.txt
 	popd
 
 	if [ "$PRODUCT" == "se6" ] && [ "$UPDATE_TYPE" == "tftp" ]; then
 		echo "for se6 control board package"
 		echo $OUTPUT_DIR
+		rm -f $OUTPUT_DIR/opt.tgz
 		rm -f $OUTPUT_DIR/recovery.tgz
 		rm -rf $OUTPUT_DIR/se6_ctl_sdcard
 
-		mv $OUTPUT_DIR/sdcard $OUTPUT_DIR/sdcard-bak
+		if [ -d "$OUTPUT_DIR/sdcard" ];then
+			mv $OUTPUT_DIR/sdcard $OUTPUT_DIR/sdcard-bak
+		fi
 		pushd $OUTPUT_DIR
 		tar -czvf recovery.tgz recovery.itb tftp
 		popd
 
-		pushd $IMAGE_TOOL_DIR/
-		./bm_make_package.sh sdcard ./partition32G_ro.xml $OUTPUT_DIR
+		pushd $SCRIPTS_DIR/
+		if [ $DISTRO == "kylinos" ]; then
+			./bm_make_package.sh sdcard ./partition32G_kylinos.xml $OUTPUT_DIR
+		else
+			./bm_make_package.sh sdcard ./partition32G.xml $OUTPUT_DIR
+		fi
 		popd
 
 		mv $OUTPUT_DIR/sdcard $OUTPUT_DIR/se6_ctl_sdcard
-		mv $OUTPUT_DIR/sdcard-bak $OUTPUT_DIR/sdcard
+		cp $SCRIPTS_DIR/local_update.sh $OUTPUT_DIR/se6_ctl_sdcard
+		pushd $OUTPUT_DIR/se6_ctl_sdcard
+		md5sum * > md5.txt
+		popd
+		if [ -d "$OUTPUT_DIR/sdcard-bak" ];then
+			mv $OUTPUT_DIR/sdcard-bak $OUTPUT_DIR/sdcard
+		fi
 	fi
 
 }
@@ -1160,6 +1231,7 @@ echo "with: DEBUG=$DEBUG, KERNEL=$KERNEL_VARIANT"
 echo "to: $OUTPUT_DIR"
 echo "distro: $DISTRO_BASE_PKT $DISTRO_OVERLAY_DIR "
 echo "ubuntu legacy is $UBUNTU_LEGACY"
+echo "os is $DISTRO"
 echo "product is $PRODUCT"
 
 # include riscv environment

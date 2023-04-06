@@ -277,6 +277,7 @@ void bm_wdt_reset(void)
 
 void bm_clear_secure_firewall(void)
 {
+#if 0
 	/*
 	 * clear AXI SRAM protection, check platform_mem_init
 	 * disable the 4th memory space for PCIe
@@ -285,6 +286,12 @@ void bm_clear_secure_firewall(void)
 	/* remove the 4th memory space for PCIe */
 	mmio_write_32(PCIE_SECURITY_BASE + REG_SPACE3_START_ADDRESS, 0);
 	mmio_write_32(PCIE_SECURITY_BASE + REG_SPACE3_END_ADDRESS, 0);
+#else
+	ERROR("disable secure firewall\n");
+	mmio_write_32(0x5000E000, 0x0);
+	mmio_write_32(0x5000E400, 0x0);
+	mmio_write_32(0x5000E800, 0x0);
+#endif
 }
 
 void bm_ip_reset(void)
@@ -331,6 +338,7 @@ unsigned long BOOT_ARGS_REG;
 unsigned long BOOT_STAGE_REG;
 uint32_t SPIF_OFFSET_A_FIP;
 uint32_t SPIF_OFFSET_B_FIP;
+size_t spif_offset;
 
 void bm_reg_base_init(void)
 {
@@ -356,6 +364,7 @@ void bm_reg_base_init(void)
 		SPIF_OFFSET_A_FIP = (0x00030000); // 192KB
 		SPIF_OFFSET_B_FIP = (0x00230000); // 2MB + 192KB
 	}
+	spif_offset = SPIF_OFFSET_A_FIP;
 }
 
 void __dead2 plat_error_handler(int err)
