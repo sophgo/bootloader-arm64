@@ -8,7 +8,14 @@ fi
 echo 40000 > /sys/class/pwm/pwmchip0/pwm0/period
 echo 39999 > /sys/class/pwm/pwmchip0/pwm0/duty_cycle
 echo 1 > /sys/class/pwm/pwmchip0/pwm0/enable
-echo 1 >/sys/class/bm_fan_speed/bm_fan_speed-0/enable
+
+if [ -d '/sys/class/bm_fan_speed/bm_fan_speed-0/enable' ];then
+	fan_path='bm_fan_speed/bm_fan_speed-0'
+else
+	fan_path='bm-tach/bm-tach-0'
+fi
+sleep 30
+echo 1 > /sys/class/${fan_path}/enable
 count=0
 
 net_warning=0
@@ -17,6 +24,10 @@ fan_warning=0
 
 net_state=0
 s_port=3456
+
+# type=1 is 96, type=ff is 192
+ptype=$(i2cget -f -y 0x1 0x6f 0x41)
+
 while true;
 do
 
@@ -25,16 +36,21 @@ do
 
 	max_t=0
 
-	fan=$(cat /sys/class/bm_fan_speed/bm_fan_speed-0/fan_speed | awk -F : '{print $2}')
+	fan=$(cat /sys/class/${fan_path}/fan_speed | awk -F : '{print $2}')
 	fan_rate=$(expr $fan \* 30)
 
 	net_warning=0
 
 	for ((i=1; i<=6; i++))
 	do
-		res=$(/root/se6_ctrl/script/ssh_anycmd.exp "${lan1ip}1${i}" linaro linaro "bm_get_temperature" )
-		chip_t=$(echo "$res" | grep 'chip temperature' | awk -F : '{printf("%s\n"),$3}' | awk -F \' '{printf("%d\n"), $1}')
-		board_t=$(echo "$res" | grep 'chip temperature' | awk -F : '{printf("%s\n"),$2}'| awk -F \' '{printf("%d\n"), $1}')
+		if [ "$ptype" = "0xff" ];then
+			res=$(/root/se6_ctrl/script/ssh_anycmd.exp "${lan1ip}1${i}" linaro linaro "bm_get_temperature" )
+			chip_t=$(echo "$res" | grep 'chip temperature' | awk -F : '{printf("%s\n"),$3}' | awk -F \' '{printf("%d\n"), $1}')
+			board_t=$(echo "$res" | grep 'chip temperature' | awk -F : '{printf("%s\n"),$2}'| awk -F \' '{printf("%d\n"), $1}')
+		else
+			chip_t=30
+			board_t=30
+		fi
 		res1=$(/root/se6_ctrl/script/ssh_anycmd.exp "${lan2ip}1${i}" linaro linaro "bm_get_temperature")
 		chip2_t=$(echo "$res1" | grep 'chip temperature' | awk -F : '{printf("%s\n"),$3}' | awk -F \' '{printf("%d\n"), $1}')
 		board2_t=$(echo "$res1" | grep 'chip temperature' | awk -F : '{printf("%s\n"),$2}'| awk -F \' '{printf("%d\n"), $1}')

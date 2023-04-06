@@ -662,4 +662,9 @@ config SL28CPLD
 	  the base driver which provides common access methods for the
 	  sub-drivers.
 
+config BM_PCA9545_MUX
+	bool "bm1684 mux driver"
+	default n
+	help
+	    enable bm1684 mux driver
 endmenu

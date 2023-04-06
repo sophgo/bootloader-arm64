@@ -1,9 +1,14 @@
 #!/bin/bash
 
 echo 1 > /proc/sys/net/ipv4/ip_forward
+wanname=$(ifconfig | grep enp | awk -F : 'NR==1{print $1}')
 
-wanname="enp3s0"
 wanip=$(ifconfig $wanname | grep "inet "|awk '{print $2}' )
+
+if [ "$wanip" = "" ]; then
+	sleep 10
+	wanip=$(ifconfig $wanname | grep "inet "|awk '{print $2}' )
+fi
 lan1ip=$(ifconfig eth0 | grep "inet "|awk '{print $2}'|awk -F . '{printf("%d.%d.%d.\n", $1,$2,$3)}' )
 lan2ip=$(ifconfig eth1 | grep "inet "|awk '{print $2}'|awk -F . '{printf("%d.%d.%d.\n", $1,$2,$3)}' )
 

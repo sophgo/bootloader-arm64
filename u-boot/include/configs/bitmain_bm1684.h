@@ -30,6 +30,7 @@ enum {
 	BM1684_SM5_V1_2_TB = 18,
 	BM1684_SE5_V1_1 = 5,
 	BM1684_SE5_V2_0 = 23,
+	BM1684_SE5_V2_1 = 22,
 	BM1684_SE5_V2_5 = 26,
 	BM1684_SM5M_V0_0_RB = 10,
 	BM1684_SM5M_V0_1_RB = 14,
@@ -50,7 +51,8 @@ enum {
 	BM1684X_FPGA = 129,
 	BM1684X_EVB_V0_0 = 130,
 	BM1684X_EP = 131,
-	BM1684X_SC7_HP300_EP = 132,
+	BM1684X_SC7_HP300 = 132, // kept for backward compatibility
+	BM1684X_MIX = 133,
 };
 #endif
 
