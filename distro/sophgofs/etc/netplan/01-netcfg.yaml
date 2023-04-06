@@ -16,3 +16,18 @@ network:
                         addresses: []
                         dhcp-identifier: mac
                         optional: yes
+                enp4s0:
+                        dhcp4: yes
+                        addresses: []
+                        dhcp-identifier: mac
+                        optional: yes
+                enp7s0:
+                        dhcp4: yes
+                        addresses: []
+                        dhcp-identifier: mac
+                        optional: yes
+                enp8s0:
+                        dhcp4: no
+                        addresses: [192.168.150.1/24]
+                        dhcp-identifier: mac
+                        optional: yes

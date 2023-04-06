@@ -14,7 +14,7 @@ if [ $# -lt 3  ] ; then
     exit -1
 fi
 
-pushd /root/se6_ctrl/script
+pushd $(dirname $(realpath $0))
 
 
 lan1ip=$(ifconfig eth0 | grep "inet "|awk '{print $2}'|awk -F . '{printf("%d.%d.%d.\n", $1,$2,$3)}' )

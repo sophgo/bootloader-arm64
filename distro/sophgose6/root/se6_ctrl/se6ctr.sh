@@ -699,6 +699,7 @@ se6ctr_mcu_core_poweron()
     fi
     se6ctr_print $PRINT_INFO "$FUNCNAME"
     val=$(se6ctr_i2c_write_mcu 0x03 0x01)
+    val=$(se6ctr_i2c_write_mcu 0x03 0x09)
     if [ $val -eq 0 ]; then
 	echo "0"
     else
@@ -1207,18 +1208,44 @@ se6ctr_set_aiu_ipaddr()
 #V = 0.5LSB+(N-1)*LSB /100= 0.5 *  VA/256 +(N-1)*VA/256/100 = (N-0.5) * VA/25600
 se6ctr_power_get_from_adc()
 {
-	power_i2c_val=$(i2cget -f -y 2 $1 0x00 w)
-	power_i2c_val=$(i2cget -f -y 2 $1 0x00 w)
-	power_low=$((power_i2c_val>>12))
-	power_high=$((power_i2c_val & 0xf))
-	power_val=$(($power_low + $power_high*16))
-	val_f1=`echo $power_val - 0.5 | bc`
-	val_f2=`echo $val_f1 \* 3.3 | bc`
-	#the real volta value
-	val_f2=`echo "scale=8; $val_f2 / 25600" | bc`
-	#get the current
-	val_f3=`echo $val_f2 \* 2000 | bc`
-	val_f4=`echo $val_f3 \* 12 | bc`
+	nc=$(i2cdetect -y -r 2 | grep 50 | wc -l)
+	if [ $nc -gt 1 ]; then
+		power_i2c_val=$(i2cget -f -y 2 $1 0x00 w)
+		power_i2c_val=$(i2cget -f -y 2 $1 0x00 w)
+		power_low=$((power_i2c_val>>12))
+		power_high=$((power_i2c_val & 0xf))
+		power_val=$(($power_low + $power_high*16))
+		val_f1=`echo $power_val - 0.5 | bc`
+		val_f2=`echo $val_f1 \* 3.3 | bc`
+		#the real volta value
+		val_f2=`echo "scale=8; $val_f2 / 25600" | bc`
+		#get the current
+		val_f3=`echo $val_f2 \* 2000 | bc`
+		val_f4=`echo $val_f3 \* 12 | bc`
+	else
+		if [ "$1" = "0x50" ];then
+			pmbus -d 2 -s 0x48 -w 0x01 -v 0xe3e3
+			sleep 1
+			val=$(pmbus -d 2 -s 0x48 -w 0x00 | grep 'exchange-value' | awk  '{print $2}')
+			rval=$(echo $((16#$val)))
+			val_f4=$(echo "scale=5;$rval / 32767 * 4.096 / 0.05 * 12"|bc)
+
+		elif [ "$1" = "0x51" ];then
+			pmbus -d 2 -s 0x48 -w 0x01 -v 0xe3d3
+			sleep 1
+			val=$(pmbus -d 2 -s 0x48 -w 0x00 | grep 'exchange-value' | awk  '{print $2}')
+			rval=$(echo $((16#$val)))
+			val_f4=$(echo "scale=5;$rval / 32767 * 4.096 / 0.05 * 12 * 2"|bc)
+
+		elif [ "$1" = "0x52" ];then
+			pmbus -d 2 -s 0x48 -w 0x01 -v 0xe3c3
+			sleep 1
+			val=$(pmbus -d 2 -s 0x48 -w 0x00 | grep 'exchange-value' | awk  '{print $2}')
+			rval=$(echo $((16#$val)))
+			val_f4=$(echo "scale=5;$rval / 32767 * 4.096 / 0.05 * 12 * 2"|bc)
+
+		fi
+	fi
 	echo $val_f4
 }
 
@@ -1246,17 +1273,24 @@ se6ctr_adc_get_power_average()
 		#echo "there is adc_val.txt exit, first remove it"
 		rm -rf $FILE_NAME
 	fi
-    for ((rtry=0; rtry<$POWER_AVERAGE_CNT; rtry++))
-    do
-	power_curr_val=$(se6ctr_power_get_from_adc $i2c_channel)
-	echo $power_curr_val >> $FILE_NAME
-    done
-	total_score=`awk -F " " 'BEGIN{total=0}{total+=$1}END{print total}' $FILE_NAME`
-	if [ -e $FILE_NAME ]; then
-		rm -rf $FILE_NAME
+	nc=$(i2cdetect -y -r 2 | grep 50 | wc -l)
+	if [ $nc -gt 1 ]; then
+		for ((rtry=0; rtry<$POWER_AVERAGE_CNT; rtry++))
+		do
+			power_curr_val=$(se6ctr_power_get_from_adc $i2c_channel)
+			#echo $power_curr_val >> $FILE_NAME
+		done
+		total_score=`awk -F " " 'BEGIN{total=0}{total+=$1}END{print total}' $FILE_NAME`
+		#if [ -e $FILE_NAME ]; then
+		#	rm -rf $FILE_NAME
+		#fi
+		#echo "total_score = $total_score"
+		echo | awk "{print $total_score/$POWER_AVERAGE_CNT}"
+	else
+
+		power_curr_val=$(se6ctr_power_get_from_adc $i2c_channel)
+		echo "$power_curr_val" |awk 'END {print}'
 	fi
-	#echo "total_score = $total_score"
-	echo | awk "{print $total_score/$POWER_AVERAGE_CNT}"
 }
 ####################################################
 #aiub power on

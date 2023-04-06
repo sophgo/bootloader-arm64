@@ -850,86 +850,45 @@ void bm_ddr_init_asic(void)
 
 	board = mmio_read_32(BOARD_TYPE_REG);
 	switch (board) {
+	case BM1684_CUST_V1_3:
+	case BM1684X_EVB_V0_0:
+		rank = GROUP_RANK(RANK2, RANK2);
+		freq = FREQ_4000M;
+		break;
 	case BM1684_EVB_V1_2:
 		rank = GROUP_RANK(RANK1, RANK2);
 		freq = FREQ_4000M;
 		is_evb = 1;
 		break;
-	case BM1684_CUST_V1_1:
-		rank = GROUP_RANK(RANK1, RANK2);
-		freq = FREQ_4000M;
-		break;
-	case BM1684_CUST_V1_3:
-		rank = GROUP_RANK(RANK2, RANK2);
-		freq = FREQ_4000M;
-		break;
 	case BM1684_SM5_V1_1_RB:
-		rank = GROUP_RANK(RANK1, RANK2);
-		freq = FREQ_4000M;
-		break;
+	case BM1684_CUST_V1_1:
 	case BM1684_SM5_V1_2_RB:
-		rank = GROUP_RANK(RANK1, RANK2);
-		freq = FREQ_4000M;
-		break;
 	case BM1684_SM5_V1_2_TB:
-		rank = GROUP_RANK(RANK1, RANK2);
-		freq = FREQ_4000M;
-		break;
 	case BM1684_SE5_V1_1:
-		rank = GROUP_RANK(RANK1, RANK2);
-		freq = FREQ_4000M;
-		break;
 	case BM1684_SE5_V2_0:
+	case BM1684_SM5M_V0_0_RB:
+	case BM1684_SM5M_V0_0_TB:
+	case BM1684_SM5M_V0_1_RB:
+	case BM1684_SM5M_V0_1_TB:
+	case BM1684_SE6_CTRL:
+	case BM1684_SC5_EP:
 		rank = GROUP_RANK(RANK1, RANK2);
 		freq = FREQ_4000M;
 		break;
-	case BM1684_SE5_V2_5:
-		rank = GROUP_RANK(RANK1, RANK1);
+	case BM1684_SM5M_V3_0_RB:
+	case BM1684_SM5M_V3_0_TB:
+	case BM1684_SE5_V2_1:
+		rank = GROUP_RANK(RANK1, RANK2);
 		freq = FREQ_3600M;
 		break;
-	case BM1684_SM5M_V0_0_RB:
-		rank = GROUP_RANK(RANK1, RANK2);
-		freq = FREQ_4000M;
-		break;
-	case BM1684_SM5M_V0_1_RB:
-		rank = GROUP_RANK(RANK1, RANK2);
-		freq = FREQ_4000M;
-		break;
-	case BM1684_SM5M_V0_2_RB:
+	case BM1684_SE5_V2_5:
 	case BM1684_CUST_V1_4:
 	case BM1684_SM5M_V3_1_RB:
 	case BM1684_SM5M_V3_1_TB:
-		rank = GROUP_RANK(RANK1, RANK1);
-		freq = FREQ_3600M;
-		break;
-	case BM1684_SM5M_V3_0_RB:
-		rank = GROUP_RANK(RANK1, RANK2);
-		freq = FREQ_3600M;
-		break;
-	case BM1684_SM5M_V0_0_TB:
-		rank = GROUP_RANK(RANK1, RANK2);
-		freq = FREQ_4000M;
-		break;
-	case BM1684_SM5M_V0_1_TB:
-		rank = GROUP_RANK(RANK1, RANK2);
-		freq = FREQ_4000M;
-		break;
+	case BM1684_SM5M_V0_2_RB:
 	case BM1684_SM5M_V0_2_TB:
 		rank = GROUP_RANK(RANK1, RANK1);
 		freq = FREQ_3600M;
-		break;
-	case BM1684_SM5M_V3_0_TB:
-		rank = GROUP_RANK(RANK1, RANK2);
-		freq = FREQ_3600M;
-		break;
-	case BM1684_SE6_CTRL:
-		rank = GROUP_RANK(RANK1, RANK2);
-		freq = FREQ_4000M;
-		break;
-	case BM1684X_EVB_V0_0:
-		rank = GROUP_RANK(RANK2, RANK2);
-		freq = FREQ_4000M;
-		is_evb = 1;
 		break;
 	default:
 		ERROR("unknown type(%d) for DDR init\n", board);
