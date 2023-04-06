@@ -40,12 +40,18 @@ static uint32_t get_board_type(void)
 
 	if (get_chip_id() == CHIP_BM1684)
 		type = mmio_read_32(0x10000FFC);
-	else
+	else {
 		type = mmio_read_32(0x5001021C);
+	}
 
 	if (type == BM1684_SC5_EP) {
 		if (readl(0x500100b4) == 2)
 			type = BM1684_SC5_MIX;
+	}
+
+	if (type == BM1684X_EP || type == BM1684X_SC7_HP300) {
+		if (readl(0x500100b4) == 2)
+			type = BM1684X_MIX;
 	}
 
 	return type;
@@ -73,7 +79,12 @@ void bm_storage_boot_loader_version_uboot(void)
 		mmio_write_8(0x101FB2C0 + i, version_string[i]);
 	}
 
-	mmio_write_8(0x101FB2C0 + size, '\0');
+	if (get_chip_id() == CHIP_BM1684) {
+		mmio_write_8(0x101FB2C0 + size, '\0');
+	} else {
+		mmio_write_8(0x101FB2C0 + size, 'X');
+		mmio_write_8(0x101FB2C0 + size + 1, '\0');
+	}
 }
 
 #ifdef CONFIG_PL011_SERIAL
@@ -198,6 +209,23 @@ static void bm_wdt_start(void)
 		else
 			printf("MCU watchdog started\n\n");
 	}
+}
+
+static int setup_mux(void)
+{
+	int err;
+	struct udevice *mux;
+	/*
+	 * enable probe pca9545 mux,
+	 * for se6 mux switch to CH0(rtc)
+	 */
+	err = uclass_get_device_by_name(UCLASS_MISC, "mux@70", &mux);
+	if (err) {
+		error("No mux found\n");
+		return err;
+	}
+
+	return 0;
 }
 
 static void bm_wdt_stop(void)
@@ -331,6 +359,8 @@ static void select_board(void)
 		break;
 	case BM1684_SE5_V2_0:
 		env_set("dtb_name", "bm1684_se5_v2.0.dtb");
+	case BM1684_SE5_V2_1:
+		env_set("dtb_name", "bm1684_se5_v2.1.dtb");
 		break;
 	case BM1684_SE5_V2_5:
 		env_set("dtb_name", "bm1684_se5_v2.5.dtb");
@@ -387,9 +417,14 @@ static void select_board(void)
 	case BM1684X_EVB_V0_0:
 		env_set("dtb_name", "bm1684x_evb_v0.0.dtb");
 		break;
-	case BM1684X_SC7_HP300_EP:
 	case BM1684X_EP:
+	case BM1684X_SC7_HP300:
 		env_set("dtb_name", "bm1684x_ep.dtb");
+		env_set("disable_wdt", "enable");
+		env_set("bootcmd", CONFIG_PCIEBOOTCOMMAND);
+		break;
+	case BM1684X_MIX:
+		env_set("dtb_name", "bm1684x_mix.dtb");
 		env_set("disable_wdt", "enable");
 		env_set("bootcmd", CONFIG_PCIEBOOTCOMMAND);
 		break;
@@ -413,6 +448,7 @@ int board_late_init(void)
 	select_board();
 
 	setup_mac();
+	setup_mux();
 	env_set("recboot", CONFIG_RECBOOTCOMMAND);
 	bm_storage_boot_loader_version_uboot();
 	return 0;
@@ -441,9 +477,6 @@ void reset_cpu(void)
 }
 
 #if defined(CONFIG_MULTI_DTB_FIT)
-/*
- * TOX: support more boards here
- */
 static const char * const board_names[] = {
 	[BM1684_EVB_V1_2] = "bitmain-bm1684-evb-v1.2",
 	[BM1684_CUST_V1_1] = "bitmain-bm1684-cust-v1",
@@ -454,6 +487,7 @@ static const char * const board_names[] = {
 	[BM1684_SM5_V1_2_TB] = "bitmain-bm1684-sm5-v1",
 	[BM1684_SE5_V1_1] = "bitmain-bm1684-se5-v1.1",
 	[BM1684_SE5_V2_0] = "bitmain-bm1684-se5-v2",
+	[BM1684_SE5_V2_1] = "bitmain-bm1684-se5-v2",
 	[BM1684_SE5_V2_5] = "bitmain-bm1684-se5-v2",
 	[BM1684_SM5M_V0_0_TB] = "bitmain-bm1684-sm5m",
 	[BM1684_SM5M_V0_1_TB] = "bitmain-bm1684-sm5m",
@@ -472,8 +506,9 @@ static const char * const board_names[] = {
 	[BM1684X_PLD] = "bitmain-bm1684x-pld",
 	[BM1684X_FPGA] = "bitmain-bm1684x-fpga",
 	[BM1684X_EVB_V0_0] = "bitmain-bm1684x-evb-v0.0",
-	[BM1684X_EP] = "bitmain-bm1684x-evb-v0.0",
-	[BM1684X_SC7_HP300_EP] = "bitmain-bm1684x-sc7-ep",
+	[BM1684X_EP] = "bitmain-bm1684x-ep",
+	[BM1684X_SC7_HP300] = "bitmain-bm1684x-ep",
+	[BM1684X_MIX] = "bitmain-bm1684x-ep",
 };
 
 int board_fit_config_name_match(const char *name)

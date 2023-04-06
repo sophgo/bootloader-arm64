@@ -91,3 +91,4 @@ obj-$(CONFIG_BITMAIN_EEPROM) += bitmain-eeprom.o
 obj-$(CONFIG_ESM_K3) += k3_esm.o
 obj-$(CONFIG_ESM_PMIC) += esm_pmic.o
 obj-$(CONFIG_SL28CPLD) += sl28cpld.o
+obj-$(CONFIG_BM_PCA9545_MUX)    += bm_pca9545.o

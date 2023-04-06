@@ -158,6 +158,17 @@
 			};
 		};
 
+		fdt-pcb14-mm0 {
+			description = "for SM5M V0.1 @RB, larger system memory";
+			data = /incbin/("./bm1684_sm5m_v0.1_rb_mm0.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
 		fdt-pcb15 {
 			description = "for SM5M V0.1 @TB";
 			data = /incbin/("./bm1684_sm5m_v0.1_tb.dtb");
@@ -370,9 +381,21 @@
 				algo = "sha1";
 			};
 		};
+
 		fdt-pcb131 {
-			description = "for BM1684X PCIe End Point";
+			description = "for BM1684X EP mode";
 			data = /incbin/("./bm1684x_ep.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb133 {
+			description = "for BM1684X mix mode";
+			data = /incbin/("./bm1684x_mix.dtb");
 			type = "flat_dt";
 			arch = "arm64";
 			compression = "none";
@@ -510,6 +533,18 @@
 			kernel = "kernel";
 			ramdisk = "ramdisk";
 			fdt = "fdt-pcb14";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb14-mm0 {
+			description = "for SM5M V0.1 @RB, larger system memory";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb14-mm0";
 			signature {
 				algo = "sha1,rsa2048";
 				key-name-hint = "vboot";
@@ -744,8 +779,9 @@
 				sign-images = "fdt", "ramdisk", "kernel";
 			};
 		};
+
 		config-pcb131 {
-			description = "for BM1684X PCIe End Point";
+			description = "for BM1684X EP mode";
 			kernel = "kernel";
 			ramdisk = "ramdisk";
 			fdt = "fdt-pcb131";
@@ -755,11 +791,24 @@
 				sign-images = "fdt", "ramdisk", "kernel";
 			};
 		};
+
 		config-pcb132 {
-			description = "for BM1684X PCIe SC7 HP300 End Point";
+			description = "for BM1684X SC7 HP300 backward compatibility";
 			kernel = "kernel";
 			ramdisk = "ramdisk";
 			fdt = "fdt-pcb131";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb133 {
+			description = "for BM1684X mix mode";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb133";
 			signature {
 				algo = "sha1,rsa2048";
 				key-name-hint = "vboot";

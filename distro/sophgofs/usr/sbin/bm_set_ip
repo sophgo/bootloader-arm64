@@ -17,7 +17,7 @@ gateway=$4
 dns=$5
 
 is_ubuntu=$(cat /etc/os-release | grep Ubuntu |wc -l)
-
+is_kylinos=$(cat /etc/os-release | grep kylinos |wc -l)
 
 if [ $is_ubuntu -gt 1 ];then
 	echo "ubuntu"
@@ -55,18 +55,30 @@ if [ $is_ubuntu -gt 1 ];then
 	sudo netplan apply
 
 else
-	echo "debian"
-	device_path="/etc/network/interfaces.d/$device"
+	if [ $is_kylinos -gt 1 ];then
+		nmcli con delete "static-${device}"
+		nmcli con add type ethernet con-name "static-${device}" ifname ${device} ipv4.method manual ipv4.addresses ${ip}/24
+		if [ "$gateway" != "" ];then
+			nmcli con modify "static-${device}" ipv4.gateway $gateway
+		fi
+		if [ "$dns" != "" ];then
+			nmcli con modify "static-${device}" ipv4.dns $dns
+		fi
+		nmcli con up "static-${device}"
+	else
+		echo "debian"
+		device_path="/etc/network/interfaces.d/$device"
 
-	echo  "auto $device" | sudo tee $device_path
-	echo  "iface $device inet static" |sudo tee -a $device_path
-	echo  "        address $ip" |sudo tee -a $device_path
-	echo  "        netmask $netmask" |sudo tee -a $device_path
-	if [ $device == "eth0"  ];then
-		echo  "        gateway $gateway" |sudo tee -a $device_path
+		echo  "auto $device" | sudo tee $device_path
+		echo  "iface $device inet static" |sudo tee -a $device_path
+		echo  "        address $ip" |sudo tee -a $device_path
+		echo  "        netmask $netmask" |sudo tee -a $device_path
+		if [ $device == "eth0"  ];then
+			echo  "        gateway $gateway" |sudo tee -a $device_path
+		fi
+		echo "        dns-nameservers $dns" |sudo tee -a $device_path
+
+		sudo ip addr flush dev $device
+		sudo service networking restart
 	fi
-	echo "        dns-nameservers $dns" |sudo tee -a $device_path
-
-	sudo ip addr flush dev $device
-	sudo service networking restart
 fi

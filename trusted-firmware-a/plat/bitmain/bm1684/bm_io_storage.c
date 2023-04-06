@@ -32,7 +32,7 @@ static uintptr_t memmap_dev_handle;
 static const io_dev_connector_t *sdfat_dev_con;
 static uintptr_t sdfat_dev_handle;
 
-static size_t spif_offset;
+extern size_t spif_offset;
 static io_block_spec_t fip_in_spi_dmmr_block_spec = {
 	.length = PLAT_BM_FIP_MAX_SIZE,
 };
@@ -154,11 +154,9 @@ static int check_fip_source(const uintptr_t spec)
 
 	switch (fip_src) {
 	case FIP_SRC_SPIF:
-		if (wdted) {
+		if (wdted && (spif_offset == SPIF_OFFSET_A_FIP)) {
 			spif_offset = SPIF_OFFSET_B_FIP;
 			NOTICE("Try SPIF section B\n");
-		} else {
-			spif_offset = SPIF_OFFSET_A_FIP;
 		}
 		fip_in_spi_dmmr_block_spec.offset = SPIF_BASE + spif_offset;
 		result = open_memmap((uintptr_t)&fip_in_spi_dmmr_block_spec);

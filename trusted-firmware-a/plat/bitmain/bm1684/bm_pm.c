@@ -292,14 +292,21 @@ static void __dead2 bm_system_off(void)
 
 static void __dead2 bm_system_reset(void)
 {
+	uint32_t board;
 	print_entry(__func__);
 
+	board = mmio_read_32(BOARD_TYPE_REG);
 #ifdef MCU_I2C_DEV
 	NOTICE("MCU reset: power off&on\n");
-	mmio_setbits_32(TOP_BASE + REG_TOP_CLOCK_ENABLE1,  (1 << 3)); // enable iic clock
-	i2c_init(i2c_info, ARRAY_SIZE(i2c_info));
-	i2c_smbus_write_byte(MCU_I2C_DEV, MCU_DEV_ADDR,
-			     INSTRUCT_REG, REBOOT_CMD);
+	if (board == BM1684_SM5M_V0_1_RB) {
+		NOTICE("MCU reset: hot-reset\n");
+		bm_wdt_reset();
+	} else {
+		mmio_setbits_32(TOP_BASE + REG_TOP_CLOCK_ENABLE1,  (1 << 3)); // enable iic clock
+		i2c_init(i2c_info, ARRAY_SIZE(i2c_info));
+		i2c_smbus_write_byte(MCU_I2C_DEV, MCU_DEV_ADDR, INSTRUCT_REG, REBOOT_CMD);
+	}
+
 #else
 	bm_wdt_reset();
 #endif

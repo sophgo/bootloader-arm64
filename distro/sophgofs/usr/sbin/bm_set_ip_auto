@@ -10,6 +10,7 @@ device=$1
 
 
 is_ubuntu=$(cat /etc/os-release | grep Ubuntu |wc -l)
+is_kylinos=$(cat /etc/os-release | grep kylinos |wc -l)
 
 
 if [ $is_ubuntu -gt 1 ];then
@@ -46,10 +47,18 @@ if [ $is_ubuntu -gt 1 ];then
 
 
 else
-	echo "debian"
-	sudo rm -rf /etc/network/interfaces.d/$device
-	sync
-	sudo ip addr flush dev eth0
-	sudo service networking restart
-	sudo systemctl restart NetworkManager
+	if [ $is_kylinos -gt 1 ];then
+		echo "kylin"
+		nmcli con delete "static-${device}"
+		nmcli con add type ethernet con-name "static-${device}" ifname ${device} ipv4.method auto
+		nmcli con up "static-${device}"
+	else
+
+		echo "debian"
+		sudo rm -rf /etc/network/interfaces.d/$device
+		sync
+		sudo ip addr flush dev eth0
+		sudo service networking restart
+		sudo systemctl restart NetworkManager
+	fi
 fi

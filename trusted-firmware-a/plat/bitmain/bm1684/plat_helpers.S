@@ -23,6 +23,7 @@
 	.globl  plat_off_mmu
 	.globl  plat_primary_suspend
 	.globl	memcpy16_safe
+	.globl	invalidate_icache_all
 
 func plat_my_core_pos
 	mrs	x0, mpidr_el1
@@ -168,8 +169,18 @@ func plat_off_mmu
 	ret
 endfunc plat_off_mmu
 
+func invalidate_icache_all
+	ic	ialluis
+	isb	sy
+	ret
+endfunc invalidate_icache_all
+
 func plat_non_primary_suspend
-	bl plat_off_mmu
+	mov_imm x0, BL31_BASE
+	mov_imm x1, 0x40000
+	bl flush_dcache_range
+	bl invalidate_icache_all
+	bl disable_mmu_icache_el3
 
 	/* hijack: enable all clock, release all reset */
 	ldr x0, =0xFFFFFFFF
@@ -207,7 +218,11 @@ func plat_non_primary_suspend
 endfunc plat_non_primary_suspend
 
 func plat_primary_suspend
-	bl plat_off_mmu
+	mov_imm x0, BL31_BASE
+	mov_imm x1, 0x40000
+	bl flush_dcache_range
+	bl invalidate_icache_all
+	bl disable_mmu_icache_el3
 
 	/* hijack: enable all clock, release all reset */
 	ldr x0, =0xFFFFFFFF

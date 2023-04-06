@@ -2,6 +2,7 @@
 
 mdev -s
 chown root:root /var/empty
+chmod -R 755 /var/empty
 
 # Start all init scripts in /etc/init.d
 # executing them in numerical order.

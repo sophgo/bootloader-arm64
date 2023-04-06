@@ -23,6 +23,7 @@
 	 */
 
 func bl31_entrypoint
+	bl invalidate_icache_all
 	/* ---------------------------------------------------------------
 	 * Stash the previous bootloader arguments x0 - x3 for later use.
 	 * ---------------------------------------------------------------

@@ -322,16 +322,16 @@ void bm_pcie_status_init(void)
 		int err = i2c_smbus_read_byte(MCU_I2C_DEV, MCU_DEV_ADDR,
 				  PCIE_CHECK_REG, &pcie_check);
 
+		// pcie_check: 1: SoC mode; 2: PCIe mode; 3: SoC mode but with PCIe EP link
 		if (!err) {
-			// 1: SoC mode; 2: PCIe mode; 3: mixed mode
 			// SC5H pcie_check is always 0xff
 			if (pcie_check == 0x2 || pcie_check == 0x3 || pcie_check == 0xff)
 				mmio_setbits_32(BOOT_ARGS_REG, PCIE_EP_LINKED);
 			if (pcie_check == 0x3)
 				mmio_setbits_32(BOOT_ARGS_REG, SOC_EP);
 		} else {
-			// iic read failed set to pcie mode
-			NOTICE("force set the card to pcie ep mode\n");
+			// i2c read failed, force to PCIe mode, for SC7 compatibility
+			NOTICE("force to PCIe mode\n");
 			mmio_setbits_32(BOOT_ARGS_REG, PCIE_EP_LINKED);
 		}
 	}
