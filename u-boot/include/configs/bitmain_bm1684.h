@@ -53,6 +53,10 @@ enum {
 	BM1684X_EP = 131,
 	BM1684X_SC7_HP300 = 132, // kept for backward compatibility
 	BM1684X_MIX = 133,
+	BM1684X_SM7M_V0_0_RB = 134,
+	BM1684X_SM7_CTRL = 135,
+	BM1684X_SM7M_V0_0_CUST_V1 = 136,
+
 };
 #endif
 
@@ -83,6 +87,9 @@ enum {
 #else
 #define PHYS_SDRAM_SIZE		(0x040000000 - 0x40000) /* ~1GB */
 #endif
+
+#define PHYS_SRAM			(0x10000000)
+#define PHYS_SRAM_SIZE		(0x200000) /* 2MB */
 
 #define CONFIG_SYS_SDRAM_BASE	PHYS_SDRAM
 

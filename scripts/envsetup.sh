@@ -4,32 +4,27 @@
 #     qemu
 #     bm1684
 #     mango
-# build kylinos =   DISTRO=kylinos;source /bootloaer-arm64/scripts/envsetup.sh
 
 CHIP=${CHIP:-bm1684}
-DEBUG=${DEBUG:-0} # for ATF
+DEBUG=${DEBUG:-0} # now only for TFA
 DISTRO=${DISTRO:-focal} # focal = Ubuntu 20.04; kylinos
-KERNEL_VARIANT=${KERNEL_VARIANT:-normal} # normal, mininum, debug
-PRODUCT=${PRODUCT:-0}
-
-# workaround for using old debian repo
-UBUNTU_LEGACY=${UBUNTU_LEGACY:-0}
-UBUNTU_LITE=${UBUNTU_LITE:-0}
+KERNEL_VARIANT=${KERNEL_VARIANT:-normal} # normal; mininum
+PRODUCT=${PRODUCT:-} # se6; cust01
 
 if [ "$CHIP" == "qemu" ]; then
 	DEBUG=1
-fi
-
-if [ $DEBUG -eq 1 ]; then
-	TFA_TYPE=debug
-else
-	TFA_TYPE=release
 fi
 
 if [ "$CHIP" == "bm1684" -o "$CHIP" == "qemu" ]; then
 	VENDOR=bitmain
 else
 	VENDOR=sophgo
+fi
+
+if [ $DEBUG -eq 1 ]; then
+	TFA_TYPE=debug
+else
+	TFA_TYPE=release
 fi
 
 function gettop
@@ -182,6 +177,15 @@ function build_fip()
 	popd
 }
 
+function clean_fip()
+{
+	clean_uboot
+	clean_tfa
+
+	rm -f $OUTPUT_DIR/gen_spi_flash
+	rm -f $OUTPUT_DIR/spi_flash*.bin
+}
+
 function build_mango_flash()
 {
 	rm -f $OUTPUT_DIR/ramdisk_mini.cpio*
@@ -212,13 +216,43 @@ function build_mango_flash()
 	popd
 }
 
-function clean_fip()
+function clean_mango_sdcard()
 {
-	clean_uboot
-	clean_tfa
+	rm -rf $OUTPUT_DIR/sdcard
+}
 
-	rm -f $OUTPUT_DIR/gen_spi_flash
-	rm -f $OUTPUT_DIR/spi_flash*.bin
+function build_mango_bsp()
+{
+	build_fip &&
+
+	build_rv_all &&
+
+	build_kernel &&
+	build_ramdisk uclibc xmr &&
+	build_debs &&
+	build_rootp &&
+
+	build_mango_flash &&
+	build_mango_sdcard &&
+	build_pld &&
+	build_sdimage
+}
+
+function clean_mango_bsp()
+{
+	clean_fip &&
+
+	clean_rv_all &&
+
+	clean_kernel &&
+	clean_ramdisk uclibc xmr &&
+	clean_debs &&
+	clean_rootp &&
+
+	clean_mango_flash &&
+	clean_mango_sdcard &&
+	clean_pld &&
+	clean_sdimage
 }
 
 function install_debs()
@@ -236,12 +270,27 @@ function build_kernel()
 	mkdir -p $KERNEL_BUILD_DIR
 
 	pushd $KERNEL_SRC_DIR
-	make ARCH=arm64 O=$KERNEL_BUILD_DIR ${VENDOR}_${PROJECT_NAME}_${KERNEL_VARIANT}_defconfig
-	ret=$?
-	if [ $ret -ne 0 ]; then
-		popd
-		echo "making kernel config failed"
-		return $ret
+	if [ -f arch/arm64/configs/${VENDOR}_${PROJECT_NAME}_${PRODUCT}_defconfig ]; then
+		./scripts/kconfig/merge_config.sh -O arch/arm64/configs/ -m \
+						arch/arm64/configs/${VENDOR}_${PROJECT_NAME}_${KERNEL_VARIANT}_defconfig \
+						arch/arm64/configs/${VENDOR}_${PROJECT_NAME}_${PRODUCT}_defconfig
+		cp arch/arm64/configs/.config arch/arm64/configs/${PRODUCT}_defconfig
+		make ARCH=arm64 O=$KERNEL_BUILD_DIR ${PRODUCT}_defconfig
+		ret=$?
+		if [ $ret -ne 0 ]; then
+			popd
+			echo "making customized kernel config failed"
+			return $ret
+		fi
+		rm arch/arm64/configs/${PRODUCT}_defconfig
+	else
+		make ARCH=arm64 O=$KERNEL_BUILD_DIR ${VENDOR}_${PROJECT_NAME}_${KERNEL_VARIANT}_defconfig
+		ret=$?
+		if [ $ret -ne 0 ]; then
+			popd
+			echo "making kernel config failed"
+			return $ret
+		fi
 	fi
 	popd
 
@@ -349,8 +398,9 @@ function build_debs()
 	cp ./bin/* ./deb/usr/sbin
 	cp -r $TOOLS_SRC_DIR/DEBIAN ./deb/
 	local version=$(echo $(cat $TOOLS_SRC_DIR/DEBIAN/control | grep Version) | cut -d ' ' -f 2)
-	dpkg-deb -b deb/  sophgo-bsp-tools_${version}_arm64.deb
-	install_debs "./*.deb"
+	rm -f $DEB_INSTALL_DIR/sophgo-bsp-tools_*_arm64.deb
+	dpkg-deb -b deb/ sophgo-bsp-tools_${version}_arm64.deb
+	install_debs "sophgo-bsp-tools_${version}_arm64.deb"
 	popd
 
 	echo make BSP images...
@@ -370,36 +420,35 @@ function build_debs()
 	sudo chown root:root ./deb/boot/*
 	rsync -a --no-links $KERNEL_BUILD_DIR/modules/ ./deb/
 	local version=$(echo $(cat $SCRIPTS_DIR/bsp-images/control | grep Version) | cut -d ' ' -f 2)
-	dpkg-deb -b deb/  sophgo-bsp-images_${version}_arm64.deb
-	install_debs "./*.deb"
+	rm -f $DEB_INSTALL_DIR/sophgo-bsp-images_*_arm64.deb
+	dpkg-deb -b deb/ sophgo-bsp-images_${version}_arm64.deb
+	install_debs "sophgo-bsp-images_${version}_arm64.deb"
 	popd
 
-	echo make BSP rootfs deb...
+	echo make BSP rootfs modification deb...
 	sudo rm -rf $ROOTFS_DST_DIR
 	mkdir -p $ROOTFS_DST_DIR/
 
-	pushd $ROOTFS_SRC_DIR
-	local version=$(echo $(cat $ROOTFS_SRC_DIR/DEBIAN/control | grep Version) | cut -d ' ' -f 2)
-	dpkg-deb -b $ROOTFS_SRC_DIR  $ROOTFS_DST_DIR/sophgo-bsp-rootfs_${version}_arm64.deb
-	install_debs "$ROOTFS_DST_DIR/sophgo-bsp-rootfs_*_arm64.deb"
-	popd
+	pushd $ROOTFS_DST_DIR
+	local version=$(echo $(cat $DISTRO_MOD_DIR/sophgo-fs/DEBIAN/control | grep Version) | cut -d ' ' -f 2)
+	rm -f $DEB_INSTALL_DIR/sophgo-bsp-rootfs_*_arm64.deb
+	dpkg-deb -b $DISTRO_MOD_DIR/sophgo-fs sophgo-bsp-rootfs_${version}_arm64.deb
+	install_debs "sophgo-bsp-rootfs_${version}_arm64.deb"
 
 	echo make BSP qt5 deb...
-	pushd $DISTRO_DEB/qt5
-	local version=$(echo $(cat $DISTRO_DEB/qt5/DEBIAN/control | grep Version) | cut -d ' ' -f 2)
+	local version=$(echo $(cat $DISTRO_MOD_DIR/sophgo-qt5/DEBIAN/control | grep Version) | cut -d ' ' -f 2)
+	rm -f $DEB_INSTALL_DIR/sophgo-bsp-qt5_*_arm64.deb
+	dpkg-deb -b $DISTRO_MOD_DIR/sophgo-qt5 sophgo-bsp-qt5_${version}_arm64.deb
+	install_debs "sophgo-bsp-qt5_${version}_arm64.deb"
 
-	dpkg-deb -b $DISTRO_DEB/qt5  $ROOTFS_DST_DIR/sophgo-bsp-qt5_${version}_arm64.deb
-	install_debs "$ROOTFS_DST_DIR/sophgo-bsp-qt5_*_arm64.deb"
-	popd
-
-	if [ "$PRODUCT" == "se6" ]; then
-		echo make se6 product deb...
-		pushd $DISTRO_DEB/sophgose6
-		local version=$(echo $(cat $DISTRO_DEB/sophgose6/DEBIAN/control | grep Version) | cut -d ' ' -f 2)
-		dpkg-deb -b $DISTRO_DEB/sophgose6  $ROOTFS_DST_DIR/sophgo-se6_${version}_arm64.deb
-		install_debs "$ROOTFS_DST_DIR/sophgo-se6_*_arm64.deb"
-		popd
+	if [ "$PRODUCT" != "" ] && [ -d $DISTRO_MOD_DIR/product-$PRODUCT ]; then
+		echo make product-$PRODUCT deb...
+		local version=$(echo $(cat $DISTRO_MOD_DIR/product-$PRODUCT/DEBIAN/control | grep Version) | cut -d ' ' -f 2)
+		rm -f $DEB_INSTALL_DIR/sophgo-${PRODUCT}_*_arm64.deb
+		dpkg-deb -b $DISTRO_MOD_DIR/product-$PRODUCT sophgo-${PRODUCT}_${version}_arm64.deb
+		install_debs "sophgo-${PRODUCT}_${version}_arm64.deb"
 	fi
+	popd
 }
 
 function clean_debs()
@@ -422,6 +471,11 @@ function create_ramdisk_folders()
 	cp -r --remove-destination $RAMDISK_DIR/target/rootfs_$1/* $RAMDISK_BUILD_DIR/target/
 	if [ -d $RAMDISK_DIR/target/overlay/$PROJECT_NAME ] ; then
 		cp -r --remove-destination $RAMDISK_DIR/target/overlay/$PROJECT_NAME/* $RAMDISK_BUILD_DIR/target/
+	fi
+
+	if [ "$PRODUCT" != "" ] && [ -d $RAMDISK_DIR/target/overlay/$PRODUCT ]; then
+		echo copy product $PRODUCT ramdisk overlay files...
+		sudo cp -rf $RAMDISK_DIR/target/overlay/$PRODUCT/* $RAMDISK_BUILD_DIR/target/
 	fi
 
 	# cook target folder
@@ -535,7 +589,7 @@ function clean_ramdisk()
 	rm -f $OUTPUT_DIR/boot.scr.*
 }
 
-function build_bsp()
+function build_bsp_without_package()
 {
 	build_fip &&
 
@@ -544,11 +598,32 @@ function build_bsp()
 	build_ramdisk glibc recovery &&
 	build_bootp &&
 
-	build_debs &&
+	build_debs
+}
+
+# for building se6:
+# $ PRODUCT=se6
+# $ source bootloader-arm64/scripts/envsetup.sh
+# $ build_bsp_without_package
+# $ build_rootp
+# $ build_update tftp
+# in the last step of building tftp package, after generated
+# the tftp folder, it will build a sdcard pakcage, then
+# put the tftp folder into the recovery partition of the fresh
+# sdcard package.
+
+function build_package()
+{
 	build_rootp &&
 	build_update tgz &&
 	build_update sdcard &&
 	build_update tftp
+}
+
+function build_bsp()
+{
+	build_bsp_without_package
+	build_package
 }
 
 function build_bsp_ro()
@@ -567,25 +642,16 @@ function build_bsp_ro()
 	build_update tftp
 }
 
-function build_bsp_without_package()
+function clean_bsp()
 {
-	build_fip &&
+	clean_fip
+	clean_kernel
+	clean_ramdisk
+	clean_bootp
 
-	build_kernel &&
-	build_ramdisk uclibc emmc &&
-	build_ramdisk glibc recovery &&
-	build_bootp &&
-
-	build_debs
-}
-
-function build_package()
-{
-
-	build_rootp &&
-	build_update tgz &&
-	build_update sdcard &&
-	build_update tftp
+	clean_debs
+	clean_rootp
+	clean_update
 }
 
 function build_doc()
@@ -614,18 +680,6 @@ function clean_doc()
 	popd
 }
 
-function clean_bsp()
-{
-	clean_fip
-	clean_kernel
-	clean_ramdisk
-	clean_bootp
-
-	clean_debs
-	clean_rootp
-	clean_update
-}
-
 function run_qemu()
 {
 	if [ ! -x $TOP_DIR/install/soc_qemu ]; then
@@ -649,7 +703,6 @@ function build_distro()
 
 	pushd $DISTRO_DIR/$DISTRO
 # following lines must not be started with space or tab.
-# Ubuntu 20.04 is diffent in some ways than Debian 10.
 sudo chroot . /bin/bash << "EOT"
 adduser --gecos linaro --disabled-login linaro
 echo "linaro:linaro" | chpasswd
@@ -658,21 +711,20 @@ adduser --gecos admin --disabled-login admin
 echo "admin:admin" | chpasswd
 usermod -a -G sudo admin
 
-apt -y install software-properties-common
+apt install -y software-properties-common
 add-apt-repository universe
 
-apt install \
-sudo irqbalance kexec-tools busybox \
+DEBIAN_FRONTEND=noninteractive apt install -y \
+irqbalance kexec-tools busybox i2c-tools \
 efivar grub-efi-arm64 initramfs-tools overlayroot \
 net-tools openssh-server libnss-mdns ethtool ifupdown \
 build-essential docker docker.io flex bison libssl-dev \
-pciutils usbutils binutils bsdmainutils mmc-utils i2c-tools \
+pciutils usbutils binutils bsdmainutils mmc-utils \
 parted gdisk vim sysstat minicom atop u-boot-tools tree \
 memtester rng-tools psmisc gawk automake pkg-config bc \
-rsync lsof cmake dnsutils python3-dev nginx python3-pip expect \
-acpid curl dnsutils linux-tools-generic libgflags-dev libgoogle-glog-dev \
-libboost-all-dev
-
+rsync lsof cmake dnsutils python3-dev nginx python3-pip \
+acpid curl dnsutils linux-tools-generic libgflags-dev \
+expect libgoogle-glog-dev libboost-all-dev
 
 apt clean
 
@@ -744,7 +796,7 @@ function build_sdimage()
 	zcat $DISTRO_DIR/distro_$DISTRO.tgz | sudo tar -C $OUTPUT_DIR/ext4 -x -f -
 
 	echo copy minimum distro overlay files...
-	sudo cp -rf $DISTRO_MOD/minimum/* $OUTPUT_DIR/ext4
+	sudo cp -rf $DISTRO_OVERLAY_DIR/minimum/rootfs/* $OUTPUT_DIR/ext4
 
 	echo copy bsp debs...
 	cp -r $DEB_INSTALL_DIR $OUTPUT_DIR/ext4/home/linaro/
@@ -890,21 +942,23 @@ function build_bootp()
 
 	pushd $OUTPUT_DIR
 	mkdir ./boot
+
+	echo copy boot files...
 	cp emmcboot.itb spi_flash.bin multi.its boot.scr.emmc ./boot
 	cp emmcboot.itb ./boot/emmcboot.itb.bak
 	cp spi_flash.bin ./boot/spi_flash.bin.bak
 	cp multi.its ./boot/multi.its.bak
 	cp boot.scr.emmc ./boot/boot.scr.emmc.bak
 
-	if [ "$PRODUCT" == "se6" ]; then
-		echo "set memory_model 0" > extra-14.cmd
-		mkimage -A arm64 -O linux -T script -C none -a 0 -e 0 -n "Distro Boot Script" -d extra-14.cmd extra-14.scr
-		cp extra-14.scr ./boot
+	if [ "$PRODUCT" != "" ] && [ -d $DISTRO_OVERLAY_DIR/$PRODUCT/boot ]; then
+		echo copy product $PRODUCT boot overlay files...
+		sudo cp -rf $DISTRO_OVERLAY_DIR/$PRODUCT/boot/* ./boot
 	fi
+
 	cd ./boot
 	tar -czvf ../boot.tgz *
 	cd ..
-	rm -r ./boot
+	rm -rf ./boot
 
 	tar -czvf recovery.tgz recovery.itb
 	popd
@@ -918,42 +972,57 @@ function clean_bootp()
 
 function build_rootp()
 {
+	echo cleanup previous build...
 	sudo rm -rf $OUTPUT_DIR/rootfs
 	rm -f $OUTPUT_DIR/rootfs.tgz
+	mkdir $OUTPUT_DIR/rootfs
 
-	pushd $OUTPUT_DIR
-	mkdir ./rootfs
-
-	echo copy distro rootfs files from $DISTRO_BASE_PKT
+	echo copy distro rootfs files from ${DISTRO_BASE_PKT}...
 	zcat $DISTRO_BASE_PKT | sudo tar -C $OUTPUT_DIR/rootfs -x -f -
 
-	sudo mkdir -p $OUTPUT_DIR/rootfs/home/linaro
-
 	echo copy linux debs...
+	sudo mkdir -p $OUTPUT_DIR/rootfs/home/linaro
 	sudo cp -r $DEB_INSTALL_DIR $OUTPUT_DIR/rootfs/home/linaro/
 
-	echo copy overlay file to rootfs
-	if [ $UBUNTU_LEGACY -eq 1 ]; then
-		echo copy distro overlay files from $DISTRO_OVERLAY_DIR
-		sudo cp -rf $DISTRO_OVERLAY_DIR/* $OUTPUT_DIR/rootfs
-	else
-		if [ -d $DISTRO_OVERLAY_DIR/common ]; then
-			echo copy common distro overlay files...
-			sudo cp -rf $DISTRO_OVERLAY_DIR/common/* $OUTPUT_DIR/rootfs
-		fi
-		if [ -d $DISTRO_OVERLAY_DIR/$PROJECT_NAME ]; then
-			echo copy project distro overlay files...
-			sudo cp -rf $DISTRO_OVERLAY_DIR/$PROJECT_NAME/* $OUTPUT_DIR/rootfs
-		fi
-		sudo cp -rf $DISTRO_DEB/debs $OUTPUT_DIR/rootfs
+	echo copy overlay file to rootfs...
+	if [ -d $DISTRO_OVERLAY_DIR/common/rootfs ]; then
+		echo copy common rootfs overlay files...
+		sudo cp -rf $DISTRO_OVERLAY_DIR/common/rootfs/* $OUTPUT_DIR/rootfs
+	fi
+	if [ -d $DISTRO_OVERLAY_DIR/$PROJECT_NAME/rootfs ]; then
+		echo copy project rootfs overlay files...
+		sudo cp -rf $DISTRO_OVERLAY_DIR/$PROJECT_NAME/rootfs/* $OUTPUT_DIR/rootfs
+	fi
+	# debs will be installed later after chroot and then deleted
+	sudo cp -rf $DISTRO_MOD_DIR/debs $OUTPUT_DIR/rootfs
+
+	if [ "$PRODUCT" != "" ] && [ -d $DISTRO_OVERLAY_DIR/$PRODUCT/debs ]; then
+		echo copy product $PRODUCT debs overlay files...
+		sudo cp -rf $DISTRO_OVERLAY_DIR/$PRODUCT/debs/* $OUTPUT_DIR/rootfs/debs/
 	fi
 
-	echo install linux image...
+	echo install packages...
 	pushd $OUTPUT_DIR/rootfs
 # following lines must not be started with space or tab.
 # install bsp images first, so it won't run flash_update
 sudo chroot . /bin/bash << "EOT"
-/debs/install.sh
+
+if [  -d /debs ] && [ $(ls /debs/*.deb | wc -l) -gt 0 ]; then
+	dpkg -i -R /debs
+	while [ $? -ne 0 ];
+	do
+		sleep 1
+		dpkg -i -R /debs
+	done
+fi
+for file in /debs/*
+do
+	file=$(basename $file)
+	if  [ "${file##*.}" == "whl" ]; then
+		pip3 install --no-index --find-links=file:///debs ${file%%-*}
+	fi
+done
+rm -rf /debs
 
 dpkg -i /home/linaro/bsp-debs/sophgo-bsp-images_*.deb
 dpkg -i /home/linaro/bsp-debs/sophgo-bsp-tools_*.deb
@@ -978,40 +1047,43 @@ if [ -f /home/linaro/bsp-debs/sophgo-se6_*.deb  ]; then
 	dpkg -i /home/linaro/bsp-debs/sophgo-se6_*.deb
 else
 	if [ "$os_release" != "Kylin" ]; then
-		echo "not se6 product ,install hdmi and system deb"
+		echo "not se6 and not kylin, try install hdmi and system deb"
 		dpkg -i /home/linaro/bsp-debs/sophgo-hdmi_*.deb
 		dpkg -i /home/linaro/bsp-debs/sophgo-system_*.deb
 	fi
 fi
 
-
-rm -rf /debs
 exit
 EOT
 	popd
 
-  echo separate opt partition...
-	pushd $OUTPUT_DIR/rootfs/opt
-	sudo touch .keep
-	sudo rm -f $OUTPUT_DIR/opt.tgz
-	sudo tar -zcf $OUTPUT_DIR/opt.tgz *
-	if [ -L ./sophon/libsophon-current ]; then
-		cd ./sophon
-		libpath=$(basename $(readlink libsophon-current))
-		echo packing ${libpath}...
-		cd ./${libpath}
-		sudo bash -c "echo ${libpath} > ./data/buildinfo.txt"
-		sudo tar -zcf $OUTPUT_DIR/system.tgz *
+	# to make it simple, cust overlay always comes at last
+	if [ "$PRODUCT" != "" ] && [ -d $DISTRO_OVERLAY_DIR/$PRODUCT/rootfs ]; then
+		echo copy product $PRODUCT rootfs overlay files...
+		sudo cp -rf $DISTRO_OVERLAY_DIR/$PRODUCT/rootfs/* $OUTPUT_DIR/rootfs
 	fi
-	sudo rm -rf $OUTPUT_DIR/rootfs/opt/*
-	popd
+
+	if [ "$(ls $OUTPUT_DIR/rootfs/opt)" != "" ]; then
+		echo separate opt partition...
+		pushd $OUTPUT_DIR/rootfs/opt
+		sudo rm -f $OUTPUT_DIR/opt.tgz
+		sudo tar -zcf $OUTPUT_DIR/opt.tgz *
+		if [ -L ./sophon/libsophon-current ]; then
+			cd ./sophon
+			libpath=$(basename $(readlink libsophon-current))
+			echo packing ${libpath}...
+			cd ./${libpath}
+			sudo bash -c "echo ${libpath} > ./data/buildinfo.txt"
+			sudo tar -zcf $OUTPUT_DIR/system.tgz *
+		fi
+		sudo rm -rf $OUTPUT_DIR/rootfs/opt/*
+		popd
+	fi
 
 	echo packing rootfs...
 	pushd $OUTPUT_DIR/rootfs
 	sudo chown 1000:1000 -R data
 	sudo tar -czf ../rootfs.tgz *
-	popd
-
 	popd
 }
 
@@ -1103,9 +1175,9 @@ function build_update()
 		popd
 	fi
 	echo packing update image...
-	# se6 core board don't use kylinos
 	if [ $DISTRO == "kylinos" ]; then
 		if [ "$PRODUCT" == "se6" ] && [ "$UPDATE_TYPE" == "tftp" ]; then
+			# se6 core board falls into here, it doesn't use kylinos
 			./bm_make_package.sh $UPDATE_TYPE ./partition32G.xml $OUTPUT_DIR
 		else
 			./bm_make_package.sh $UPDATE_TYPE ./partition32G_kylinos.xml $OUTPUT_DIR
@@ -1121,19 +1193,23 @@ function build_update()
 	popd
 
 	if [ "$PRODUCT" == "se6" ] && [ "$UPDATE_TYPE" == "tftp" ]; then
-		echo "for se6 control board package"
+		echo "packet tftp package and sdcard package for se6..."
 		echo $OUTPUT_DIR
 		rm -f $OUTPUT_DIR/opt.tgz
 		rm -f $OUTPUT_DIR/recovery.tgz
 		rm -rf $OUTPUT_DIR/se6_ctl_sdcard
 
+		# try not overwrite someone else's sdcard folder
 		if [ -d "$OUTPUT_DIR/sdcard" ];then
 			mv $OUTPUT_DIR/sdcard $OUTPUT_DIR/sdcard-bak
 		fi
+
+		# pack core board's tftp package into control board's recovery partition
 		pushd $OUTPUT_DIR
 		tar -czvf recovery.tgz recovery.itb tftp
 		popd
 
+		# make sdcard package for control board
 		pushd $SCRIPTS_DIR/
 		if [ $DISTRO == "kylinos" ]; then
 			./bm_make_package.sh sdcard ./partition32G_kylinos.xml $OUTPUT_DIR
@@ -1151,7 +1227,6 @@ function build_update()
 			mv $OUTPUT_DIR/sdcard-bak $OUTPUT_DIR/sdcard
 		fi
 	fi
-
 }
 
 function clean_update
@@ -1183,30 +1258,16 @@ KERNEL_BUILD_DIR=$KERNEL_SRC_DIR/build/$PROJECT_NAME/$KERNEL_VARIANT
 RAMDISK_DIR=$TOP_DIR/bootloader-arm64/ramdisk
 RAMDISK_BUILD_DIR=$RAMDISK_DIR/build/$PROJECT_NAME
 
-# a clean Ubuntu for SD image
+# out-of-tree path
 DISTRO_DIR=$TOP_DIR/distro
-DISTRO_MOD=$TOP_DIR/bootloader-arm64/distro/overlay
-DISTRO_DEB=$TOP_DIR/bootloader-arm64/distro
+DISTRO_BASE_PKT=$DISTRO_DIR/distro_$DISTRO.tgz
 
-# used only by build_rootp
-if [ $UBUNTU_LEGACY -eq 1 ]; then
-	if [ $UBUNTU_LITE -eq 1 ]; then
-		DISTRO_BASE_PKT=$TOP_DIR/debian/distro_focal_lite_20211018.tgz
-		DISTRO_OVERLAY_DIR=$TOP_DIR/debian/overlay/soc_bm1684_asic_newos_lite
-	else
-		DISTRO_BASE_PKT=$TOP_DIR/debian/distro_focal_20220328.tgz
-		DISTRO_OVERLAY_DIR=$TOP_DIR/debian/overlay/soc_bm1684_asic_newos
-	fi
-else
-	DISTRO_BASE_PKT=$DISTRO_DIR/distro_$DISTRO.tgz
-	DISTRO_OVERLAY_DIR=$TOP_DIR/bootloader-arm64/distro/overlay
-fi
+DISTRO_MOD_DIR=$TOP_DIR/bootloader-arm64/distro
+DISTRO_OVERLAY_DIR=$TOP_DIR/bootloader-arm64/distro/overlay
 
 TOOLS_SRC_DIR=$KERNEL_SRC_DIR/tools/bitmain
 TOOLS_DST_DIR=$OUTPUT_DIR/bsp-tools
 IMAGES_DST_DIR=$OUTPUT_DIR/bsp-images
-
-ROOTFS_SRC_DIR=$DISTRO_DEB/sophgofs
 ROOTFS_DST_DIR=$OUTPUT_DIR/bsp-rootfs
 
 # toolchain
@@ -1224,15 +1285,12 @@ fi
 export CROSS_COMPILE=$CROSS_COMPILE_64
 GCC_VER=$(${CROSS_COMPILE}gcc --version | grep gcc | sed 's/^.*) //g')
 
-echo "building: $PROJECT_NAME, by $VENDOR"
+echo "building: $VENDOR $PROJECT_NAME $PRODUCT"
 echo "in: $TOP_DIR"
 echo "using: $CROSS_COMPILE v$GCC_VER"
 echo "with: DEBUG=$DEBUG, KERNEL=$KERNEL_VARIANT"
 echo "to: $OUTPUT_DIR"
-echo "distro: $DISTRO_BASE_PKT $DISTRO_OVERLAY_DIR "
-echo "ubuntu legacy is $UBUNTU_LEGACY"
-echo "os is $DISTRO"
-echo "product is $PRODUCT"
+echo "distro: $DISTRO_BASE_PKT $DISTRO_OVERLAY_DIR"
 
 # include riscv environment
 RV_SCRIPT_DIR=$TOP_DIR/bootloader-riscv/scripts

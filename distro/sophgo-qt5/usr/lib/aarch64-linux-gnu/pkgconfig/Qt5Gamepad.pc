@@ -1,0 +1,13 @@
+prefix=/home/demon/work/qt-everywhere-src-5.14.0/install
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+
+Name: Qt5 Gamepad
+Description: Qt Gamepad module
+Version: 5.14.0
+Libs: -L${libdir} -lQt5Gamepad 
+Cflags: -DQT_GAMEPAD_LIB -I${includedir}/QtGamepad -I${includedir}
+Requires: Qt5Core Qt5Gui
+

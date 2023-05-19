@@ -153,7 +153,6 @@ static void pinmux_config(int io_type)
 				   (0x1 << 20) | (0x4 << 22) | (0x1 << 4)); /* RGMII0_IRQ RGMII0_MDC */
 		mmio_clrsetbits_32(PINMUX_BASE + 0x48, (0x3 << 4) | (0xf << 6),
 				   (0x1 << 4) | (0x2 << 6)); /* RGMII0_MDIO */
-		mmio_setbits_32(PINMUX_BASE + 0x40, (0x1 << 10)); /* RGMII0_RXC schmitt*/
 #ifdef CONFIG_ARCH_BM1686_FPGA
 		mmio_clrsetbits_32(PINMUX_BASE + 0x8c, (0x3 << 20), (0x1 << 20)); /* GPIO2 PHY RESET */
 #endif
@@ -178,7 +177,6 @@ static void pinmux_config(int io_type)
 				   (0x1 << 20) | (0x4 << 22) | (0x1 << 4)); /* RGMII1_IRQ RGMII1_MDC */
 		mmio_clrsetbits_32(PINMUX_BASE + 0x68, (0x3 << 4) | (0xf << 6),
 				   (0x1 << 4) | (0x2 << 6)); /* RGMII1_MDIO */
-		mmio_setbits_32(PINMUX_BASE + 0x60, (0x1 << 10)); /* RGMII0_RXC schmitt*/
 #ifdef CONFIG_ARCH_BM1686_FPGA
 		mmio_clrsetbits_32(PINMUX_BASE + 0x90, (0x3 << 4), (0x1 << 4)); /* GPIO3 PHY RESET */
 #endif
@@ -417,6 +415,15 @@ static void select_board(void)
 	case BM1684X_EVB_V0_0:
 		env_set("dtb_name", "bm1684x_evb_v0.0.dtb");
 		break;
+	case BM1684X_SM7M_V0_0_RB:
+		env_set("dtb_name", "bm1684x_sm7m_v0.0.dtb");
+		break;
+	case BM1684X_SM7_CTRL:
+		env_set("dtb_name", "bm1684x_sm7_ctrl.dtb");
+		break;
+	case BM1684X_SM7M_V0_0_CUST_V1:
+		env_set("dtb_name", "bm1684x_sm7m_v0.0_cust_v1.dtb");
+		break;
 	case BM1684X_EP:
 	case BM1684X_SC7_HP300:
 		env_set("dtb_name", "bm1684x_ep.dtb");
@@ -465,7 +472,8 @@ int dram_init_banksize(void)
 {
 	gd->bd->bi_dram[0].start = PHYS_SDRAM;
 	gd->bd->bi_dram[0].size = PHYS_SDRAM_SIZE;
-
+	gd->bd->bi_dram[1].start = PHYS_SRAM;
+	gd->bd->bi_dram[1].size =  PHYS_SRAM_SIZE;
 	return 0;
 }
 
@@ -509,6 +517,10 @@ static const char * const board_names[] = {
 	[BM1684X_EP] = "bitmain-bm1684x-ep",
 	[BM1684X_SC7_HP300] = "bitmain-bm1684x-ep",
 	[BM1684X_MIX] = "bitmain-bm1684x-ep",
+	[BM1684X_SM7M_V0_0_RB] = "bitmain-bm1684x-sm7m-v0.0",
+	[BM1684X_SM7_CTRL] = "bitmain-bm1684x-sm7-ctrl",
+	[BM1684X_SM7M_V0_0_CUST_V1] = "bitmain-bm1684x-sm7m-v0.0-cust-v1",
+
 };
 
 int board_fit_config_name_match(const char *name)
