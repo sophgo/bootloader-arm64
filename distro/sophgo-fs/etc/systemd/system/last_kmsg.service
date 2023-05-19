@@ -1,0 +1,11 @@
+[Unit]
+Description=save last kmsg
+After=system.mount
+
+[Service]
+User=root
+ExecStart=/usr/sbin/last_kmsg.sh
+Type=oneshot
+
+[Install]
+WantedBy=multi-user.target

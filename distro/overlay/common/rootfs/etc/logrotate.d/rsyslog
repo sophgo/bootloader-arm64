@@ -1,0 +1,35 @@
+/var/log/syslog
+{
+	size=300M
+	rotate 6
+	missingok
+	notifempty
+	compress
+	postrotate
+		kill -HUP $(ps -ef | grep rsyslog | grep -v  grep | awk '{print $2}')
+	endscript
+}
+
+/var/log/mail.info
+/var/log/mail.warn
+/var/log/mail.err
+/var/log/mail.log
+/var/log/daemon.log
+/var/log/kern.log
+/var/log/auth.log
+/var/log/user.log
+/var/log/lpr.log
+/var/log/cron.log
+/var/log/debug
+/var/log/messages
+{
+	size=300M
+	rotate 4
+	missingok
+	notifempty
+	compress
+	sharedscripts
+	postrotate
+		kill -HUP $(ps -ef | grep rsyslog | grep -v  grep | awk '{print $2}')
+	endscript
+}

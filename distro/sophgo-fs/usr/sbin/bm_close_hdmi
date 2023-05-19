@@ -1,0 +1,11 @@
+#!/bin/bash
+
+echo ">>>>>start close default hdmi..."
+sudo systemctl stop SophonHDMIStatus.service
+sudo systemctl disable SophonHDMIStatus.service
+
+sudo systemctl stop SophonHDMI
+sudo systemctl disable SophonHDMI
+
+echo "done !!"
+

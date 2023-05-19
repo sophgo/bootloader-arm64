@@ -1,0 +1,11 @@
+[Unit]
+Description=setup bitmain runtime env.
+After=resize-helper.service docker.service
+
+[Service]
+User=root
+ExecStart=/usr/sbin/bmrt_setup.sh
+Type=oneshot
+
+[Install]
+WantedBy=multi-user.target

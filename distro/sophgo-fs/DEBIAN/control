@@ -1,0 +1,8 @@
+Package: sophgo-bsp-fs
+Source: sophgo-bsp-fs
+Version: 1.0.0
+Architecture: arm64
+Maintainer: sophgo
+Priority: optional
+Description: This is a collection of BSP rootfs for Sophgo SoCs.
+

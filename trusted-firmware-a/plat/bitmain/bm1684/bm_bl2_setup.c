@@ -169,6 +169,18 @@ static int bm_get_board_info(void)
 			if (hw_ver == 0x00)
 				type = BM1684X_EVB_V0_0;
 			break;
+		case MCU_BM1684X_SM7M_RB:
+			if (hw_ver == 0x00)
+				type = BM1684X_SM7M_V0_0_RB;
+			break;
+		case MCU_BM1684X_SM7_CTRL:
+			if (hw_ver == 0x00)
+				type = BM1684X_SM7_CTRL;
+			break;
+		case MCU_BM1684X_SM7M_CUST_V1:
+			if (hw_ver == 0x00)
+				type = BM1684X_SM7M_V0_0_CUST_V1;
+			break;
 		case MCU_BM1684X_SC7_HP300:
 			type = BM1684X_EP;
 			break;

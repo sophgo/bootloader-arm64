@@ -1,0 +1,2 @@
+event=button[ /]fnf1
+action=/etc/acpi/restorebtn-acpi-support.sh
