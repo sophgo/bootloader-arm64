@@ -79,21 +79,43 @@ do
 		max_t=$chip_t
 	fi
 
-	ratio=0
-	if [ $max_t -ge 85 ];then
-		rate=0
-	elif [ $max_t -ge 68 ] && [ $max_t -le 85 ] ;then
-		ratio=$(expr $max_t \- 68)
-		rate=$(expr 30000 \- $(expr $ratio \* 1764))
-	elif [ $max_t -ge 64 ] && [ $max_t -le 68 ] ;then
-		ratio=$(expr $max_t \- 64)
-		rate=$(expr 34000 \- $(expr $ratio \* 1000))
-	elif [ $max_t -ge 60 ] && [ $max_t -le 64 ] ;then
-		ratio=$(expr $max_t \- 60)
-		rate=$(expr 36000 \- $(expr $ratio \* 500))
-		rate=36000
-	elif [ $max_t -le 60 ] ;then
-		rate=39999
+	product=$(cat /sys/bus/i2c/devices/1-0017/information | grep model | awk -F \" '{print $4}')
+    if ([ "$product" = "SM7 CTRL" ]); then
+		ratio=0
+		if [ $max_t -ge 75 ];then
+			rate=39999
+		elif [ $max_t -ge 70 ] && [ $max_t -le 75 ] ;then
+			rate=36000
+		elif [ $max_t -ge 65 ] && [ $max_t -le 70 ] ;then
+			rate=32000
+		elif [ $max_t -ge 60 ] && [ $max_t -le 65 ] ;then
+			rate=28000
+		elif [ $max_t -ge 55 ] && [ $max_t -le 60 ] ;then
+			rate=24000
+		elif [ $max_t -ge 50 ] && [ $max_t -le 55 ] ;then
+			rate=20000
+		elif [ $max_t -ge 45 ] && [ $max_t -le 50 ] ;then
+			rate=16000
+		elif [ $max_t -le 45 ] ;then
+			rate=12000
+		fi
+	else
+		ratio=0
+		if [ $max_t -ge 85 ];then
+			rate=0
+		elif [ $max_t -ge 68 ] && [ $max_t -le 85 ] ;then
+			ratio=$(expr $max_t \- 68)
+			rate=$(expr 30000 \- $(expr $ratio \* 1764))
+		elif [ $max_t -ge 64 ] && [ $max_t -le 68 ] ;then
+			ratio=$(expr $max_t \- 64)
+			rate=$(expr 34000 \- $(expr $ratio \* 1000))
+		elif [ $max_t -ge 60 ] && [ $max_t -le 64 ] ;then
+			ratio=$(expr $max_t \- 60)
+			rate=$(expr 36000 \- $(expr $ratio \* 500))
+			rate=36000
+		elif [ $max_t -le 60 ] ;then
+			rate=39999
+		fi
 	fi
 
 	echo "$rate" > /sys/class/pwm/pwmchip0/pwm0/duty_cycle
