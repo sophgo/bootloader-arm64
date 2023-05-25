@@ -81,7 +81,7 @@ do
 
 	product=$(cat /sys/bus/i2c/devices/1-0017/information | grep model | awk -F \" '{print $4}')
     if ([ "$product" = "SM7 CTRL" ]); then
-		ratio=0
+		ratio=39999
 		if [ $max_t -ge 75 ];then
 			rate=39999
 		elif [ $max_t -ge 70 ] && [ $max_t -le 75 ] ;then

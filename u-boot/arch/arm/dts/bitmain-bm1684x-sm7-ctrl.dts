@@ -253,6 +253,38 @@
 		reg = <0x0 0x5001E000 0x0 0x1000>;
 		bus-clocks = <100000000>;
 		clock-frequency = <100000>;
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2c2_sda_grp1 &i2c2_scl_grp1>;
+
+		mux@70 {
+			compatible = "sophgo,bm-pca9545";
+			reg = <0x70>;
+		};
+
+		tca6416: gpio@20 {
+			#gpio-cells = <2>;
+			compatible = "ti,tca6416";
+			reg = <0x20>;
+			gpio-controller;
+		};
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		error {
+			label = "error";
+			gpios = <&tca6416 0 0>;
+			default-state = "on";
+		};
+		status {
+			label = "status";
+			gpios = <&tca6416 12 0>;
+			default-state = "off";
+		};
 	};
 
 	uart0: serial@50118000 {
@@ -356,6 +388,20 @@
 
 		rgmii1_grp1: rgmii1-grp1 {
 			bitmain,pins = "GPIO30";
+			bitmain,pin-mux = <1>;
+			bitmain,pin-drv = <8>;
+			u-boot,dm-pre-reloc;
+		};
+
+		i2c2_sda_grp1: i2c2-sda-grp1 {
+			bitmain,pins = "IIC2_SDA";
+			bitmain,pin-mux = <1>;
+			bitmain,pin-drv = <8>;
+			u-boot,dm-pre-reloc;
+		};
+
+		i2c2_scl_grp1: i2c2-scl-grp1 {
+			bitmain,pins = "IIC2_SCL";
 			bitmain,pin-mux = <1>;
 			bitmain,pin-drv = <8>;
 			u-boot,dm-pre-reloc;
