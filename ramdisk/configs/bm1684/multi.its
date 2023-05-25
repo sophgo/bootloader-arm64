@@ -437,6 +437,17 @@
 			};
 		};
 
+		fdt-pcb134-mm0 {
+			description = "for BM1684X SM7M V0.0_RB, 3G system memory";
+			data = /incbin/("./bm1684x_sm7m_v0.0_mm0.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
 		fdt-pcb135 {
 			description = "for BM1684X SM7 control board";
 			data = /incbin/("./bm1684x_sm7_ctrl.dtb");
@@ -900,6 +911,18 @@
 			kernel = "kernel";
 			ramdisk = "ramdisk";
 			fdt = "fdt-pcb134";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb134-mm0 {
+			description = "for BM1684X SM7M V0.0 RB, 3G system memory";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb134-mm0";
 			signature {
 				algo = "sha1,rsa2048";
 				key-name-hint = "vboot";
