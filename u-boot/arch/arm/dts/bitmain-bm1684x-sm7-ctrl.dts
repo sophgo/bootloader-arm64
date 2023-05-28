@@ -301,7 +301,7 @@
 		compatible = "snps,dwc-qos-ethernet-4.10";
 		reg = <0x0 0x50108000  0x0 0x4000>;
 		reg-names = "mac";
-		phy-mode = "rgmii-id";
+		phy-mode = "rgmii-txid";
 		phy-reset-gpios = <&port0a 29 GPIO_ACTIVE_HIGH>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&rgmii0_grp1>;
