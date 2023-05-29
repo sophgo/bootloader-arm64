@@ -21,6 +21,11 @@ network:
                         addresses: []
                         dhcp-identifier: mac
                         optional: yes
+                enp6s0:
+                        dhcp4: yes
+                        addresses: []
+                        dhcp-identifier: mac
+                        optional: yes
                 enp7s0:
                         dhcp4: yes
                         addresses: []
