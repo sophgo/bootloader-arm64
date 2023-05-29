@@ -192,6 +192,7 @@ int board_init(void)
 {
 	pinmux_config(PINMUX_RGMII0);
 	pinmux_config(PINMUX_RGMII1);
+	mmio_setbits_32(0x50029000, 0x1); /* set fan run */
 
 	return 0;
 }

@@ -452,7 +452,7 @@ int eth_initialize(void)
 				if (num_devices)
 					printf(", ");
 
-				printf("eth%d: %s", dev_seq(dev), dev->name);
+				printf("eth%d: %s\n", dev_seq(dev), dev->name);
 
 				if (ethprime && dev == prime_dev)
 					printf(" [PRIME]");
