@@ -62,6 +62,8 @@ enum {
 
 enum {
 	MCU_BM1684X_EVB = 0x20,
+	MCU_BM1684X_SE8_CTRL = 0x31,
+	MCU_BM1684X_SE8_CUST_V1 = 0x32,
 };
 
 enum {
