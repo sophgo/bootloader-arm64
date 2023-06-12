@@ -299,69 +299,71 @@ c. OTA升级
 
 按如下步骤可进行OTA升级:
 
-1. 登录到Ubuntu操作系统，使用mkdir -p /data/ota创建升级目录。使用sdcard的升级包作为ota升级包, 将升级包里的所有内容拷贝到/data/ota目录底下
+1. 首先获取待更新版本的SophonSDK压缩包，获取其sophon-img子文件夹下的bsp_update.tgz和system.tgz压缩包。
+   其中bsp_update.tgz主要包含升级脚本（bsp_update.sh）及内核镜像（emmcboot.itb）等内容，解压后的文件如下：
 
-2. 把下面脚本内容拷贝到local_update.sh里，将local_update.sh脚本拷贝到盒子/data/ota目录下
+         .. image:: ./_static/image94.jpg
 
-.. code-block:: shell
-   :name: local_update
 
-   #!/bin/bash
-
-   if [ $# -lt 1  ] ; then
-           echo "need md5 file"
-           exit
-   fi
-
-   echo ">>>>>start upgrade app package..."
-
-   echo ">>>>>md5sum check ..."
-
-   basepath=$(cd `dirname $0`; pwd)
-   echo $basepath
-   cd $basepath
-
-   md5sum -c $1 > ota_versino.txt
-   ret=$?
-   count=$#
-   rootpath="/data/ota"
-   if [ $ret -ne 0 ]; then
-       echo ">>>>> upgrade package is wrong stop upgrade..."
-       echo "update failed"
-   else
-       echo ">>>>>upgrade package starting..."
-       # backup user information
-       echo ">>>>>backup user information..."
-       rm -rf ${rootpath}/public_ota/backup
-       mkdir -p ${rootpath}/public_ota/backup
-
-       # update boot-loader
-       #sudo flash_update -i spi_flash.bin -b 0x06000000 -f 0x0
-       #sudo flash_update -i fip.bin -b 0x6000000 -f 0x40000
-       # upgrade mcu
-       #sudo mcu-util-aarch64 upgrade 1 0x17 sa5-mcu*.bin
-
-       # private ota :boot-recovery /data/ota/startup.sh\nprivate_update"
-       echo -e "boot-recovery\n/DATA/ota" > /dev/mmcblk0p3
-       echo "update success"
-
-       sudo reboot
-   fi
-
-3. 盒子上执行如下命令：
+2. 将两个压缩包拷贝到模组的某一路径如家目录（/home/linaro）下，解压bsp_update.tgz压缩包并进入解压后的目录，执行bsp_update.sh升级脚本。可使用如下命令：
 
    .. code-block:: bash
 
-      sudo -i
-      cd /data/ota
-      ./local_update.sh md5.txt
+      tar zxvf bsp_update.tgz
+      cd bsp_update
+      sudo ./bsp_update.sh
 
-   如果遇到local_update.sh 没有执行权限，使用如下命令增加权限：
+
+3. 回退至system.tgz所在目录，执行如下命令将system.tgz中的内容解压至/system目录下：
 
    .. code-block:: bash
 
-      chmod +x local_update.sh
+      sudo tar xzf system.tgz -C /system
+      sudo sync
 
+
+4. 关机重启检查是否升级成功（可以通过bm_version查看kernel版本及libsophon的版本信息）。以下为升级前后的对比示例：
+
+   .. image:: ./_static/image95.jpg
+
+   .. image:: ./_static/image96.jpg
+
+
+5. 如有内核开发的需求，需要升级内核开发软件包。同理，从对应版本的SophonSDK压缩包中获取bsp-debs将其拷贝至家目录（/home/linaro）下并在bsp-debs下创建linux-headers-install.sh脚本，脚本内容如下：
+
+   .. code-block:: bash
+
+      #!/bin/bash
+
+      cur_ver=$(uname -r)
+      echo ${cur_ver}
+      sudo mkdir -p /lib/modules/${cur_ver}
+      if [ -e /home/linaro/bsp-debs/linux-headers-${cur_ver}.deb ]; then
+            if [ -d /lib/modules/${cur_ver} ]; then
+                     sudo dpkg -i /home/linaro/bsp-debs/linux-headers-${cur_ver}.deb
+                     sudo mkdir -p /usr/src/linux-headers-${cur_ver}/tools/include/tools
+                     sudo cp /home/linaro/bsp-debs/*.h  /usr/src/linux-headers-${cur_ver}/tools/include/tools
+                     cd /usr/src/linux-headers-${cur_ver}
+                     sudo make prepare0
+                     sudo make scripts
+            else
+                     echo "/lib/modules not match"
+            fi
+      else
+            echo "linux header deb not match"
+      fi
+
+   如果遇到linux-headers-install.sh没有执行权限，使用如下命令增加权限：
+
+   .. code-block:: bash
+
+      chmod +x llinux-headers-install.sh.sh
+
+   若脚本执行过程中出现缺少flex等错误，可执行如下命令安装相关环境：
+
+   .. code-block:: bash
+
+      sudo apt install flex bison libssl-dev
 
 
 
@@ -1819,3 +1821,33 @@ BM1684当前默认的内存布局可能不适合部分yolo等较大模型的精�
 .. |Product| replace:: BM1684X
 .. |nbsp| unicode:: 0xA0
    :trim:
+
+开机自启动服务
+-----------------------------
+
+如果您有开机自动启动某些服务的需求，可以参考本节内容。
+BM1684X系列计算模组使用systemd实现核心服务bmrt_setup的开机自启动，该服务包含以下三个关键文件：
+
+   .. code-block:: bash
+
+      /etc/systemd/system/bmrt_setup.service （服务描述文件）
+      /etc/systemd/system/multi-user.target.wants/bmrt_setup.service （软链接）
+      /usr/sbin/bmrt_setup.sh （执行脚本）
+
+其中bmrt_setup.service的内容如下，您可以参考它的写法，在/etc/systemd/system目录下构建自己的服务。
+
+   .. code-block:: bash
+
+      [Unit]
+      Description=setup bitmain runtime env.
+      After=docker.service # 表明该服务在docker服务后启动
+
+      [Service]
+      User=root
+      ExecStart=/usr/sbin/bmrt_setup.sh # 指定服务启动执行的命令
+      Type=oneshot
+
+      [Install]
+      WantedBy=multi-user.target
+
+在bmrt_setup.sh脚本中，我们加载了VPU、JPU以及TPU等关键驱动，所以请您把自定义的服务放在这个服务后面执行，或者在您的业务逻辑中等待驱动加载完成（可以使用systemd-analyze plot > boot.svg 生成一张启动详细信息矢量图，然后用图像浏览器或者网页浏览器打开查看所有服务的启动顺序和耗时）。

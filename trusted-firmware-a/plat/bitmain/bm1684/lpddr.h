@@ -250,8 +250,7 @@ static struct init_data cfg_ecc_2rank[] = {
 };
 #endif
 
-static struct init_data addrmap_1684[] = {
-	// for bm1684 ADDRMAP
+static struct init_data addrmap_1rank[] = {
 	{0x00000200, 0x00000017}, // ADDRMAP0
 	{0x00000204, 0x00080808}, // ADDRMAP1
 	{0x00000208, 0x00000000}, // ADDRMAP2
@@ -264,6 +263,21 @@ static struct init_data addrmap_1684[] = {
 	{0x00000224, 0x07070707}, // ADDRMAP9
 	{0x00000228, 0x07070707}, // ADDRMAP10
 	{0x0000022c, 0x00000007}, // ADDRMAP11
+};
+
+static struct init_data addrmap_2rank[] = {
+	{0x00000200, 0x00000007},
+	{0x00000204, 0x00080808},
+	{0x00000208, 0x00000000},
+	{0x0000020c, 0x00000000},
+	{0x00000210, 0x00001f1f},
+	{0x00000214, 0x08080808},
+	{0x00000218, 0x08080808},
+	{0x0000021c, 0x00000f08},
+	{0x00000220, 0x00000000},
+	{0x00000224, 0x08080808},
+	{0x00000228, 0x08080808},
+	{0x0000022c, 0x00000008},
 };
 
 static struct init_data cfg_data[] = {

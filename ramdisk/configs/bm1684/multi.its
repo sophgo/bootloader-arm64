@@ -136,6 +136,17 @@
 			};
 		};
 
+		fdt-pcb8 {
+			description = "for SE5 2+2 rank, 16G";
+			data = /incbin/("./bm1684_se5_v1.3.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
 		fdt-pcb10 {
 			description = "for SM5M V0.0 @RB";
 			data = /incbin/("./bm1684_sm5m_v0.0_rb.dtb");
@@ -575,6 +586,18 @@
 			kernel = "kernel";
 			ramdisk = "ramdisk";
 			fdt = "fdt-pcb7-mm1";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb8 {
+			description = "for SE5 2+2 rank, 16G";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb8";
 			signature {
 				algo = "sha1,rsa2048";
 				key-name-hint = "vboot";

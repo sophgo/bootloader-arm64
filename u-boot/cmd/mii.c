@@ -282,10 +282,11 @@ static int do_mii(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 {
 	char		op[2];
 	unsigned char	addrlo, addrhi, reglo, reghi;
-	unsigned char	addr, reg;
+	unsigned int	addr, reg, page;
 	unsigned short	data, mask;
 	int		rcode = 0;
 	const char	*devname;
+	unsigned int	realtek_page[7] = {0, 0xa42, 0xa43, 0xa46, 0xd04, 0xd08, 0xd40};
 
 	if (argc < 2)
 		return CMD_RET_USAGE;
@@ -416,6 +417,50 @@ static int do_mii(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 				}
 			}
 		}
+	} else if (strncmp(op, "al", 2) == 0) {
+		if (argv[2] == NULL) {
+			printf("plase give all arg we need\r\n");
+			printf("\texample: mii all marvell/realtek\r\n");
+			return 0;
+		}
+		if (strncmp(argv[2], "marvell", 7) == 0) {
+
+			printf("select as marvell\r\n");
+			printf("\t");
+			for (int i = 0; i < 7; i++)
+				printf("page %-8d\t", i);
+			printf("\n");
+
+			for (reg = 0; reg < 27; reg++) {
+				printf("reg %d:\t", reg);
+				for (page = 0; page < 7; page++) {
+					miiphy_write(devname, addr, 22, page);
+					miiphy_read(devname, addr, reg, &data);
+					printf("0x%-8x\t", data);
+					miiphy_write(devname, addr, 22, 0);
+				}
+				printf("\r\n");
+			}
+		} else if (strncmp(argv[2], "realtek", 7) == 0) {
+
+			printf("select as realtek\r\n");
+			printf("\t");
+			for (int i = 0; i < 7; i++)
+				printf("page 0x%x\t", realtek_page[i]);
+			printf("\n");
+
+			for (reg = 0; reg < 27; reg++) {
+				printf("reg %d:\t", reg);
+				for (int i = 0; i < 7; i++) {
+					miiphy_write(devname, addr, 0x1f, realtek_page[i]);
+					miiphy_read(devname, addr, reg, &data);
+					printf("0x%-8x\t", data);
+					miiphy_write(devname, addr, 0x1f, 0);
+				}
+				printf("\r\n");
+			}
+		}
+		printf("\n");
 	} else if (strncmp(op, "du", 2) == 0) {
 		ushort regs[MII_STAT1000 + 1];  /* Last reg is 0x0a */
 		int ok = 1;
@@ -468,6 +513,7 @@ U_BOOT_CMD(
 	mii, 6, 1, do_mii,
 	"MII utility commands",
 	"device                            - list available devices\n"
+	"mii all    <realtek/marvell>		- dump all phy register form realtek/marvell\n"
 	"mii device <devname>                  - set current device\n"
 	"mii info   <addr>                     - display MII PHY info\n"
 	"mii read   <addr> <reg>               - read  MII PHY <addr> register <reg>\n"

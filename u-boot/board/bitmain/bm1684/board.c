@@ -356,6 +356,9 @@ static void select_board(void)
 	case BM1684_SE5_V1_1:
 		env_set("dtb_name", "bm1684_se5_v1.1.dtb");
 		break;
+	case BM1684_SE5_V1_3:
+		env_set("dtb_name", "bm1684_se5_v1.3.dtb");
+		break;
 	case BM1684_SE5_V2_0:
 		env_set("dtb_name", "bm1684_se5_v2.0.dtb");
 	case BM1684_SE5_V2_1:
@@ -495,6 +498,7 @@ static const char * const board_names[] = {
 	[BM1684_SM5_V1_2_RB] = "bitmain-bm1684-sm5-v1",
 	[BM1684_SM5_V1_2_TB] = "bitmain-bm1684-sm5-v1",
 	[BM1684_SE5_V1_1] = "bitmain-bm1684-se5-v1.1",
+	[BM1684_SE5_V1_3] = "bitmain-bm1684-se5-v1.1",
 	[BM1684_SE5_V2_0] = "bitmain-bm1684-se5-v2",
 	[BM1684_SE5_V2_1] = "bitmain-bm1684-se5-v2",
 	[BM1684_SE5_V2_5] = "bitmain-bm1684-se5-v2",
