@@ -4,7 +4,7 @@
 #jun.hu@sophgo.com
 
 #=================================================
-I2C_RETRY_MAX=3
+I2C_RETRY_MAX=5
 #================================================
 #CPLD
 #------------------------------------------------
@@ -681,6 +681,7 @@ se6ctr_i2c_write_mcu()
 	if [ $? -eq 0 ];then
 	    break
 	fi
+	sleep 0.2
     done
     if [ $rtry -lt $I2C_RETRY_MAX ];then
 	echo "0"
@@ -698,7 +699,7 @@ se6ctr_mcu_core_poweron()
 	return
     fi
     se6ctr_print $PRINT_INFO "$FUNCNAME"
-    val=$(se6ctr_i2c_write_mcu 0x03 0x01)
+    #val=$(se6ctr_i2c_write_mcu 0x03 0x01)
     val=$(se6ctr_i2c_write_mcu 0x03 0x09)
     if [ $val -eq 0 ]; then
 	echo "0"

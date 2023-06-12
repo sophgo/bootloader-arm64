@@ -106,7 +106,10 @@ static int bm_get_board_info(void)
 				type = BM1684_SM5_V1_1_RB;
 			break;
 		case MCU_BM1684_SE5_V1:
-			type = BM1684_SE5_V1_1;
+			if (hw_ver == 0x13)
+				type = BM1684_SE5_V1_3;
+			else
+				type = BM1684_SE5_V1_1;
 			break;
 		case MCU_BM1684_SE5_V2:
 			if (hw_ver == 0x20)

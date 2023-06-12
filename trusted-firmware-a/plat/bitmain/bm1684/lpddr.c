@@ -661,13 +661,22 @@ static void dwc_pre_setting(uint32_t is_lpddr4, uint32_t rank, uint32_t freq, ui
 #endif
 
 	/*
-	 *bm1684 use old addrmap
+	 *set addrmap by rank
 	 */
-	if (bm_get_chip_id() == CHIP_BM1684) {
-		for (count = 0; count < ARRAY_SIZE(addrmap_1684); count++) {
+	if (rank == RANK1) {
+		for (count = 0; count < ARRAY_SIZE(addrmap_1rank); count++) {
 			for (i = 0; i < ARRAY_SIZE(cfg_data); i++) {
-				if (cfg_data[i].offset == addrmap_1684[count].offset) {
-					cfg_data[i].value = addrmap_1684[count].value;
+				if (cfg_data[i].offset == addrmap_1rank[count].offset) {
+					cfg_data[i].value = addrmap_1rank[count].value;
+					break;
+				}
+			}
+		}
+	} else {
+		for (count = 0; count < ARRAY_SIZE(addrmap_2rank); count++) {
+			for (i = 0; i < ARRAY_SIZE(cfg_data); i++) {
+				if (cfg_data[i].offset == addrmap_2rank[count].offset) {
+					cfg_data[i].value = addrmap_2rank[count].value;
 					break;
 				}
 			}
@@ -855,6 +864,7 @@ void bm_ddr_init_asic(void)
 	case BM1684X_SM7_CTRL:
 	case BM1684X_SM7M_V0_0_RB:
 	case BM1684X_SM7M_V0_0_CUST_V1:
+	case BM1684_SE5_V1_3:
 		rank = GROUP_RANK(RANK2, RANK2);
 		freq = FREQ_4000M;
 		break;
