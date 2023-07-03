@@ -16,4 +16,11 @@ Build
                       uuid-dev libxml2-dev debootstrap \
                       qemu-user-static kpartx
 4. $ source bootloader-arm64/scripts/envsetup.sh
-5. $ build_bsp
+5. $ build_bsp_without_package生成.deb文件
+6. $ 拷贝'/home/linaro/bsp-debs/sophon-soc-libsophon*.deb'，
+'/home/linaro/bsp-debs/sophon-mw-soc-sophon-ffmpeg*.deb'和
+'/home/linaro/bsp-debs/sophon-mw-soc-sophon-opencv*.deb'至/install/soc_bm1684/bsp-debs文件
+其中/sophon-soc-libsophon*.deb是libsophgo算法生成的deb包，ffmpeg*.deb和opencv*.deb可从对应路径复制：ftp://172.28.141.89
+多媒体的安装包在/sophon-sdk/sophon-mw/release_build/Release_20230702_032400/目录里
+7. $ build_package得到install/soc_bm1684/sdcard刷机包
+
