@@ -22,4 +22,4 @@ Build
 8. download 'libsophon' from https://github.com/sophgo/libsophon.git
    build in SoC mode to get 'libsophon*.deb'
 9. download SDK from https://developer.sophgo.com/site/index/material/all/all.html
-   copy 'sophon-mw-soc-sophon-ffmpeg*.deb' and 'sophon-mw-soc-sophon-opencv*.deb' in 'sophon-mw'
+   copy 'sophon-mw-soc-sophon-ffmpeg*.deb' and 'sophon-mw-soc-sophon-opencv*.deb' from 'sophon-mw'
