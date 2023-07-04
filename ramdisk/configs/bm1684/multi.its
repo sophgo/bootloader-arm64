@@ -480,6 +480,18 @@
 				algo = "sha1";
 			};
 		};
+
+		fdt-pcb137 {
+			description = "for BM1684X SE7 V1";
+			data = /incbin/("./bm1684x_se7_v1.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
 	};
 
 	configurations {
@@ -970,6 +982,18 @@
 			kernel = "kernel";
 			ramdisk = "ramdisk";
 			fdt = "fdt-pcb136";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb137 {
+			description = "for BM1684X SE7";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb137";
 			signature {
 				algo = "sha1,rsa2048";
 				key-name-hint = "vboot";

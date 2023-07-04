@@ -439,6 +439,9 @@ static void select_board(void)
 		env_set("disable_wdt", "enable");
 		env_set("bootcmd", CONFIG_PCIEBOOTCOMMAND);
 		break;
+	case BM1684X_SE7_V1:
+		env_set("dtb_name", "bm1684x_se7_v1.dtb");
+		break;
 	default:
 		printf("unknown board type %d\n", board_type);
 	}
@@ -525,6 +528,7 @@ static const char * const board_names[] = {
 	[BM1684X_SM7M_V0_0_RB] = "bitmain-bm1684x-sm7m-v0.0",
 	[BM1684X_SM7_CTRL] = "bitmain-bm1684x-sm7-ctrl",
 	[BM1684X_SM7M_V0_0_CUST_V1] = "bitmain-bm1684x-sm7m-v0.0-cust-v1",
+	[BM1684X_SE7_V1] = "bitmain-bm1684x-se7-v1",
 
 };
 

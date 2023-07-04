@@ -864,6 +864,7 @@ void bm_ddr_init_asic(void)
 	case BM1684X_SM7_CTRL:
 	case BM1684X_SM7M_V0_0_RB:
 	case BM1684X_SM7M_V0_0_CUST_V1:
+	case BM1684X_SE7_V1:
 	case BM1684_SE5_V1_3:
 		rank = GROUP_RANK(RANK2, RANK2);
 		freq = FREQ_4000M;

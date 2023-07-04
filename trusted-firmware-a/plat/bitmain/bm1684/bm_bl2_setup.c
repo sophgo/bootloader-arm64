@@ -187,6 +187,10 @@ static int bm_get_board_info(void)
 		case MCU_BM1684X_SC7_HP300:
 			type = BM1684X_EP;
 			break;
+		case MCU_BM1684X_SE7_V1:
+			if (hw_ver == 0x00)
+				type = BM1684X_SE7_V1;
+			break;
 		default:
 			ERROR("unknown board type %u\n", mcu_type);
 			assert(0);
