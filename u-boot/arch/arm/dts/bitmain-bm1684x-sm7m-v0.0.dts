@@ -246,6 +246,13 @@
 			compatible = "bitmain,bm16xx-wdt";
 			reg = <0x69>;
 		};
+
+		tca6416: tca6416@6c {
+			compatible = "ti,tca6416";
+			reg = <0x6c>;
+			gpio-controller;
+			#gpio-cells = <2>;
+		};
 	};
 
 	i2c2: i2c@5001E000 {
@@ -270,7 +277,7 @@
 		reg = <0x0 0x50108000  0x0 0x4000>;
 		reg-names = "mac";
 		phy-mode = "rgmii-txid";
-		phy-reset-gpios = <&port0a 29 GPIO_ACTIVE_HIGH>;
+		phy-reset-gpios = <&port2a 12 GPIO_ACTIVE_HIGH>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&rgmii0_grp1>;
 	};
@@ -280,7 +287,7 @@
 		reg = <0x0 0x5010C000  0x0 0x4000>;
 		reg-names = "mac";
 		phy-mode = "rgmii-txid";
-		phy-reset-gpios = <&port0a 30 GPIO_ACTIVE_HIGH>;
+		phy-reset-gpios = <&port0a 31 GPIO_ACTIVE_HIGH>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&rgmii1_grp1>;
 	};
@@ -348,17 +355,32 @@
 		u-boot,dm-pre-reloc;
 
 		rgmii0_grp1: rgmii0-grp1 {
-			bitmain,pins = "GPIO29";
+			bitmain,pins = "GPIO76";
 			bitmain,pin-mux = <1>;
 			bitmain,pin-drv = <8>;
 			u-boot,dm-pre-reloc;
 		};
 
 		rgmii1_grp1: rgmii1-grp1 {
-			bitmain,pins = "GPIO30";
+			bitmain,pins = "GPIO31";
 			bitmain,pin-mux = <1>;
 			bitmain,pin-drv = <8>;
 			u-boot,dm-pre-reloc;
 		};
 	};
+
+	leds {
+		compatible = "gpio-leds";
+		error {
+			label = "error";
+			gpios = <&tca6416 3 0>;
+			default-state = "on";
+		};
+		status {
+			label = "status";
+			gpios = <&tca6416 4 0>;
+			default-state = "off";
+		};
+	};
+
 };
