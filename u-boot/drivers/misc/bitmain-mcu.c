@@ -97,11 +97,19 @@ static const struct mcu_feature mcu_list[] = {
 		.cmd = 0x14,
 	},
 	{
+		MCU_BM1684X_SM7M_RB, "EVB", "BM1684X", "STM32",
+		.cmd = 0x14,
+	},
+	{
 		MCU_BM1684X_SE8_CTRL, "EVB", "BM1684X", "STM32",
 		.cmd = 0x14,
 	},
 	{
 		MCU_BM1684X_SE8_CUST_V1, "EVB", "BM1684X", "STM32",
+		.cmd = 0x14,
+	},
+	{
+		MCU_BM1684X_SE7_V1, "EVB", "BM1684X", "STM32",
 		.cmd = 0x14,
 	},
 	{
