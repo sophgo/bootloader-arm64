@@ -140,6 +140,12 @@ function install_prepackages()
 		touch /root/post_install/installed
 	fi
 }
+function invoke_board_setup() {
+    local board setup
+    board="$(tr -d '\0' </proc/device-tree/info/file-name)"
+    setup="/usr/sbin/$(basename $board .dts)-setup.sh"
+    test -x "$setup" && "$setup"
+}
 
 # enable /etc/ld.so.conf.d/system.conf
 ldconfig
@@ -168,3 +174,4 @@ else
 	fi
 
 fi
+invoke_board_setup
