@@ -247,12 +247,6 @@
 			reg = <0x69>;
 		};
 
-		tca6416: tca6416@6c {
-			compatible = "ti,tca6416";
-			reg = <0x6c>;
-			gpio-controller;
-			#gpio-cells = <2>;
-		};
 	};
 
 	i2c2: i2c@5001E000 {
@@ -367,20 +361,28 @@
 			bitmain,pin-drv = <8>;
 			u-boot,dm-pre-reloc;
 		};
+
+		dbg_i2c_grp: dbg-i2c-grp {
+			bitmain,pins = "GPIO29", "GPIO30";
+			bitmain,pin-mux = <1>;
+			bitmain,pin-drv = <8>;
+			u-boot,dm-pre-reloc;
+		};
 	};
 
 	leds {
 		compatible = "gpio-leds";
+		pinctrl-names = "default";
+		pinctrl-0 = <&dbg_i2c_grp>;
 		error {
 			label = "error";
-			gpios = <&tca6416 3 0>;
-			default-state = "on";
+			gpios = <&port2a 14 0>;
+			default-state = "off";
 		};
 		status {
 			label = "status";
-			gpios = <&tca6416 4 0>;
-			default-state = "off";
+			gpios = <&port0a 29 0>;
+			default-state = "on";
 		};
 	};
-
 };
