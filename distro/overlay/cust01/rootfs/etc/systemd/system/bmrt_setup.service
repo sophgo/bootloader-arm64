@@ -1,6 +1,6 @@
 [Unit]
 Description=setup bitmain runtime env.
-After=resize-helper.service docker.service
+After=network.target.service
 
 [Service]
 User=root

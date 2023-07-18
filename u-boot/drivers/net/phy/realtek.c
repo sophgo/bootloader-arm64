@@ -115,7 +115,6 @@ static int rtl8211f_probe(struct phy_device *phydev)
 #ifdef CONFIG_RTL8211F_PHY_FORCE_EEE_RXC_ON
 	phydev->flags |= PHY_RTL8211F_FORCE_EEE_RXC_ON;
 #endif
-
 	return 0;
 }
 
@@ -479,6 +478,20 @@ static struct phy_driver RTL8201F_driver = {
 	.config = &rtl8201f_config,
 	.startup = &rtl8211e_startup,
 	.shutdown = &genphy_shutdown,
+};
+
+/* Support for JL2XXX PHY */
+static struct phy_driver jl2xxx_driver = {
+	.name = "JL2xxx 10/100/1000Mbps Ethernet",
+	.uid = 0x937c4032,
+	.mask = 0xfffffff0,
+	.features = PHY_GBIT_FEATURES,
+	.probe = &rtl8211f_probe,
+	.config = &rtl8211f_config,
+	.startup = &rtl8211f_startup,
+	.shutdown = &genphy_shutdown,
+	.readext = &rtl8211f_phy_extread,
+	.writeext = &rtl8211f_phy_extwrite,
 };
 
 int phy_realtek_init(void)

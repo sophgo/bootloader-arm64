@@ -863,8 +863,11 @@ void bm_ddr_init_asic(void)
 	case BM1684X_EVB_V0_0:
 	case BM1684X_SM7_CTRL:
 	case BM1684X_SM7M_V0_0_RB:
+	case BM1684X_SM7M_V0_0_RB_CTRL:
 	case BM1684X_SM7M_V0_0_CUST_V1:
 	case BM1684_SE5_V1_3:
+	case BM1684_SE5_V1_4:
+	case BM1684X_SE7_V1:
 		rank = GROUP_RANK(RANK2, RANK2);
 		freq = FREQ_4000M;
 		break;
@@ -887,12 +890,9 @@ void bm_ddr_init_asic(void)
 	case BM1684_SC5_EP:
 	case BM1684_SM5M_V3_0_TB:
 	case BM1684_SE5_V2_1:
-		rank = GROUP_RANK(RANK1, RANK2);
-		freq = FREQ_4000M;
-		break;
 	case BM1684_SM5M_V3_0_RB:
 		rank = GROUP_RANK(RANK1, RANK2);
-		freq = FREQ_3600M;
+		freq = FREQ_4000M;
 		break;
 	case BM1684_SE5_V2_5:
 	case BM1684_CUST_V1_4:

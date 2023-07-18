@@ -15,6 +15,24 @@ ip=$2
 netmask=$3
 gateway=$4
 dns=$5
+shortMask=0
+mask1=$(echo $netmask |awk -F . '{printf("%d\n", $1)}')
+mask2=$(echo $netmask |awk -F . '{printf("%d\n", $2)}')
+mask3=$(echo $netmask |awk -F . '{printf("%d\n", $3)}')
+mask4=$(echo $netmask |awk -F . '{printf("%d\n", $4)}')
+maskArray=($mask1 $mask2 $mask3 $mask4)
+for(( i=0;i<${#maskArray[@]};i++)) do
+        echo ${maskArray[$i]}
+        if [ "${maskArray[$i]}" = "255" ];then
+                shortMask=`expr $shortMask + 8`
+        else
+                lastBin=$(echo "obase=2; ${maskArray[$i]}" | bc)
+                last=$(echo $lastBin |grep -o '1' |wc -l)
+                shortMask=`expr $shortMask + $last`
+                break;
+        fi
+done
+
 
 is_ubuntu=$(cat /etc/os-release | grep Ubuntu |wc -l)
 is_kylinos=$(cat /etc/os-release | grep kylinos |wc -l)
@@ -44,7 +62,7 @@ if [ $is_ubuntu -gt 1 ];then
 	echo "add network config"
 	echo "                ${device}:" | sudo tee -a $device_path
 	echo "                        dhcp4: no" | sudo tee -a  $device_path
-	echo "                        addresses: [${ip}/24]" | sudo tee -a  $device_path
+	echo "                        addresses: [${ip}/${shortMask}]" | sudo tee -a  $device_path
         if [ "$gateway" != "" ];then
                 echo "                        gateway4: $gateway" | sudo tee -a  $device_path
         fi
@@ -56,14 +74,18 @@ if [ $is_ubuntu -gt 1 ];then
 
 else
 	if [ $is_kylinos -gt 1 ];then
-		nmcli con delete "static-${device}"
-		nmcli con add type ethernet con-name "static-${device}" ifname ${device} ipv4.method manual ipv4.addresses ${ip}/24
+		exist=$(nmcli con | grep "static-${device}" | wc -l)
+		if [ "$exist" -gt 0 ]; then
+			nmcli con delete "static-${device}"
+		fi
+		nmcli con add type ethernet con-name "static-${device}" ifname ${device} ipv4.method manual ipv4.addresses ${ip}/${shortMask}
 		if [ "$gateway" != "" ];then
 			nmcli con modify "static-${device}" ipv4.gateway $gateway
 		fi
 		if [ "$dns" != "" ];then
 			nmcli con modify "static-${device}" ipv4.dns $dns
 		fi
+		nmcli connection modify "static-${device}" connection.autoconnect yes
 		nmcli con up "static-${device}"
 	else
 		echo "debian"

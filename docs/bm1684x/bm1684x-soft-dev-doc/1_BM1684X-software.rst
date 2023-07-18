@@ -1096,6 +1096,58 @@ b. 将deb包直接放到overlay/soc_bm1684_asic_newos/root/post_install/debs目�
       build_update sdcard  // 重新编译sdcard刷机包
       build_update tftp    // 重新编译tftp刷机包
 
+如何通过github代码构建安装包
+-------------------------------
+
+1.从http://219.142.246.77:65000/sharing/5ajzpas1H下载工具链和Ubuntu base。
+
+2.将它们放在与bootloader-arm64和linux-arm64同一级别的目录下，然后解压缩工具链，不需要解压缩发行版，你将得到以下文件夹：
+
+    .. code-block:: bash
+
+        .
+        ├── bootloader-arm64
+        ├── distro
+        │   └── distro_focal.tgz
+        ├── gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu
+        └── linux-arm64
+
+3.执行以下命令
+
+    .. code-block:: bash
+
+       sudo apt install bison flex bc rsync kmod cpio sudo \
+       uuid-dev cmake libssl-dev fakeroot \
+       dpkg-dev device-tree-compiler u-boot-tools \
+       uuid-dev libxml2-dev debootstrap \
+       qemu-user-static kpartx
+
+4.编译envsetup.sh文件
+
+    .. code-block:: bash
+
+       source bootloader-arm64/scripts/envsetup.sh
+
+5.创建bsp-debs文件包
+
+    .. code-block:: bash
+
+       build_bsp_without_package
+
+6.从源码编译SoC版本。首先您需要编译SoC BSP，请参考BSP的编译指导。
+
+7.在GitHub官网https://github.com/sophgo/libsophon.git下载libsophon，参考BSP的编译指导编译SoC BSP。在SoC模式下编译以获取libsophon*.deb文件包。
+
+8.在https://developer.sophgo.com/site/index/material/all/all.html网站下载SDK，下载多媒体文件多媒体文件sophon-mw-soc-sophon-ffmpeg*.deb ， sophon-mw-soc-sophon-opencv*.deb。
+
+9.拷贝Sophon-soc-lib sophon*.deb、sophon-mw-soc-sophon-ffmpeg*.deb和Sophon-mw-soc-sophon-opencv*.deb 软件包到 soc_bm1684/bsp-debs目录下。
+
+10.执行以下命令，即可得到sdcard刷机包。
+
+    .. code-block:: bash
+
+       build_ package
+
 在 |Product| 上编译内核模块
 -------------------------------
 
