@@ -62,6 +62,7 @@ function build_tfa()
 	pushd $TFA_SRC_DIR
 
 	# clean fip tool as some options may changed
+	make PLAT=${PROJECT_NAME} DEBUG=${DEBUG} --no-print-directory clean
 	make PLAT=${PROJECT_NAME} DEBUG=${DEBUG} --no-print-directory -C $FIP_TOOL_DIR clean
 	# create a dummy u-boot binary for packing fip
 	touch $OUTPUT_DIR/u-boot.bin
@@ -78,6 +79,7 @@ function build_tfa()
 	ret=$?
 
 	popd
+
 	if [ $ret -ne 0 ]; then
 		echo "making TFA failed"
 		return $ret
@@ -98,6 +100,32 @@ function build_tfa()
     		dd if=fip.bin of=flash.bin seek=64 bs=4096 conv=notrunc
     		popd
 	fi
+
+	#This option is only available for bm1684x
+	if [ $DDR_INTLV_MODE ]; then
+		rm -f $OUTPUT_DIR/fip_intlv_mode*.bin
+		pushd $TFA_SRC_DIR
+		echo "genarate interleave mode 0 fip"
+		make PLAT=${PROJECT_NAME} DEBUG=${DEBUG} --no-print-directory clean
+		make PLAT=${PROJECT_NAME} DEBUG=${DEBUG} --no-print-directory -C $FIP_TOOL_DIR clean
+		make -j$(nproc) PLAT=${PROJECT_NAME} \
+			DEBUG=0 CFLAGS='-g -DCONFIG_INTLV_MODE0' LOG_LEVEL=40 ENABLE_ASSERTIONS=1 \
+			BL33=$OUTPUT_DIR/u-boot.bin all fip
+
+		ret=$?
+		popd
+		if [ $ret -ne 0 ]; then
+		    echo "making TFA failed"
+		    return $ret
+		fi
+		if [ $DDR_INTLV_MODE -eq 1 ]; then
+			cp $TFA_BUILD_DIR/fip.bin $OUTPUT_DIR/fip_intlv_mode0.bin
+		elif [ $DDR_INTLV_MODE -eq 0 ]; then
+			mv $OUTPUT_DIR/fip.bin $OUTPUT_DIR/fip_intlv_mode1.bin
+			cp $TFA_BUILD_DIR/fip.bin $OUTPUT_DIR/
+		fi
+	fi
+
 }
 
 function clean_tfa()
@@ -108,7 +136,7 @@ function clean_tfa()
 	popd
 
 	rm -f $OUTPUT_DIR/bl*.bin
-	rm -f $OUTPUT_DIR/fip.bin
+	rm -f $OUTPUT_DIR/fip*.bin
 	rm -f $OUTPUT_DIR/bl*.elf
 	rm -f $OUTPUT_DIR/bl*.dump
 	rm -f $OUTPUT_DIR/flash.bin

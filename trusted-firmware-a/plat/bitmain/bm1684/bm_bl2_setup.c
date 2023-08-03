@@ -236,7 +236,11 @@ static void bm_ddr_init(void)
 #ifdef CONFIG_ARCH_BM1686_FPGA
 		default_mode = 2;
 #else
+#ifdef CONFIG_INTLV_MODE0
+		default_mode = 0;
+#else
 		default_mode = 1;
+#endif
 #endif
 	}
 
