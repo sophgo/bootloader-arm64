@@ -53,6 +53,10 @@ int bitmain_pinctrl_set_state(struct udevice *dev, struct udevice *config)
 		if (!name)
 			continue;
 		reg = pin_to_reg_addr(dev, name, &pin_offset);
+    if (reg == 0) {
+      printf("pinctrl: error unknown pin %s\n", name);
+      continue;
+    }
 
 		if (pinmux != -1) {
 			value = readl(reg);
