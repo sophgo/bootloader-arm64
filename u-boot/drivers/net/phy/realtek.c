@@ -470,16 +470,16 @@ static struct phy_driver RTL8211F_driver = {
 
 /* Support for RTL8211F-VD-CG PHY */
 static struct phy_driver RTL8211F_VD_CG_driver = {
-	.name = "RealTek RTL8211F-VD-CG",
-	.uid = 0x1cc878,
-	.mask = 0xffffff,
-	.features = PHY_GBIT_FEATURES,
-	.probe = &rtl8211f_probe,
-	.config = &rtl8211f_config,
-	.startup = &rtl8211f_startup,
-	.shutdown = &genphy_shutdown,
-	.readext = &rtl8211f_phy_extread,
-	.writeext = &rtl8211f_phy_extwrite,
+       .name = "RealTek RTL8211F-VD-CG",
+       .uid = 0x1cc878,
+       .mask = 0xffffff,
+       .features = PHY_GBIT_FEATURES,
+       .probe = &rtl8211f_probe,
+       .config = &rtl8211f_config,
+       .startup = &rtl8211f_startup,
+       .shutdown = &genphy_shutdown,
+       .readext = &rtl8211f_phy_extread,
+       .writeext = &rtl8211f_phy_extwrite,
 };
 
 /* Support for RTL8201F PHY */
@@ -513,9 +513,10 @@ int phy_realtek_init(void)
 	phy_register(&RTL8211B_driver);
 	phy_register(&RTL8211E_driver);
 	phy_register(&RTL8211F_driver);
-  phy_register(&RTL8211F_VD_CG_driver);
+	phy_register(&RTL8211F_VD_CG_driver);
 	phy_register(&RTL8211DN_driver);
 	phy_register(&RTL8201F_driver);
+	phy_register(&jl2xxx_driver);
 
 	return 0;
 }

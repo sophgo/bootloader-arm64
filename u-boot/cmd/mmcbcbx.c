@@ -56,7 +56,7 @@ static int do_mmcbcbx(struct cmd_tbl *cmdtp, int flag, int argc, char * const ar
 		return CMD_RET_FAILURE;
 
 	misc_part_num = get_part_info("MISC", desc, &info);
-	if (misc_part_num > 128)
+	if (misc_part_num >= 128)
 		return CMD_RET_FAILURE;
 
 	if (!part_get_info(desc, misc_part_num, &info)) {
@@ -103,7 +103,7 @@ static int do_mmcbcbx(struct cmd_tbl *cmdtp, int flag, int argc, char * const ar
 		token = strtok(vars[1], "/");
 		if (token) {
 			ota_part_num = get_part_info(token, desc, &info);
-			if (ota_part_num > 128)
+			if (ota_part_num >= 128)
 				return CMD_RET_FAILURE;
 
 			var = argv[4];
