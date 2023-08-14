@@ -1209,8 +1209,8 @@ se6ctr_set_aiu_ipaddr()
 #V = 0.5LSB+(N-1)*LSB /100= 0.5 *  VA/256 +(N-1)*VA/256/100 = (N-0.5) * VA/25600
 se6ctr_power_get_from_adc()
 {
-	nc=$(i2cdetect -y -r 2 | grep 50 | wc -l)
-	if [ $nc -gt 1 ]; then
+	nc=$(i2cdetect -y -r 2 | grep '50 51' | wc -l)
+	if [ $nc -eq 1 ]; then
 		power_i2c_val=$(i2cget -f -y 2 $1 0x00 w)
 		power_i2c_val=$(i2cget -f -y 2 $1 0x00 w)
 		power_low=$((power_i2c_val>>12))
@@ -1270,28 +1270,9 @@ se6ctr_adc_get_power_average()
 	elif [ $i2c_val == 2 ]; then
 		i2c_channel=0x52
 	fi
-	if [ -e $FILE_NAME ]; then
-		#echo "there is adc_val.txt exit, first remove it"
-		rm -rf $FILE_NAME
-	fi
-	nc=$(i2cdetect -y -r 2 | grep 50 | wc -l)
-	if [ $nc -gt 1 ]; then
-		for ((rtry=0; rtry<$POWER_AVERAGE_CNT; rtry++))
-		do
-			power_curr_val=$(se6ctr_power_get_from_adc $i2c_channel)
-			#echo $power_curr_val >> $FILE_NAME
-		done
-		total_score=`awk -F " " 'BEGIN{total=0}{total+=$1}END{print total}' $FILE_NAME`
-		#if [ -e $FILE_NAME ]; then
-		#	rm -rf $FILE_NAME
-		#fi
-		#echo "total_score = $total_score"
-		echo | awk "{print $total_score/$POWER_AVERAGE_CNT}"
-	else
+	power_curr_val=$(se6ctr_power_get_from_adc $i2c_channel)
 
-		power_curr_val=$(se6ctr_power_get_from_adc $i2c_channel)
-		echo "$power_curr_val" |awk 'END {print}'
-	fi
+	echo "$power_curr_val" |awk 'END {print}'
 }
 ####################################################
 #aiub power on

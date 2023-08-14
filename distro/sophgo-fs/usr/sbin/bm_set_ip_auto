@@ -49,8 +49,12 @@ if [ $is_ubuntu -gt 1 ];then
 else
 	if [ $is_kylinos -gt 1 ];then
 		echo "kylin"
-		nmcli con delete "static-${device}"
+		exist=$(nmcli con | grep "static-${device}" | wc -l)
+		if [ "$exist" -gt 0 ]; then
+			nmcli con delete "static-${device}"
+		fi
 		nmcli con add type ethernet con-name "static-${device}" ifname ${device} ipv4.method auto
+		nmcli connection modify "static-${device}" connection.autoconnect yes
 		nmcli con up "static-${device}"
 	else
 

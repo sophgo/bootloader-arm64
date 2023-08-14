@@ -192,7 +192,6 @@ int board_init(void)
 {
 	pinmux_config(PINMUX_RGMII0);
 	pinmux_config(PINMUX_RGMII1);
-	mmio_setbits_32(0x50029000, 0x1); /* set fan run */
 
 	return 0;
 }
@@ -359,6 +358,9 @@ static void select_board(void)
 	case BM1684_SE5_V1_3:
 		env_set("dtb_name", "bm1684_se5_v1.3.dtb");
 		break;
+	case BM1684_SE5_V1_4:
+		env_set("dtb_name", "bm1684_se5_v1.4.dtb");
+		break;
 	case BM1684_SE5_V2_0:
 		env_set("dtb_name", "bm1684_se5_v2.0.dtb");
 	case BM1684_SE5_V2_1:
@@ -422,7 +424,11 @@ static void select_board(void)
 	case BM1684X_SM7M_V0_0_RB:
 		env_set("dtb_name", "bm1684x_sm7m_v0.0.dtb");
 		break;
+	case BM1684X_SM7M_V0_0_RB_CTRL:
+		env_set("dtb_name", "bm1684x_sm7m_v0.0_ctrl.dtb");
+		break;
 	case BM1684X_SM7_CTRL:
+		mmio_setbits_32(0x50029000, 0x1); /* set fan run */
 		env_set("dtb_name", "bm1684x_sm7_ctrl.dtb");
 		break;
 	case BM1684X_SM7M_V0_0_CUST_V1:
@@ -438,6 +444,9 @@ static void select_board(void)
 		env_set("dtb_name", "bm1684x_mix.dtb");
 		env_set("disable_wdt", "enable");
 		env_set("bootcmd", CONFIG_PCIEBOOTCOMMAND);
+		break;
+	case BM1684X_SE7_V1:
+		env_set("dtb_name", "bm1684x_se7_v1.dtb");
 		break;
 	default:
 		printf("unknown board type %d\n", board_type);
@@ -499,6 +508,7 @@ static const char * const board_names[] = {
 	[BM1684_SM5_V1_2_TB] = "bitmain-bm1684-sm5-v1",
 	[BM1684_SE5_V1_1] = "bitmain-bm1684-se5-v1.1",
 	[BM1684_SE5_V1_3] = "bitmain-bm1684-se5-v1.1",
+	[BM1684_SE5_V1_4] = "bitmain-bm1684-se5-v1.1",
 	[BM1684_SE5_V2_0] = "bitmain-bm1684-se5-v2",
 	[BM1684_SE5_V2_1] = "bitmain-bm1684-se5-v2",
 	[BM1684_SE5_V2_5] = "bitmain-bm1684-se5-v2",
@@ -523,8 +533,10 @@ static const char * const board_names[] = {
 	[BM1684X_SC7_HP300] = "bitmain-bm1684x-ep",
 	[BM1684X_MIX] = "bitmain-bm1684x-ep",
 	[BM1684X_SM7M_V0_0_RB] = "bitmain-bm1684x-sm7m-v0.0",
+	[BM1684X_SM7M_V0_0_RB_CTRL] = "bitmain-bm1684x-sm7m-ctrl",
 	[BM1684X_SM7_CTRL] = "bitmain-bm1684x-sm7-ctrl",
 	[BM1684X_SM7M_V0_0_CUST_V1] = "bitmain-bm1684x-sm7m-v0.0-cust-v1",
+	[BM1684X_SE7_V1] = "bitmain-bm1684x-se7-v1",
 
 };
 

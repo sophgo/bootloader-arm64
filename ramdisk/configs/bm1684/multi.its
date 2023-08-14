@@ -378,6 +378,17 @@
 			};
 		};
 
+		fdt-pcb40 {
+			description = "for SE5 V1.4 16G";
+			data = /incbin/("./bm1684_se5_v1.4.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
 		fdt-pcb128 {
 			description = "for BM1684X Palladium";
 			data = /incbin/("./bm1684x_pld.dtb");
@@ -473,6 +484,28 @@
 		fdt-pcb136 {
 			description = "for BM1684X SM7M V0.0 CUST V1";
 			data = /incbin/("./bm1684x_sm7m_v0.0_cust_v1.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb137 {
+			description = "for BM1684X SE7 V1";
+			data = /incbin/("./bm1684x_se7_v1.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb138 {
+			description = "for BM1684X SM7M RB control board";
+			data = /incbin/("./bm1684x_sm7m_v0.0_ctrl.dtb");
 			type = "flat_dt";
 			arch = "arm64";
 			compression = "none";
@@ -857,6 +890,18 @@
 			};
 		};
 
+		config-pcb40 {
+			description = "for SE5 V1.4 16G";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb40";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
 		config-pcb128 {
 			description = "for BM1684X Palladium";
 			kernel = "kernel";
@@ -970,6 +1015,30 @@
 			kernel = "kernel";
 			ramdisk = "ramdisk";
 			fdt = "fdt-pcb136";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb137 {
+			description = "for BM1684X SE7";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb137";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb138 {
+			description = "for BM1684X SM7M RB control board";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb138";
 			signature {
 				algo = "sha1,rsa2048";
 				key-name-hint = "vboot";
