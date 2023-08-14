@@ -79,8 +79,9 @@ do
 		max_t=$chip_t
 	fi
 
+	se6ex=$(cat /factory/OEMconfig.ini  | grep 'SE6 DUO' | wc -l)
 	product=$(cat /sys/bus/i2c/devices/1-0017/information | grep model | awk -F \" '{print $4}')
-    if ([ "$product" = "SM7 CTRL" ]); then
+    if ([ "$product" = "SM7 CTRL" ]) || ([ "$se6ex" -eq 1 ]) ; then
 		ratio=39999
 		if [ $max_t -ge 75 ];then
 			rate=39999

@@ -7,15 +7,6 @@ function se6_install_prepackages()
 	if [ ! -f /root/se6_ctrl/debs/installed ] ; then
 
 		# install tftp server and config it
-		product=$(cat /sys/bus/i2c/devices/1-0017/information | grep model | awk -F \" '{print $4}')
-		if ([ "$product" = "SE6-CTRL" ] || [ "$product" = "SE6 CTRL" ] || [ "$product" = "SM7 CTRL" ]); then
-			cp /root/se6_ctrl/script/reboot_all /usr/sbin/
-			cp -r /root/se6_ctrl/script /home/linaro/
-			rm /home/linaro/script/reboot_all
-			rm /home/linaro/script/switch_uart.sh
-			rm /home/linaro/script/core_run_command.py
-			chown linaro.linaro -R /home/linaro/script
-		fi
 		if [ -d /root/se6_ctrl/debs ]; then
 			/root/se6_ctrl/debs/nfs_setup.sh
 			touch /root/se6_ctrl/debs/installed
@@ -75,7 +66,8 @@ function se6_init()
 	product=$(cat /sys/bus/i2c/devices/1-0017/information | grep model | awk -F \" '{print $4}')
 
 	se6_install_prepackages
-	if [ "$product" = "SE6-CTRL" ] || [ "$product" = "SE6 CTRL" ] || [ "$product" = "SM7 CTRL" ]; then
+	if [ "$product" = "SE6-CTRL" ] || [ "$product" = "SE6 CTRL" ] \
+		|| [ "$product" = "SM7 CTRL" ] || [ "$product" = "SE8 CTRL" ]; then
 		echo "se6/7 ctl init!"
 		# remove sophon system, sophon hdmi server
 		if [ -f /etc/systemd/system/multi-user.target.wants/SophonHDMI.service ]; then
@@ -92,7 +84,6 @@ function se6_init()
 			#remove sophon system config files
 			rm -rf /data/config
 			rm -rf /data/log
-
 			# setup bm-ssm
 			mkdir -p /data/ota
 			chown linaro.linaro /data/ota
@@ -103,6 +94,17 @@ function se6_init()
 			systemctl restart acpid
 		fi
 
+		if [ ! -f /root/se6_ctrl/script/installed ]; then
+			# copy script at first
+			cp /root/se6_ctrl/script/reboot_all /usr/sbin/
+			cp -r /root/se6_ctrl/script /home/linaro/
+			rm /home/linaro/script/reboot_all
+			rm /home/linaro/script/switch_uart.sh
+			rm /home/linaro/script/core_run_command.py
+			chown linaro.linaro -R /home/linaro/script
+			sync
+			touch /root/se6_ctrl/script/installed
+		fi
 		if [ ! -f /etc/systemd/system/multi-user.target.wants/bmSE6Monitor.service ]; then
 			systemctl stop bmSysMonitor.service
 			systemctl disable bmSysMonitor.service
@@ -218,12 +220,13 @@ function se6_init()
 			fi
 
 			# cores init only
-			if [ ! -d /home/linaro/tftp_update ]; then
+			if [ ! -f /root/se6_ctrl/script/installed ]; then
 				cp -r /root/se6_ctrl/tftp_update /home/linaro
 				cp -r /root/se6_ctrl/script /home/linaro
 				chown linaro.linaro -R /home/linaro/*
 				cp /etc/systemd/timesyncd.conf  /etc/systemd/timesyncd.conf.bak
 				sed -i "s/#NTP=/NTP=${core}.200/" /etc/systemd/timesyncd.conf
+				sync
 				# rename system/usr lib
 				#mv /system/usr /system/old_lib
 				mv /system/usr/lib/aarch64-linux-gnu/libm.* /system/usr
@@ -232,23 +235,30 @@ function se6_init()
 				sed -i "s/192.168.150.101/${coreip}/" /system/bmssm/deviceConf.json
 				/system/bmssm/deploy-bmssm.sh
 				popd
+				touch /root/se6_ctrl/script/installed
 
 			fi
 			echo "se6 core set ip"
-			device_path="/etc/netplan/01-netcfg.yaml"
-			rm /etc/netplan/*
-			echo "network:" | sudo tee -a $device_path
-			echo "        version: 2" | sudo tee -a  $device_path
-			echo "        renderer: networkd" | sudo tee -a  $device_path
-			echo "        ethernets:" | sudo tee -a  $device_path
-			bm_set_ip eth0 $coreip 255.255.255.0 ${core}.200 "8.8.8.8,114.114.114.114"
-			# set ntp conf
-			#cp /etc/systemd/timesyncd.conf.bak /etc/systemd/timesyncd.conf
-			exist=$(grep "${core}.200" /etc/systemd/timesyncd.conf | wc -l)
-			if [ $exist -lt 1 ];then
-				sed -i "0,/NTP=/{s/NTP=/NTP=${core}.200 /}" /etc/systemd/timesyncd.conf
+			coreip1=$(echo $coreip | awk -F . '{printf("%d\n", $1)}')
+			coreip2=$(echo $coreip | awk -F . '{printf("%d\n", $2)}')
+			coreip4=$(echo $coreip | awk -F . '{printf("%d\n", $4)}')
+			if [ "$coreip1" = "0" ] || [ "$coreip2" = "0" ] || [ "$coreip4" = "0" ]; then
+				echo "wrong core ip,don't update it"
+			else
+				device_path="/etc/netplan/01-netcfg.yaml"
+				rm /etc/netplan/*
+				echo "network:" | sudo tee -a $device_path
+				echo "        version: 2" | sudo tee -a  $device_path
+				echo "        renderer: networkd" | sudo tee -a  $device_path
+				echo "        ethernets:" | sudo tee -a  $device_path
+				bm_set_ip eth0 $coreip 255.255.255.0 ${core}.200 "8.8.8.8,114.114.114.114"
+				# set ntp conf
+				#cp /etc/systemd/timesyncd.conf.bak /etc/systemd/timesyncd.conf
+				exist=$(grep "${core}.200" /etc/systemd/timesyncd.conf | wc -l)
+				if [ $exist -lt 1 ];then
+					sed -i "0,/NTP=/{s/NTP=/NTP=${core}.200 /}" /etc/systemd/timesyncd.conf
+				fi
 			fi
-
 			dsn=$(grep DEVICE_SN /factory/OEMconfig.ini | awk -F '= ' '{print $2}' |  sed 's/.*\(......\)$/\1/')
 			id=$(cat /sys/bus/i2c/devices/1-0017/board-id | awk -F : '{print $2}')
 			cur=$(hostname)

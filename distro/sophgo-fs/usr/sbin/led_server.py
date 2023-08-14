@@ -7,7 +7,7 @@ import time
 
 
 red_led_status = 0
-
+green_led_status = 1
 alarm_sleep = 'sleep'
 alarm_heating = 'heating'
 alarm_fan = 'fan'
@@ -19,7 +19,7 @@ fan_timer = 0
 product = ''
 
 def turn_on_green():
-    if product == "SE6-CTRL" or product == "SM7 CTRL" or product == "SE6 CTRL":
+    if product == "SE6-CTRL" or product == "SM7 CTRL" or product == "SE6 CTRL" or product == "SE8 CTRL":
         er,res = subprocess.getstatusoutput("ps -ef | grep bmrt_setup.sh | grep -v grep | awk 'NR==1{print $2}'")
         if len(res) == 0:
             er,res = subprocess.getstatusoutput("i2cget -f -y 2 0x20 0x2")
@@ -29,13 +29,14 @@ def turn_on_green():
             er,res = subprocess.getstatusoutput("i2cget -f -y 2 0x20 0x3")
             val = int(res,16) | 0x10
             er,res = subprocess.getstatusoutput("i2cset -f -y 2 0x20 0x3 " + str(val) )
+
     else:
         er,res = subprocess.getstatusoutput("i2cset -y 1 0x6c 0x02 0x09")
         er,res = subprocess.getstatusoutput("i2cset -y 1 0x6c 0x03 0xd")
 
 
 def turn_off_green():
-    if product == "SE6-CTRL" or product == "SM7 CTRL" or product == "SE6 CTRL":
+    if product == "SE6-CTRL" or product == "SM7 CTRL" or product == "SE6 CTRL" or product == "SE8 CTRL":
         er,res = subprocess.getstatusoutput("ps -ef | grep bmrt_setup.sh | grep -v grep | awk 'NR==1{print $2}'")
         if len(res) == 0:
             # se6 will turn off all
@@ -54,7 +55,7 @@ def turn_off_green():
 
 
 def turn_on_red():
-    if product == "SE6-CTRL" or product == "SM7 CTRL" or product == "SE6 CTRL":
+    if product == "SE6-CTRL" or product == "SM7 CTRL" or product == "SE6 CTRL" or product == "SE8 CTRL":
         er,res = subprocess.getstatusoutput("ps -ef | grep bmrt_setup.sh | grep -v grep | awk 'NR==1{print $2}'")
         if len(res) == 0:
             er,res = subprocess.getstatusoutput("i2cget -f -y 2 0x20 0x2")
@@ -71,7 +72,7 @@ def turn_on_red():
 
 
 def turn_off_red():
-    if product == "SE6-CTRL" or product == "SM7 CTRL" or product == "SE6 CTRL":
+    if product == "SE6-CTRL" or product == "SM7 CTRL" or product == "SE6 CTRL" or product == "SE8 CTRL":
         er,res = subprocess.getstatusoutput("ps -ef | grep bmrt_setup.sh | grep -v grep | awk 'NR==1{print $2}'")
         if len(res) == 0:
             er,res = subprocess.getstatusoutput("i2cget -f -y 2 0x20 0x2")
@@ -92,8 +93,9 @@ def turn_off_red():
 # red led twinkle
 def fan_led(interval):
     global red_led_status
+    global green_led_status
     global fan_timer
-    #print ('fan_led: {}',red_led_status)
+    #print ('red led: {} green led: {}',red_led_status, green_led_status)
     if red_led_status == 1:
         turn_on_red()
         red_led_status = 2
@@ -101,12 +103,13 @@ def fan_led(interval):
         turn_off_red()
         red_led_status = 1
 
-    if red_led_status != 0 :
+    if red_led_status != 0 and green_led_status != 1:
         fan_timer = threading.Timer(float(interval), fan_led,["0.5"])
         fan_timer.start()
 
 def server():
     global red_led_status
+    global green_led_status
     global fan_timer
 
 
@@ -142,6 +145,7 @@ def server():
                                 green_led_status = 0
                             else:
                                 red_led_status = 1
+                                green_led_status = 0
                             break
 
                     if red_led_status == 1:

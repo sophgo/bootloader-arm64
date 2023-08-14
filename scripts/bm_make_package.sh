@@ -319,7 +319,7 @@ function create_spif_script()
 	CURRENT_SCRIPT=${RECOVERY_DIR}/${SPIFCMD_SCRIPT}.cmd
 	cp /dev/null ${CURRENT_SCRIPT}
 
-	cp ${SOURCE_FILES_PATH}/fip.bin ${RECOVERY_DIR}
+	cp ${SOURCE_FILES_PATH}/fip*.bin ${RECOVERY_DIR}
 	touch ${RECOVERY_DIR}/BOOT
 
 

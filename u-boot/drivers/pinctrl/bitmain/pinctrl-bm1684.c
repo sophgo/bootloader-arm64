@@ -15,6 +15,7 @@ static struct pinctrl_ops bm1684_pinctrl_ops = {
 
 static const struct bitmain_pin_data bm1684_pin_list[] = {
 	BITMAIN_PIN_DATA("GPIO76",		0x6C,	0), /* PWM1 */
+	BITMAIN_PIN_DATA("GPIO28",		0xc0,   0), /* JTAG_1_2_SRST */
 	BITMAIN_PIN_DATA("GPIO29",		0xC4,	0), /* DBG_I2C_SCL */
 	BITMAIN_PIN_DATA("GPIO30",		0xC4,	1), /* DBG_I2C_SDA */
 	BITMAIN_PIN_DATA("GPIO31",		0xC8,	0), /* DBG_I2C_OEs */
