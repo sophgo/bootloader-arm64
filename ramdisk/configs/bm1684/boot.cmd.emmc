@@ -26,8 +26,10 @@ fi
 
 echo "booting #${config_sel}"
 load ${devtype} ${devnum}:${distro_bootpart} ${ramdisk_addr_r} emmcboot.itb
+bm_savelog mmc 0:1 bootlog.log
 bootm ${ramdisk_addr_r}#${config_sel}
 
 echo "emmcboot.itb boot error, use emmcboot.itb.bak"
 load ${devtype} ${devnum}:${distro_bootpart} ${ramdisk_addr_r} emmcboot.itb.bak
+bm_savelog mmc 0:1 bootlog.log
 bootm ${ramdisk_addr_r}#${config_sel}
