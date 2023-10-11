@@ -120,6 +120,10 @@ static const struct mcu_feature mcu_list[] = {
 		MCU_MANGO_EVB, "EVB", "MANGO", "STM32",
 		.cmd = 0x14,
 	},
+	{
+		MCU_BM1684X_SM7M_V1_0, "EVB", "BM1684X", "STM32",
+		.cmd = 0x14,
+	},
 };
 
 static void mcu_show(struct udevice *i2c, const struct mcu_feature * const f)

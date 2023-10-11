@@ -76,7 +76,7 @@ do
 
 	for ((i=1; i<=6; i++))
 	do
-		if [ "$ptype" = "0xff" ];then
+		if [ "$ptype" = "0xff" ] || [ "$ptype" = "0xb4" ];then
 			res=$(/root/se6_ctrl/script/ssh_anycmd.exp "${lan1ip}1${i}" linaro linaro "bm_get_temperature" )
 			chip_t=$(echo "$res" | grep 'chip temperature' | awk -F : '{printf("%s\n"),$3}' | awk -F \' '{printf("%d\n"), $1}')
 			board_t=$(echo "$res" | grep 'chip temperature' | awk -F : '{printf("%s\n"),$2}'| awk -F \' '{printf("%d\n"), $1}')
@@ -114,7 +114,7 @@ do
 	se6ex=$(cat /factory/OEMconfig.ini  | grep 'SE6 DUO' | wc -l)
 	product=$(cat /sys/bus/i2c/devices/1-0017/information | grep model | awk -F \" '{print $4}')
 	echo "max_t: $max_t"
-    if [ "$product" = "SM7 CTRL" ]; then
+   if [ "$product" = "SM7 CTRL" ]; then
 		ratio=39999
 		if [ $max_t -ge 75 ];then
 			rate=39999
@@ -191,13 +191,14 @@ do
 			if [ $max_t -le 74 ];then
 				stage=3
 				rate=10000
+				se6_ctrl_fan_slowly 400 10000
 			else
 				stage=4
 				rate=1
 			fi
 			;;
 		esac
-	elif [ "$seex" -ge 0 ];then
+	elif [ "$se6ex" -ge 0 ];then
 		case $stage in
 		0)
 			if [ $max_t -ge 55 ];then
@@ -281,9 +282,8 @@ do
 			rate=39999
 		fi
 	fi
-
+	echo "stage: $stage"
 	echo "$rate" > /sys/class/pwm/pwmchip0/pwm0/duty_cycle
-
 	echo "set fan duty cycle is: $rate; ratio $ratio; control board t : $chip_t "
 	echo "network warning is $net_state ; temperature warning is $temp_warning ; fan warning is $ $fan_warning"
 
@@ -353,3 +353,31 @@ do
 	sleep 5
 done
 
+
+# $1: former speed
+# $2: new speed
+se6_ctrl_fan_slowly()
+{
+	former=$1
+	newSpd=$2
+	if [ $former -ge $newSpd ];then
+		echo slow down
+		for ((i=$former;i>$newSpd;i-=200))
+		do
+			echo "$i" > /sys/class/pwm/pwmchip0/pwm0/duty_cycle
+			sleep 1
+		done
+
+	elif [ $former -le $newSpd ];then
+		echo speed up
+		for ((i=$former;i<$newSpd;i+=200))
+		do
+			echo "$i" > /sys/class/pwm/pwmchip0/pwm0/duty_cycle
+			sleep 1
+		done
+
+	else
+		echo no update
+	fi
+
+}

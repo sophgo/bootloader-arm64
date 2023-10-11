@@ -112,7 +112,9 @@ function se6_init()
 			systemctl start bmSE6Monitor.service
 		fi
 		systemctl stop ledSocketServer.service
+		systemctl stop bmDeviceDetect.service
 		systemctl disable ledSocketServer.service
+		systemctl disable bmDeviceDetect.service
 
 		#waiting for network ready
 		sleep 10

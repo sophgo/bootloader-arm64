@@ -2,6 +2,12 @@
 product=$(cat /sys/bus/i2c/devices/1-0017/information | grep model | awk -F \" '{print $4}')
 if ([ "$product" = "SE6-CTRL" ] || [ "$product" = "SE6 CTRL" ]\
 	|| [ "$product" = "SM7 CTRL" ] || [ "$product" = "SE8 CTRL" ]); then
+
+	if [ -f /data/.sophon.net/install.sh ]; then
+		/data/.sophon.net/install.sh
+		echo "reinstall sophon.net"
+	fi
+
 	#fan and temperature monitor
 	systemctl enable bmSE6Monitor.service
 	systemctl restart bmSE6Monitor.service
