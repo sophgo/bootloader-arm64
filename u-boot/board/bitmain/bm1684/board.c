@@ -352,6 +352,9 @@ static void select_board(void)
 	case BM1684_SM5_V1_2_TB:
 		env_set("dtb_name", "bm1684_sm5_v1.2_tb.dtb");
 		break;
+	case BM1684_SM5_V2_0_TB:
+		env_set("dtb_name", "bm1684_sm5_v2.0_tb.dtb");
+		break;
 	case BM1684_SE5_V1_1:
 		env_set("dtb_name", "bm1684_se5_v1.1.dtb");
 		break;
@@ -434,6 +437,12 @@ static void select_board(void)
 	case BM1684X_SM7M_V0_0_CUST_V1:
 		env_set("dtb_name", "bm1684x_sm7m_v0.0_cust_v1.dtb");
 		break;
+	case BM1684X_SM7M_V1_0:
+		env_set("dtb_name", "bm1684x_sm7m_v1.0.dtb");
+		break;
+	case BM1684X_SM7M_V1_2:
+		env_set("dtb_name", "bm1684x_sm7m_v1.2.dtb");
+		break;
 	case BM1684X_EP:
 	case BM1684X_SC7_HP300:
 		env_set("dtb_name", "bm1684x_ep.dtb");
@@ -447,6 +456,12 @@ static void select_board(void)
 		break;
 	case BM1684X_SE7_V1:
 		env_set("dtb_name", "bm1684x_se7_v1.dtb");
+		break;
+	case BM1684X_SE7_V2_0:
+		env_set("dtb_name", "bm1684x_se7_v2_0.dtb");
+		break;
+	case BM1684X_SM7_AIRBOX:
+		env_set("dtb_name", "bm1684x_sm7_airbox.dtb");
 		break;
 	default:
 		printf("unknown board type %d\n", board_type);
@@ -506,6 +521,7 @@ static const char * const board_names[] = {
 	[BM1684_SM5_V1_1_RB] = "bitmain-bm1684-sm5-v1",
 	[BM1684_SM5_V1_2_RB] = "bitmain-bm1684-sm5-v1",
 	[BM1684_SM5_V1_2_TB] = "bitmain-bm1684-sm5-v1",
+	[BM1684_SM5_V2_0_TB] = "bitmain-bm1684-sm5-v1",
 	[BM1684_SE5_V1_1] = "bitmain-bm1684-se5-v1.1",
 	[BM1684_SE5_V1_3] = "bitmain-bm1684-se5-v1.1",
 	[BM1684_SE5_V1_4] = "bitmain-bm1684-se5-v1.1",
@@ -537,7 +553,10 @@ static const char * const board_names[] = {
 	[BM1684X_SM7_CTRL] = "bitmain-bm1684x-sm7-ctrl",
 	[BM1684X_SM7M_V0_0_CUST_V1] = "bitmain-bm1684x-sm7m-v0.0-cust-v1",
 	[BM1684X_SE7_V1] = "bitmain-bm1684x-se7-v1",
-
+	[BM1684X_SM7M_V1_0] = "bitmain-bm1684x-sm7m-v1.0",
+	[BM1684X_SM7M_V1_2] = "bitmain-bm1684x-sm7m-v1.0",
+	[BM1684X_SE7_V2_0] = "bitmain-bm1684x-sm7m-v1.0",
+	[BM1684X_SM7_AIRBOX] = "bitmain-bm1684x-sm7m-v0.0-cust-v1",
 };
 
 int board_fit_config_name_match(const char *name)

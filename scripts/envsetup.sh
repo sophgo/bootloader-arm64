@@ -998,6 +998,81 @@ function clean_bootp()
 	rm -f $OUTPUT_DIR/recovery.tgz
 }
 
+function build_athena2_rootp()
+{
+	echo cleanup previous build...
+	mkdir -p $OUTPUT_DIR/rootfs
+	sudo rm -rf $OUTPUT_DIR/rootfs
+	rm -f $OUTPUT_DIR/rootfs.tgz
+	mkdir $OUTPUT_DIR/rootfs
+
+	echo copy distro rootfs files from ${DISTRO_BASE_PKT}...
+	zcat $DISTRO_BASE_PKT | sudo tar -C $OUTPUT_DIR/rootfs -x -f -
+
+	echo copy linux debs...
+	sudo mkdir -p $OUTPUT_DIR/rootfs/home/linaro
+	sudo cp -r $DEB_INSTALL_DIR $OUTPUT_DIR/rootfs/home/linaro/
+
+	echo copy overlay file to rootfs...
+	if [ -d $DISTRO_OVERLAY_DIR/common/rootfs ]; then
+		echo copy common rootfs overlay files...
+		sudo cp -rf $DISTRO_OVERLAY_DIR/common/rootfs/* $OUTPUT_DIR/rootfs
+	fi
+	if [ -d $DISTRO_OVERLAY_DIR/$PROJECT_NAME/rootfs ]; then
+		echo copy project rootfs overlay files...
+		sudo cp -rf $DISTRO_OVERLAY_DIR/$PROJECT_NAME/rootfs/* $OUTPUT_DIR/rootfs
+	fi
+	# debs will be installed later after chroot and then deleted
+	sudo cp -rf $DISTRO_MOD_DIR/debs $OUTPUT_DIR/rootfs
+
+	if [ "$PRODUCT" != "" ] && [ -d $DISTRO_OVERLAY_DIR/$PRODUCT/debs ]; then
+		echo copy product $PRODUCT debs overlay files...
+		sudo cp -rf $DISTRO_OVERLAY_DIR/$PRODUCT/debs/* $OUTPUT_DIR/rootfs/debs/
+	fi
+
+	echo install packages...
+	pushd $OUTPUT_DIR/rootfs
+# following lines must not be started with space or tab.
+# install bsp images first, so it won't run flash_update
+sudo chroot . /bin/bash << "EOT"
+
+if [  -d /debs ] && [ $(ls /debs/*.deb | wc -l) -gt 0 ]; then
+	dpkg -i -R /debs
+	while [ $? -ne 0 ];
+	do
+		sleep 1
+		dpkg -i -R /debs
+	done
+fi
+for file in /debs/*
+do
+	file=$(basename $file)
+	if  [ "${file##*.}" == "whl" ]; then
+		pip3 install --no-index --find-links=file:///debs ${file%%-*}
+	fi
+done
+rm -rf /debs
+
+if [  -d /home/linaro/debs ] && [ $(ls /home/linaro//debs/*.deb | wc -l) -gt 0 ]; then
+	dpkg -i -R /home/linaro/debs
+	while [ $? -ne 0 ];
+	do
+		sleep 1
+		dpkg -i -R /home/linaro/debs
+	done
+fi
+
+exit
+EOT
+	popd
+
+	echo packing rootfs...
+	pushd $OUTPUT_DIR/rootfs
+	sudo chown 1000:1000 -R data
+	sudo tar -czf ../rootfs.tgz *
+	popd
+}
+
 function build_rootp()
 {
 	echo cleanup previous build...
@@ -1070,9 +1145,9 @@ if [ "$os_release" = "Kylin" ]; then
 	usermod -a -G sudo linaro
 	chown linaro.linaro -R /home/linaro
 fi
-if [ -f /home/linaro/bsp-debs/sophgo-se6_*.deb  ]; then
+if [ -f /home/linaro/bsp-debs/sophgo-se_*.deb  ]; then
 	echo "install se6 deb"
-	dpkg -i /home/linaro/bsp-debs/sophgo-se6_*.deb
+	dpkg -i /home/linaro/bsp-debs/sophgo-se_*.deb
 else
 	if [ "$os_release" != "Kylin" ]; then
 		echo "not se6 and not kylin, try install hdmi and system deb"
@@ -1225,7 +1300,7 @@ function build_update()
 		echo $OUTPUT_DIR
 		rm -f $OUTPUT_DIR/opt.tgz
 		rm -f $OUTPUT_DIR/recovery.tgz
-		rm -rf $OUTPUT_DIR/se6_ctl_sdcard
+		rm -rf $OUTPUT_DIR/se_ctl_sdcard
 
 		# try not overwrite someone else's sdcard folder
 		if [ -d "$OUTPUT_DIR/sdcard" ];then
@@ -1246,9 +1321,9 @@ function build_update()
 		fi
 		popd
 
-		mv $OUTPUT_DIR/sdcard $OUTPUT_DIR/se6_ctl_sdcard
-		cp $SCRIPTS_DIR/local_update.sh $OUTPUT_DIR/se6_ctl_sdcard
-		pushd $OUTPUT_DIR/se6_ctl_sdcard
+		mv $OUTPUT_DIR/sdcard $OUTPUT_DIR/se_ctl_sdcard
+		cp $SCRIPTS_DIR/local_update.sh $OUTPUT_DIR/se_ctl_sdcard
+		pushd $OUTPUT_DIR/se_ctl_sdcard
 		md5sum * > md5.txt
 		popd
 		if [ -d "$OUTPUT_DIR/sdcard-bak" ];then
