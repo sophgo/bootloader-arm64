@@ -463,12 +463,6 @@ function build_debs()
 	dpkg-deb -b $DISTRO_MOD_DIR/sophgo-fs sophgo-bsp-rootfs_${version}_arm64.deb
 	install_debs "sophgo-bsp-rootfs_${version}_arm64.deb"
 
-	echo make BSP qt5 deb...
-	local version=$(echo $(cat $DISTRO_MOD_DIR/sophgo-qt5/DEBIAN/control | grep Version) | cut -d ' ' -f 2)
-	rm -f $DEB_INSTALL_DIR/sophgo-bsp-qt5_*_arm64.deb
-	dpkg-deb -b $DISTRO_MOD_DIR/sophgo-qt5 sophgo-bsp-qt5_${version}_arm64.deb
-	install_debs "sophgo-bsp-qt5_${version}_arm64.deb"
-
 	if [ "$PRODUCT" != "" ] && [ -d $DISTRO_MOD_DIR/product-$PRODUCT ]; then
 		echo make product-$PRODUCT deb...
 		local version=$(echo $(cat $DISTRO_MOD_DIR/product-$PRODUCT/DEBIAN/control | grep Version) | cut -d ' ' -f 2)
@@ -1279,7 +1273,7 @@ function build_update()
 	fi
 	echo packing update image...
 	if [ $DISTRO == "kylinos" ]; then
-		if [ "$PRODUCT" == "se6" ] && [ "$UPDATE_TYPE" == "tftp" ]; then
+		if [ "$PRODUCT" == "se" ] && [ "$UPDATE_TYPE" == "tftp" ]; then
 			# se6 core board falls into here, it doesn't use kylinos
 			./bm_make_package.sh $UPDATE_TYPE ./partition32G.xml $OUTPUT_DIR
 		else
@@ -1295,7 +1289,7 @@ function build_update()
 	md5sum * > md5.txt
 	popd
 
-	if [ "$PRODUCT" == "se6" ] && [ "$UPDATE_TYPE" == "tftp" ]; then
+	if [ "$PRODUCT" == "se" ] && [ "$UPDATE_TYPE" == "tftp" ]; then
 		echo "packet tftp package and sdcard package for se6..."
 		echo $OUTPUT_DIR
 		rm -f $OUTPUT_DIR/opt.tgz

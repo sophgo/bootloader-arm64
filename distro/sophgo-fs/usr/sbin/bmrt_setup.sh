@@ -132,17 +132,32 @@ sudo chown linaro:linaro -R /data
 reset_module
 store_reset_reason
 install_prepackages
+product=$(cat /sys/bus/i2c/devices/1-0017/information | grep model | awk -F \" '{print $4}')
 if [ -f /root/se_ctrl/se_init.sh ]; then
 	source /root/se_ctrl/se_init.sh
 	se_init
+elif [ "$product" = "SM7 AIRBOX" ]; then
+	echo "sm7 airbox product"
+		systemctl stop bmSE6Monitor.service
+		systemctl disable bmSE6Monitor.service
+		systemctl stop bmSysMonitor.service
+		systemctl disable bmSysMonitor.service
+		systemctl enable airboxFanMonitor.service
+		systemctl start airboxFanMonitor.service
 else
 	echo "not se6 product"
 	if [ -f /etc/systemd/system/multi-user.target.wants/bmSE6Monitor.service ]; then
 		systemctl stop bmSE6Monitor.service
 		systemctl disable bmSE6Monitor.service
+		systemctl stop airboxFanMonitor.service
+		systemctl disable airboxFanMonitor.service
 		systemctl enable bmSysMonitor.service
 		systemctl start bmSysMonitor.service
 	fi
+	systemctl enable bmssm.service
+	systemctl start bmssm.service
+	systemctl enable sophliteos.service
+	systemctl start sophliteos.service
 
 fi
 invoke_board_setup

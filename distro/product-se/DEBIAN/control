@@ -1,0 +1,8 @@
+Package: sophgo-se
+Source: sophgo-se
+Version: 1.0.0
+Architecture: arm64
+Maintainer: sophgo
+Priority: optional
+Description: sophgo se6 special configure and services.
+

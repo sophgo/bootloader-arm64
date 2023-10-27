@@ -1,0 +1,15 @@
+module:bootloader-arm64(sophon-23.09-lts)
+commit 58c480bcda763a8d8b0d4f26587969dd91d71e61
+
+module:linux-arm64(sophon-23.09-lts)
+commit e28b60a56503091d2de059774fdc6abfbecc32af
+
+module:libsophon(sophon-23.09-lts)
+commit 9d5f5e1cbae9dace05b5c5d541ad5853debcbfd2
+
+module:bmvid(sophon-23.09-lts)
+commit 89681b935c236815f532625b1e25c77937363e18
+
+/data/release/sophon-sdk/sophon-mw/release_build/LTS_2309_20230914_033900
+buildname:LTS_2309_20230914_063933
+buildtime:20230914_063933
