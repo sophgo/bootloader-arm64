@@ -215,6 +215,9 @@ static int bm_get_board_info(void)
 		case MCU_BM1684X_SM7_AIRBOX:
 			type = BM1684X_SM7_AIRBOX;
 			break;
+		case MCU_BM1684X_SM7M_V1_0_RB_CTRL:
+			type = BM1684X_SM7M_V1_0_RB_CTRL;
+			break;
 		default:
 			ERROR("unknown board type %u\n", mcu_type);
 			assert(0);

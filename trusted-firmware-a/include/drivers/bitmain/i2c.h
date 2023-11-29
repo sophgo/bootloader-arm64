@@ -36,6 +36,9 @@ int i2c_smbus_read_byte(int i2c, unsigned char addr,
 			unsigned char cmd, unsigned char *data);
 int i2c_smbus_write_byte(int i2c, unsigned char addr,
 			 unsigned char cmd, unsigned char data);
+int i2c_smbus_write_bytes(int i2c, unsigned char addr,
+			  unsigned int eeprom_addr, unsigned int data_len,
+			  const unsigned char *data);
 int i2c_smbus_read(int i2c, unsigned char addr, unsigned int len,
 		   unsigned char cmd, unsigned char *data);
 

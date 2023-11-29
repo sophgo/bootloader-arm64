@@ -567,6 +567,16 @@
 				algo = "sha1";
 			};
 		};
+		fdt-pcb143 {
+			description = "for BM1684X SM7 V1_0 SE8 CTRL";
+			data = /incbin/("./bm1684x_sm7m_v0.0_ctrl.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
 	};
 
 	configurations {
@@ -1153,6 +1163,17 @@
 			kernel = "kernel";
 			ramdisk = "ramdisk";
 			fdt = "fdt-pcb142";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+		config-pcb143 {
+			description = "for BM1684X SM7 V1_0 SE8 CTRL";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb143";
 			signature {
 				algo = "sha1,rsa2048";
 				key-name-hint = "vboot";

@@ -463,6 +463,9 @@ static void select_board(void)
 	case BM1684X_SM7_AIRBOX:
 		env_set("dtb_name", "bm1684x_sm7_airbox.dtb");
 		break;
+	case BM1684X_SM7M_V1_0_RB_CTRL:
+		env_set("dtb_name", "bm1684x_sm7m_v0.0_ctrl.dtb");
+		break;
 	default:
 		printf("unknown board type %d\n", board_type);
 	}
@@ -557,6 +560,7 @@ static const char * const board_names[] = {
 	[BM1684X_SM7M_V1_2] = "bitmain-bm1684x-sm7m-v1.0",
 	[BM1684X_SE7_V2_0] = "bitmain-bm1684x-sm7m-v1.0",
 	[BM1684X_SM7_AIRBOX] = "bitmain-bm1684x-sm7m-v0.0-cust-v1",
+	[BM1684X_SM7M_V1_0_RB_CTRL] = "bitmain-bm1684x-sm7m-v1.0-ctrl",
 };
 
 int board_fit_config_name_match(const char *name)

@@ -132,6 +132,11 @@ static const struct mcu_feature mcu_list[] = {
 		MCU_BM1684X_SM7_AIRBOX, "EVB", "BM1684X", "STM32",
 		.cmd = 0x14,
 	},
+	{
+		MCU_BM1684X_SM7M_V1_0_RB_CTRL, "EVB", "BM1684X", "STM32",
+		.cmd = 0x14,
+	},
+
 };
 
 static void mcu_show(struct udevice *i2c, const struct mcu_feature * const f)

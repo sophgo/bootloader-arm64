@@ -161,4 +161,4 @@ else
 
 fi
 invoke_board_setup
-
+echo "bmrt_setup finish done!!!"

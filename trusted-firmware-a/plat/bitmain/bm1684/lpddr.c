@@ -873,6 +873,7 @@ void bm_ddr_init_asic(void)
 	case BM1684_SM5_V2_0_TB:
 	case BM1684X_SE7_V2_0:
 	case BM1684X_SM7_AIRBOX:
+	case BM1684X_SM7M_V1_0_RB_CTRL:
 		rank = GROUP_RANK(RANK2, RANK2);
 		freq = FREQ_4000M;
 		break;

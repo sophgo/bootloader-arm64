@@ -13,6 +13,8 @@
 #include <plat/common/platform.h>
 #include <drivers/bitmain/i2c.h>
 #include <spinlock.h>
+#include <dw_gpio.h>
+#include <gpio.h>
 
 #include "bm_common.h"
 
@@ -277,14 +279,34 @@ static struct i2c_info i2c_info[] = {
  ******************************************************************************/
 static void __dead2 bm_system_off(void)
 {
+	uint32_t board;
 	print_entry(__func__);
 
+	board = mmio_read_32(BOARD_TYPE_REG);
 #ifdef MCU_I2C_DEV
 	/* control mcu to power off bm1684 */
 	mmio_setbits_32(TOP_BASE + REG_TOP_CLOCK_ENABLE1,  (1 << 3)); // enable iic clock
 	i2c_init(i2c_info, ARRAY_SIZE(i2c_info));
-	i2c_smbus_write_byte(MCU_I2C_DEV, MCU_DEV_ADDR,
-			     INSTRUCT_REG, POWER_OFF_CMD);
+	if (board == BM1684X_SE7_V1) {
+		const unsigned char shutdown_flag = EEPROM_POWER_OFF_FLAG;
+		unsigned char ret = 0;
+		/* need unlock eeprom, then write poweroff flag */
+		NOTICE("board is se7 v1, send poweroff sign...\n");
+		for (const char *p = EEPROM_UNLOCK_CMD; *p; ++p) {
+			ret |= i2c_smbus_write_byte(MCU_I2C_DEV, MCU_DEV_ADDR, EEPROM_LOCK_REG, *p);
+		}
+		ret |= i2c_smbus_write_bytes(MCU_I2C_DEV, MCU_EEPROM_ADDR, EEPROM_POWER_OFF_OFFSET, 1, &shutdown_flag);
+		for (const char *p = EEPROM_LOCK_CMD; *p; ++p) {
+			ret |= i2c_smbus_write_byte(MCU_I2C_DEV, MCU_DEV_ADDR, EEPROM_LOCK_REG, *p);
+		}
+		NOTICE("poweroff sign send ret is %d, start poweroff...\n", ret);
+		dw_gpio_init(BM_GPIO_BASE, BM_GPIO_SIZE, BM_GPIO_WIDTH);
+		gpio_set_direction(17, GPIO_DIR_OUT);
+		gpio_set_value(17, GPIO_LEVEL_HIGH);
+	} else {
+		i2c_smbus_write_byte(MCU_I2C_DEV, MCU_DEV_ADDR,
+				     INSTRUCT_REG, POWER_OFF_CMD);
+	}
 #endif
 	while (1)
 		wfi();
