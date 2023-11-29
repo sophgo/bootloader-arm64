@@ -400,15 +400,22 @@ extern uint32_t SPIF_OFFSET_B_FIP;
  */
 #define MCU_I2C_DEV			1
 #define MCU_DEV_ADDR			0x17
+#define MCU_EEPROM_ADDR			0x6a
 
 #define HW_TYPE_REG			0x00 // board type
 #define HW_VERSION_REG			0x02 // PCB and BOM version
 #define INSTRUCT_REG			0x03
 #define DDR_TYPE_REG			0x15 // LPDDR4 or LPDDR4X
 #define PCIE_CHECK_REG			0x17 // use perst signal to check PCIe plugging
+#define EEPROM_LOCK_REG			0x60
 
 #define POWER_OFF_CMD			0x02
 #define REBOOT_CMD			0x07
+
+#define EEPROM_POWER_OFF_OFFSET	0xa0
+#define EEPROM_POWER_OFF_FLAG	0x80
+#define EEPROM_UNLOCK_CMD		"CK"
+#define EEPROM_LOCK_CMD			"LO"
 
 /*
  * eFuse register

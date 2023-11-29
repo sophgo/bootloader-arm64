@@ -1,7 +1,7 @@
 #!/bin/sh
 
-
-rm -rf /media/root-rw/overlay
+rm -rf /media/root-rw/*
+#rm -rf /media/root-rw/overlay
 
 #tar -zxf /media/root-ro/root/rootfs_rw.tgz -m -C /media/root-rw/
 
