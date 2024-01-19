@@ -288,7 +288,8 @@ flash_update -i ./spi_flash.bin -b 0x6000000，成功后可以看到如下log：
 替换kernel：将您要更新的emmcboot.itb放入/boot中替换同名文件，再sudo
 reboot即可。
 
-替换bmnnsdk2运行时环境：bmnnsdk2运行时环境位于/opt目录下，请将您拿到的更新包（通常是一个名为opt.tgz的压缩包）整体替换即可，解压时请留意相对路径。
+替换bmnnsdk2运行时环境：bmnnsdk2运行时环境位于/system目录下，请将您拿到的更新包（通常是一个名为system.tgz的压缩包）整体替换即可，解压时请留意相对路径。
+替换SophonSDK运行时环境：SophonSDK运行时环境位于/opt目录下，请将您拿到的更新包（通常是一个名为opt.tgz的压缩包）整体替换即可，解压时请留意相对路径。
 
 .. warning::
 
@@ -357,7 +358,7 @@ c. OTA升级
 
    .. code-block:: bash
 
-      chmod +x llinux-headers-install.sh.sh
+      chmod +x linux-headers-install.sh.sh
 
    若脚本执行过程中出现缺少flex等错误，可执行如下命令安装相关环境：
 
@@ -583,6 +584,57 @@ sysfs、procfs节点，或top等工具读取。以下仅介绍 |Product| 特有�
               "reset count": 0
       }
 
+命令：
+
+   .. code-block:: bash
+
+      cat /factory/OEMconfig.ini
+
+返回：
+
+   .. code-block:: bash
+
+      linaro@bm1684:~/bsp-debs$ cat /factory/OEMconfig.ini
+      [BASE]
+      SN = BJSNS7MBCJGJA00WM
+      MAC0 = 58 c4 1e e0 1a 90
+      MAC1 = 58 c4 1e e0 1a 95
+      PRODUCT_TYPE = 0x01
+      AGING_FLAG = 0x01
+      DDR_TYPE = 16GB
+      BOARD_TYPE = V12
+      BOM = V12
+      MODULE_TYPE = SE6 DUO
+      EX_MODULE_TYPE = SE6 DUO
+      PRODUCT = SE6
+      VENDER = SOPHGO
+      ALGORITHM = 3RDPARTY
+      DEVICE_SN =
+      DATE_PRODUCTION =
+      PASSWORD_SSH = linaro
+      USERNAME = admin
+      PASSWORD = admin
+
+命令：
+
+   .. code-block:: bash
+
+      bm_get_basic_info
+
+返回：
+
+   .. code-block:: bash
+
+      linaro@bm1684:~/bsp-debs$ bm_get_basic_info
+      ------------------------------------------------------------------------
+      chip sn: BJSNS7MBCJGJA00WM
+      device sn:
+      hostname: bm1684
+      uptimeInfo: up 14 minutes
+      boardtemperature: 41
+      coretemperature: 41
+      ------------------------------------------------------------------------
+
 读取BM1684X芯片温度
 -----------------------
 
@@ -602,9 +654,9 @@ sysfs、procfs节点，或top等工具读取。以下仅介绍 |Product| 特有�
 
 Linux的thermal框架会使用这个温度做管理：
 
-1. 普通版模组：当温度升到85度时，TPU频率会降到80%，CPU降频到1.15GHz；当温度回落到80度时，TPU频率会恢复到100%，CPU频率恢复到2.3GHz；当温度升到90度时，TPU频率会降到最低挡位；当温度升到95度时，会自动关机。
+1. 普通版模组：当温度升到85度时，TPU频率会降到75%，CPU降频到1.15GHz；当温度回落到80度时，TPU频率会恢复到100%，CPU频率恢复到2.3GHz；当温度升到90度时，TPU频率会降到最低挡位；当温度升到95度时，会自动关机。
 
-2. 宽温版模组：当温度升到95度时，TPU频率会降到80%，CPU降频到1.15GHz；当温度回落到90度时，TPU频率会恢复到100%，CPU频率恢复到2.3GHz；当温度升到105度时，TPU频率会降到最低挡位；当温度升到110度时，会自动关机。
+2. 宽温版模组：当温度升到95度时，TPU频率会降到75%，CPU降频到1.15GHz；当温度回落到90度时，TPU频率会恢复到100%，CPU频率恢复到2.3GHz；当温度升到105度时，TPU频率会降到最低挡位；当温度升到110度时，会自动关机。
 
 另外，片外的MCU也会使用这个温度来做最后的保险机制：
 
@@ -771,7 +823,7 @@ BTB接口上提供了1个风扇测速输入引脚，可以采样风扇的转速�
 
       cat /sys/class/bm-tach/bm-tach-0/fan_speed
 
-同时提供了一个netlink事件，当风扇停转时告警，示例代码可以从bsp-sdk/linux-bitmain/tools/fan_alert获取。
+同时提供了一个netlink事件，当风扇停转时告警，示例代码可以从bsp-sdk/linux-arm64/tools/fan_alert获取。
 
 查询内存用量
 -----------------
@@ -899,19 +951,19 @@ install安装即可。
       build_kernel
       build_ramdisk uclibc emmc
 
-即可得到新的emmcboot.itb。不建议您直接到linux-bitmain目录下手敲make，除非您非常清楚如何操作。
+即可得到新的emmcboot.itb。不建议您直接到linux-arm64目录下手敲make，除非您非常清楚如何操作。
 
 内核的编译结果在如下路径：
 
    ::
 
-      linux-bitmain/build/bm1684/normal
+      linux-arm64/build/bm1684/normal
 
 编译出的ko可以在如下路径找到：
 
    ::
 
-      linux-bitmain/build/bm1684/normal/modules/lib/modules/5.4.202-bm1684/kernel
+      linux-arm64/build/bm1684/normal/modules/lib/modules/5.4.202-bm1684/kernel
 
 两个路径下的内容是一样的，默认已经打进刷机包。
 
@@ -920,23 +972,23 @@ module）可以在如下路径找到：
 
    ::
 
-      linux-bitmain/build/bm1684/normal/bm1684_asic/linux-dev
+      linux-arm64/build/bm1684/normal/debs
 
-默认已经打进刷机包，即板卡上的/home/linaro/linux-dev目录。
+默认已经打进刷机包，即板卡上的/home/linaro/bsp-debs目录。
 
 修改kernel
 --------------
 
 kernel的配置文件在：
 
-   linux-bitmain/arch/arm64/configs/bitmain_bm1684_normal_defconfig
+   linux-arm64/arch/arm64/configs/bitmain_bm1684_normal_defconfig
 
 请注意修改kernel
 config可能会造成您的kernel与我们通过二进制发布的驱动文件（板上/opt/sophon/libsophon-current/data/下的bmtpu.ko、vpu.ko、jpu.ko）无法兼容。
 
 标准版 |Product| 使用的设备树文件在：
 
-   linux-bitmain/arch/arm64/boot/dts/bitmain/bm1684x_evb_v0.0.dts
+   linux-arm64/arch/arm64/boot/dts/bitmain/bm1684x_evb_v0.0.dts
 
 修改之后请执行：
 
@@ -970,7 +1022,7 @@ tree的修改。请替换到板卡的/boot目录下并重启即可。
          ...
 
    关注 Selecting config 这一行，
-   即可知道这块板子对应的device tree源文件是在linux-bitmain/arch/arm64/boot/dts/bitmain/目录下的**bm1684x_evb_v0.0.dts**。
+   即可知道这块板子对应的device tree源文件是在linux-arm64/arch/arm64/boot/dts/bitmain/目录下的**bm1684x_evb_v0.0.dts**。
 
 修改Ubuntu 20.04
 --------------------
@@ -979,23 +1031,23 @@ tree的修改。请替换到板卡的/boot目录下并重启即可。
 
 Ubuntu 20.04系统的生成过程是这样：
 
-1. debian/distro_focal_lite_20211018.tgz是Ubuntu官方纯净版底包， debian/distro_focal_20220328.tgz是我们内部修改过的底包。
+1. distro/distro_focal.tgz是Ubuntu官方纯净版底包。
 
-2. debian/overlay/soc_bm1684_asic_newos下包含了 |Product| 对底包的修改，会覆盖到底包的同名路径。
+2. bootloader-arm64/distro/overlay下包含了 |Product| 对底包的修改，会覆盖到底包的同名路径。
 
 3. kernel编译的过程中也会把ko等文件更新进去。
 
-4. 如果install/soc_bm1684目录下有opt.tgz文件，则刷机包生成过程中会把它作为/opt目录下的内容。
+4. 如果install/soc_bm1684目录下有system.tgz文件，则刷机包生成过程中会把它作为/system目录下的内容。
 
-5. 如果install/soc_bm1684目录下有data.tgz文件，则刷机包生成过程中会把它作为/data目录下的内容。
+5. install/soc_bm1684目录下有data.tgz文件，则刷机包生成过程中会把它作为/data目录下的内容。
 
-所以您可以在overlay/soc_bm1684_asic_newos加入您自己的改动，比如放入一些工具软件，修改以太网配置文件等等，然后重新生成刷机包。
+所以您可以在overlay/bm1684加入您自己的改动，比如放入一些工具软件，修改以太网配置文件等等，然后重新生成刷机包。
 
 如果您有一个或多个deb想要预装到Ubuntu 20.04，那么有两种做法：
 
-a. 如果deb包比较简单，您可以直接将它解压缩后把里面的文件copy到overlay/soc_bm1684_asic_newos下的对应目录。
+a. 如果deb包比较简单，您可以直接将它解压缩后把里面的文件copy到bootloader-arm64/distro/overlay/bm1684/rootfs下的对应目录。
 
-b. 将deb包直接放到overlay/soc_bm1684_asic_newos/root/post_install/debs目录，则 |Product| 在刷机后第一次开机时会把这些deb包都安装上。
+b. 将deb包直接放到bootloader-arm64/distro/sophgo-fs/root/post_install/debs目录，则 |Product| 在刷机后第一次开机时会把这些deb包都安装上。
 
 方式二：利用qemu虚拟机方式进行修改
 
@@ -1155,7 +1207,7 @@ b. 将deb包直接放到overlay/soc_bm1684_asic_newos/root/post_install/debs目�
 module，可以省去上述搭建交叉编译环境的麻烦。步骤如下：
 
 1. uname
-   -r得到kernel版本号，与/home/linaro/linux-dev和/lib/modules里面的文件名比较，确保一致
+   -r得到kernel版本号，与/home/linaro/bsp-debs和/lib/modules里面的文件名比较，确保一致
 
 2. 因为kernel在交叉编译环境下做make
    bindeb-pkg的缺陷，需要再额外做如下处理：
@@ -1166,16 +1218,15 @@ module，可以省去上述搭建交叉编译环境的麻烦。步骤如下：
 
          sudo date -s "01:01:01 2021-03-01"
 
-   b. 检查是否存在/home/linaro/linux-dev/debs/install.sh，如果有的话，执行它即可
+   b. 检查是否存在/home/linaro/bsp-debs/install.sh，如果有的话，执行它即可
 
    c. 如果没有的话，需要手工操作：
 
       .. code-block:: bash
 
-         sudo dpkg -i /home/linaro/linux-dev/linux-headers-*.deb
+         sudo dpkg -i /home/linaro/bsp-debs/linux-headers-*.deb
          sudo mkdir -p /usr/src/linux-headers-$(uname -r)/tools/include/tools
-         sudo cp /home/linaro/linux-dev/*.h /usr/src/linux-headers-$(uname-r)/tools/
-         include/tools
+         sudo cp /home/linaro/linux-dev/*.h /usr/src/linux-headers-$(uname-r)/tools/include/tools
          cd /usr/src/linux-headers-$(uname -r)
          sudo apt update
          sudo apt-get install -y build-essential bc bison flex libssl-dev

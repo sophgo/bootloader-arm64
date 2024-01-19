@@ -1,0 +1,410 @@
+/dts-v1/;
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+	compatible = "linux,dummy-virt";
+	#size-cells = <0x2>;
+	#address-cells = <0x2>;
+	interrupt-parent = <&gic>;
+
+	gic: interrupt-controller {
+		compatible = "arm,cortex-a15-gic";
+		ranges;
+		#size-cells = <0x2>;
+		#address-cells = <0x2>;
+		interrupt-controller;
+		#interrupt-cells = <0x3>;
+		reg = <0x0 0x50001000 0x0 0x1000>,
+		      <0x0 0x50002000 0x0 0x2000>;
+	};
+
+	psci {
+		migrate = <0xc4000005>;
+		cpu_on = <0xc4000003>;
+		cpu_off = <0x84000002>;
+		cpu_suspend = <0xc4000001>;
+		sys_poweroff = <0x84000008>;
+		sys_reset = <0x84000009>;
+		method = "smc";
+		compatible = "arm,psci-0.2", "arm,psci";
+	};
+
+	cpus {
+		#size-cells = <0x0>;
+		#address-cells = <0x1>;
+		cpu-map {
+			cluster0 {
+				core0 {
+					cpu = <&cpu0>;
+				};
+				core1 {
+					cpu = <&cpu1>;
+				};
+				core2 {
+					cpu = <&cpu2>;
+				};
+				core3 {
+					cpu = <&cpu3>;
+				};
+		    };
+			cluster1 {
+				core0 {
+					cpu = <&cpu4>;
+				};
+				core1 {
+					cpu = <&cpu5>;
+				};
+				core2 {
+					cpu = <&cpu6>;
+				};
+				core3 {
+					cpu = <&cpu7>;
+				};
+			};
+		};
+
+		cpu0: cpu@0 {
+			reg = <0x0>;
+			enable-method = "psci";
+			compatible = "arm,cortex-a53";
+			device_type = "cpu";
+		};
+
+		cpu1: cpu@1 {
+			reg = <0x1>;
+			enable-method = "psci";
+			compatible = "arm,cortex-a53";
+			device_type = "cpu";
+		};
+
+		cpu2: cpu@2 {
+			reg = <0x2>;
+			enable-method = "psci";
+			compatible = "arm,cortex-a53";
+			device_type = "cpu";
+		};
+
+		cpu3: cpu@3 {
+			reg = <0x3>;
+			enable-method = "psci";
+			compatible = "arm,cortex-a53";
+			device_type = "cpu";
+		};
+
+		cpu4: cpu@100 {
+			reg = <0x100>;
+			enable-method = "psci";
+			compatible = "arm,cortex-a53";
+			device_type = "cpu";
+		};
+
+		cpu5: cpu@101 {
+			reg = <0x101>;
+			enable-method = "psci";
+			compatible = "arm,cortex-a53";
+			device_type = "cpu";
+		};
+
+		cpu6: cpu@102 {
+			reg = <0x102>;
+			enable-method = "psci";
+			compatible = "arm,cortex-a53";
+			device_type = "cpu";
+		};
+
+		cpu7: cpu@103 {
+			reg = <0x103>;
+			enable-method = "psci";
+			compatible = "arm,cortex-a53";
+			device_type = "cpu";
+		};
+	};
+
+	timer {
+		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(8) | IRQ_TYPE_LEVEL_LOW)>,
+			<GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(8) | IRQ_TYPE_LEVEL_LOW)>,
+			<GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(8) | IRQ_TYPE_LEVEL_LOW)>,
+			<GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(8) | IRQ_TYPE_LEVEL_LOW)>;
+		always-on;
+		compatible = "arm,armv8-timer";
+	};
+
+	apb_pclk {
+		phandle = <0x8000>;
+		clock-output-names = "clk24mhz";
+		clock-frequency = <0x16e3600>;
+		#clock-cells = <0x0>;
+		compatible = "fixed-clock";
+	};
+
+	rst: reset-controller {
+		compatible = "bitmain,bm-reset";
+		reg = <0x0 0x50010C00 0x0 0x1>;
+		#reset-cells = <1>;
+	 };
+
+	gpio: gpio@50027000 {
+		compatible = "snps,dw-apb-gpio";
+		reg = <0x0 0x50027000 0x0 0x1000>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port0a: gpio-controller@0 {
+			compatible = "snps,dw-apb-gpio-port";
+			bank-name = "port0a";
+			gpio-controller;
+			#gpio-cells = <2>;
+			snps,nr-gpios = <32>;
+			reg = <0>;
+			interrupt-controller;
+			interrupts = <GIC_SPI 20 IRQ_TYPE_LEVEL_HIGH>;
+		};
+	};
+
+	gpio1: gpio@50027400 {
+		compatible = "snps,dw-apb-gpio";
+		reg = <0x0 0x50027400 0x0 0x400>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port1a: gpio-controller@1 {
+			compatible = "snps,dw-apb-gpio-port";
+			bank-name = "port1a";
+			gpio-controller;
+			#gpio-cells = <2>;
+			snps,nr-gpios = <32>;
+			reg = <0>;
+			interrupt-controller;
+			interrupts = <GIC_SPI 21 IRQ_TYPE_LEVEL_HIGH>;
+		};
+	};
+
+	gpio2: gpio@50027800 {
+		compatible = "snps,dw-apb-gpio";
+		reg = <0x0 0x50027800 0x0 0x400>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port2a: gpio-controller@2 {
+			compatible = "snps,dw-apb-gpio-port";
+			bank-name = "port2a";
+			gpio-controller;
+			#gpio-cells = <2>;
+			snps,nr-gpios = <32>;
+			reg = <0>;
+			interrupt-controller;
+			interrupts = <GIC_SPI 22 IRQ_TYPE_LEVEL_HIGH>;
+		};
+	};
+
+	i2c0: i2c@5001A000 {
+		compatible = "snps,designware-i2c";
+		reg = <0x0 0x5001A000 0x0 0x1000>;
+		bus-clocks = <100000000>;
+		clock-frequency = <100000>;
+	};
+
+	i2c1: i2c@5001C000 {
+		compatible = "snps,designware-i2c";
+		reg = <0x0 0x5001C000 0x0 0x1000>;
+		bus-clocks = <100000000>;
+		clock-frequency = <100000>;
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		bm16xxeeprom@6a {
+			compatible = "bitmain,bm16xx-eeprom";
+			reg = <0x6a>;
+
+			#address-cells = <1>;
+			#size-cells = <1>;
+			sn: sn@0000 {
+				reg = <0x0000 17>;
+			};
+
+			mac0: mac0@0020 {
+				reg = <0x0020 6>;
+			};
+
+			mac1: mac1@0040 {
+				reg = <0x0040 6>;
+			};
+		};
+
+		bm16xxmcu@17 {
+			compatible = "bitmain,bm16xx-mcu";
+			reg = <0x17>;
+
+			nvmem-cells = <&sn>, <&mac0>, <&mac1>;
+			nvmem-cell-names = "sn", "mac0", "mac1";
+		};
+
+		bm16xxwdt@69 {
+			compatible = "bitmain,bm16xx-wdt";
+			reg = <0x69>;
+		};
+
+		tca6416: tca6416@6c {
+			compatible = "ti,tca6416";
+			reg = <0x6c>;
+			gpio-controller;
+			#gpio-cells = <2>;
+		};
+	};
+
+	i2c2: i2c@5001E000 {
+		compatible = "snps,designware-i2c";
+		reg = <0x0 0x5001E000 0x0 0x1000>;
+		bus-clocks = <100000000>;
+		clock-frequency = <100000>;
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2c2_sda_grp1 &i2c2_scl_grp1>;
+
+		mux@70 {
+			compatible = "sophgo,bm-pca9545";
+			reg = <0x70>;
+		};
+	};
+
+	uart0: serial@50118000 {
+		compatible = "snps,dw-apb-uart";
+		reg = <0x0 0x50118000 0x0 0x1000>;
+		clock-frequency = <500000000>;
+		interrupts = <GIC_SPI 1 IRQ_TYPE_LEVEL_HIGH>;
+		reg-shift = <2>;
+		reg-io-width = <4>;
+	};
+
+	/* only support one ethernet in uboot */
+	ethernet0: ethernet@50108000 {
+		compatible = "snps,dwc-qos-ethernet-4.10";
+		reg = <0x0 0x50108000  0x0 0x4000>;
+		reg-names = "mac";
+		phy-mode = "rgmii-txid";
+		phy-reset-gpios = <&port0a 29 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&rgmii0_grp1>;
+	};
+
+	ethernet1: ethernet@5010C000 {
+		compatible = "snps,dwc-qos-ethernet-4.10";
+		reg = <0x0 0x5010C000  0x0 0x4000>;
+		reg-names = "mac";
+		phy-mode = "rgmii-txid";
+		phy-reset-gpios = <&port0a 30 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&rgmii1_grp1>;
+	};
+
+	memory {
+		reg = <0x1 0x00000000 0x0 0x40000000>;
+		device_type = "memory";
+	};
+
+	aliases {
+		serial0 = &uart0;
+		i2c0 = &i2c0;
+		i2c1 = &i2c1;
+		i2c2 = &i2c2;
+		spi0 = &spif0;
+	};
+
+	chosen {
+		stdout-path = "serial0"; // "serial0:115200n8", no arguments means no re-initialization
+	};
+
+	emmc: sdhc@50100000 {
+		compatible = "bitmain,synopsys-sdhc";
+		bus-width = <4>;
+		reg = <0x0 0x50100000 0x0 0x1000>;
+		max-frequency = <125000000>;
+		mmc_init_freq = <200000>;
+		mmc_trans_freq = <125000000>;
+		64_addressing;
+		has_phy;
+		index = <0x0>;
+		status = "okay";
+	};
+
+	sd: sdhc@50101000 {
+		compatible = "bitmain,synopsys-sdhc";
+		bus-width = <4>;
+		reg = <0x0 0x50101000 0x0 0x1000>;
+		max-frequency = <50000000>;
+		mmc_init_freq = <200000>;
+		mmc_trans_freq = <12000000>;
+		64_addressing;
+		has_phy;
+		index = <0x1>;
+		status = "okay";
+	};
+
+	spif0: spi@6000000 {
+		compatible = "bitmain,spif";
+		reg = <0x0 0x6000000 0x0 0x1000>;
+		status = "okay";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		spi_flash: spiflash@0 {
+			compatible = "jedec,spi-nor";
+			spi-max-frequency = <20000000>;
+			reg = <0>;
+		};
+	};
+
+	pinctrl@50010400 {
+		compatible = "bitmain,bm1684-pinctrl";
+		reg = <0x0 0x50010400 0x0 0x1000>;
+		bootph-all;
+
+		rgmii0_grp1: rgmii0-grp1 {
+			bitmain,pins = "GPIO29";
+			bitmain,pin-mux = <1>;
+			bitmain,pin-drv = <8>;
+			bootph-all;
+		};
+
+		rgmii1_grp1: rgmii1-grp1 {
+			bitmain,pins = "GPIO30";
+			bitmain,pin-mux = <1>;
+			bitmain,pin-drv = <8>;
+			bootph-all;
+		};
+
+		i2c2_sda_grp1: i2c2-sda-grp1 {
+			bitmain,pins = "IIC2_SDA";
+			bitmain,pin-mux = <1>;
+			bitmain,pin-drv = <8>;
+			bootph-all;
+		};
+
+		i2c2_scl_grp1: i2c2-scl-grp1 {
+			bitmain,pins = "IIC2_SCL";
+			bitmain,pin-mux = <1>;
+			bitmain,pin-drv = <8>;
+			bootph-all;
+		};
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		error {
+			label = "error";
+			gpios = <&tca6416 3 0>;
+			default-state = "on";
+		};
+		status {
+			label = "status";
+			gpios = <&tca6416 4 0>;
+			default-state = "off";
+		};
+	};
+};

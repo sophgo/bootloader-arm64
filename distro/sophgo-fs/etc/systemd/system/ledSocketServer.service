@@ -1,6 +1,6 @@
 [Unit]
 Description=Sophon Led Socket Server Service
-After=network.target.service
+After=network.target
 
 [Service]
 User=root

@@ -1,5 +1,35 @@
 #!/bin/bash
 
+# $1: former speed
+# $2: new speed
+se6_ctrl_fan_slowly()
+{
+	former=$1
+	newSpd=$2
+	if [ $former -ge $newSpd ];then
+		echo slow down $former $newSpd
+		for ((i=$former;i>$newSpd;i-=200))
+		do
+			echo $i
+			echo "$i" > /sys/class/pwm/pwmchip0/pwm0/duty_cycle
+			sleep 1
+		done
+
+	elif [ $former -le $newSpd ];then
+		echo speed up $former $newSpd
+		for ((i=$former;i<$newSpd;i+=200))
+		do
+			echo $i
+			echo "$i" > /sys/class/pwm/pwmchip0/pwm0/duty_cycle
+			sleep 1
+		done
+
+	else
+		echo no update
+	fi
+
+}
+
 if [ -d '/sys/class/pwm/pwmchip0/pwm0' ];then
 	echo "already export"
 else
@@ -21,7 +51,8 @@ count=0
 net_warning=0
 temp_warning=0
 fan_warning=0
-
+rate=0
+stage=0
 net_state=0
 s_port=3456
 
@@ -45,13 +76,13 @@ do
 
 	for ((i=1; i<=6; i++))
 	do
-		if [ "$ptype" = "0xff" ];then
+		if [ "$ptype" = "0x01" ];then
+			chip_t=30
+			board_t=30
+		else
 			res=$(/root/se6_ctrl/script/ssh_anycmd.exp "${lan1ip}1${i}" linaro linaro "bm_get_temperature" )
 			chip_t=$(echo "$res" | grep 'chip temperature' | awk -F : '{printf("%s\n"),$3}' | awk -F \' '{printf("%d\n"), $1}')
 			board_t=$(echo "$res" | grep 'chip temperature' | awk -F : '{printf("%s\n"),$2}'| awk -F \' '{printf("%d\n"), $1}')
-		else
-			chip_t=30
-			board_t=30
 		fi
 		res1=$(/root/se6_ctrl/script/ssh_anycmd.exp "${lan2ip}1${i}" linaro linaro "bm_get_temperature")
 		chip2_t=$(echo "$res1" | grep 'chip temperature' | awk -F : '{printf("%s\n"),$3}' | awk -F \' '{printf("%d\n"), $1}')
@@ -60,6 +91,7 @@ do
 
 		if [ "$chip_t" = "" ] || [ "$chip2_t" = "" ];then
 			net_warning=1
+			max_t=100
 		fi
 		if [ "$chip_t" != "" ] && [ $chip_t -gt $max_t ];then
 			max_t=$chip_t
@@ -81,7 +113,8 @@ do
 
 	se6ex=$(cat /factory/OEMconfig.ini  | grep 'SE6 DUO' | wc -l)
 	product=$(cat /sys/bus/i2c/devices/1-0017/information | grep model | awk -F \" '{print $4}')
-    if ([ "$product" = "SM7 CTRL" ]) || ([ "$se6ex" -eq 1 ]) ; then
+	echo "max_t: $max_t"
+    if [ "$product" = "SM7 CTRL" ]; then
 		ratio=39999
 		if [ $max_t -ge 75 ];then
 			rate=39999
@@ -100,6 +133,136 @@ do
 		elif [ $max_t -le 45 ] ;then
 			rate=12000
 		fi
+	elif [ "$product" = "SE8 CTRL" ];then
+		case $stage in
+		0)
+			if [ $max_t -ge 50 ];then
+				stage=1
+				rate=26000
+				se6_ctrl_fan_slowly 34000 26000
+			else
+				stage=0
+				rate=34000
+			fi
+			;;
+		1)
+			if [ $max_t -ge 60 ];then
+				stage=2
+				rate=18000
+				se6_ctrl_fan_slowly 26000 18000
+			elif [ $max_t -le 44 ];then
+				stage=0
+				rate=34000
+				se6_ctrl_fan_slowly 26000 34000
+			else
+				stage=1
+				rate=26000
+			fi
+			;;
+		2)
+			if [ $max_t -ge 70 ];then
+				stage=3
+				rate=10000
+				se6_ctrl_fan_slowly 18000 10000
+			elif [ $max_t -le 54 ];then
+				stage=1
+				rate=26000
+				se6_ctrl_fan_slowly 18000 26000
+			else
+				stage=2
+				rate=18000
+			fi
+			;;
+		3)
+			if [ $max_t -ge 78 ];then
+				stage=4
+				rate=1
+				se6_ctrl_fan_slowly 10000 400
+			elif [ $max_t -le 64 ];then
+				stage=2
+				rate=18000
+				se6_ctrl_fan_slowly 10000 18000
+			else
+				stage=3
+				rate=10000
+			fi
+			;;
+		4)
+			if [ $max_t -le 74 ];then
+				stage=3
+				rate=10000
+			else
+				stage=4
+				rate=1
+			fi
+			;;
+		esac
+	elif [ "$seex" -ge 0 ];then
+		case $stage in
+		0)
+			if [ $max_t -ge 55 ];then
+				stage=1
+				rate=18000
+				se6_ctrl_fan_slowly 12000 18000
+			else
+				stage=0
+				rate=12000
+			fi
+			;;
+		1)
+			if [ $max_t -ge 65 ];then
+				stage=2
+				rate=24000
+				se6_ctrl_fan_slowly 18000 24000
+			elif [ $max_t -le 50 ];then
+				stage=0
+				rate=12000
+				se6_ctrl_fan_slowly 18000 12000
+			else
+				stage=1
+				rate=18000
+			fi
+			;;
+		2)
+			if [ $max_t -ge 73 ];then
+				stage=3
+				rate=32000
+				se6_ctrl_fan_slowly 24000 32000
+			elif [ $max_t -le 60 ];then
+				stage=1
+				rate=18000
+				se6_ctrl_fan_slowly 18000 24000
+			else
+				stage=2
+				rate=24000
+			fi
+			;;
+		3)
+			if [ $max_t -ge 80 ];then
+				stage=4
+				rate=39999
+				se6_ctrl_fan_slowly 32000 39600
+			elif [ $max_t -le 69 ];then
+				stage=2
+				rate=24000
+				se6_ctrl_fan_slowly 32000 24000
+			else
+				stage=3
+				rate=32000
+			fi
+			;;
+		4)
+			if [ $max_t -le 76 ];then
+				stage=3
+				rate=32000
+				se6_ctrl_fan_slowly 39600 32000
+
+			else
+				stage=4
+				rate=39999
+			fi
+			;;
+		esac
 	else
 		ratio=0
 		if [ $max_t -ge 85 ];then
