@@ -484,3 +484,32 @@ int i2c_smbus_write_byte(int i2c, unsigned char addr,
 	return i2c_xfer(i2c, &msg, 1);
 }
 
+/*
+ * i2c_smbus_write_bytes - Write multiple bytes to the device,
+ * maximum 16 bytes in a single operation.
+ */
+int i2c_smbus_write_bytes(int i2c, unsigned char addr,
+			  unsigned int eeprom_addr, unsigned int data_len,
+			  const unsigned char *data)
+{
+	struct i2c_msg msg;
+	u8 buf[18];
+
+	if (data_len > 16) {
+		ERROR("%s: write %d bytes exceeds 16\n", __func__, data_len);
+		return -1;
+	}
+
+	memset(&msg, 0, sizeof(msg));
+	memcpy((void *)(buf + 2), (const void *)data, data_len);
+
+	buf[0] = (eeprom_addr >> 8) & 0xff;
+	buf[1] = eeprom_addr & 0xff;
+
+	msg.addr = addr;
+	msg.flags = 0; /* 7bit address */
+	msg.len = data_len + 2;
+	msg.buf = buf;
+
+	return i2c_xfer(i2c, &msg, 1);
+}

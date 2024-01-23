@@ -30,6 +30,7 @@ if ([ "$product" = "SE6-CTRL" ] || [ "$product" = "SE6 CTRL" ]\
 	done
 
 	sed -i 's/TFTP_DIRECTORY=\"\/srv\/tftp\"/TFTP_DIRECTORY=\"\/recovery\/tftp\"/' /etc/default/tftpd-hpa
+	sed -i 's/\(TFTP_OPTIONS="\)/\1-v /' /etc/default/tftpd-hpa
 
 	cp /etc/ntp.conf /etc/ntp.conf.bak
 
@@ -41,6 +42,7 @@ else
 	rm -f /root/se6_ctrl/debs/sophliteos_soc_*.deb
 	rm -f /root/se6_ctrl/debs/tftpd-hpa*.deb
 	rm -f /root/se6_ctrl/debs/ntp_*.deb
+	rm -f /root/se_ctrl/debs/bmsec_*.deb
 
 	sudo dpkg -i -R /root/se6_ctrl/debs
 	while [ $? -ne 0 ];

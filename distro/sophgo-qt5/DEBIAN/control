@@ -1,8 +1,0 @@
-Package: sophgo-bsp-qt5
-Source: sophgo-bsp-qt5
-Version: 1.0.0
-Architecture: arm64
-Maintainer: sophgo
-Priority: optional
-Description: This is a modified qt5.14 for Sophgo SoCs hmdi.
-

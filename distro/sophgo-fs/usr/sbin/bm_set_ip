@@ -63,7 +63,7 @@ if [ $is_ubuntu -gt 1 ];then
 	echo "                ${device}:" | sudo tee -a $device_path
 	echo "                        dhcp4: no" | sudo tee -a  $device_path
 	echo "                        addresses: [${ip}/${shortMask}]" | sudo tee -a  $device_path
-        if [ "$gateway" != "" ] && [[ "$device" == "enp3s0" || "$device" == "enp4s0" ]];then
+        if [ "$gateway" != "" ] && [[ "$device" == "enp3s0" || "$device" == "enp4s0" || "$device" == "eth0" || "$device" == "eth1" ]];then
                 echo "                        gateway4: $gateway" | sudo tee -a  $device_path
         fi
 	echo "                        nameservers:" | sudo tee -a  $device_path

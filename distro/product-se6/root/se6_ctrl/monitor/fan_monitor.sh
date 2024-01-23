@@ -76,13 +76,13 @@ do
 
 	for ((i=1; i<=6; i++))
 	do
-		if [ "$ptype" = "0xff" ];then
+		if [ "$ptype" = "0x01" ];then
+			chip_t=30
+			board_t=30
+		else
 			res=$(/root/se6_ctrl/script/ssh_anycmd.exp "${lan1ip}1${i}" linaro linaro "bm_get_temperature" )
 			chip_t=$(echo "$res" | grep 'chip temperature' | awk -F : '{printf("%s\n"),$3}' | awk -F \' '{printf("%d\n"), $1}')
 			board_t=$(echo "$res" | grep 'chip temperature' | awk -F : '{printf("%s\n"),$2}'| awk -F \' '{printf("%d\n"), $1}')
-		else
-			chip_t=30
-			board_t=30
 		fi
 		res1=$(/root/se6_ctrl/script/ssh_anycmd.exp "${lan2ip}1${i}" linaro linaro "bm_get_temperature")
 		chip2_t=$(echo "$res1" | grep 'chip temperature' | awk -F : '{printf("%s\n"),$3}' | awk -F \' '{printf("%d\n"), $1}')

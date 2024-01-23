@@ -39,7 +39,7 @@ function revert_system() {
 	mkdir $tmp_path
 	sudo mount $output_file $tmp_path
 	pushd $tmp_path
-	sudo tar zcvf ../$name.tgz *
+	sudo tar zcvSf ../$name.tgz *
 	popd
 	sudo sync
 	sudo umount $tmp_path

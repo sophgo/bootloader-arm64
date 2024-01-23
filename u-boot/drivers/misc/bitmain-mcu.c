@@ -101,11 +101,11 @@ static const struct mcu_feature mcu_list[] = {
 		.cmd = 0x14,
 	},
 	{
-		MCU_BM1684X_SE8_CTRL, "EVB", "BM1684X", "STM32",
+		MCU_BM1684X_SM7_CTRL, "EVB", "BM1684X", "STM32",
 		.cmd = 0x14,
 	},
 	{
-		MCU_BM1684X_SE8_CUST_V1, "EVB", "BM1684X", "STM32",
+		MCU_BM1684X_SM7M_CUST_V1, "EVB", "BM1684X", "STM32",
 		.cmd = 0x14,
 	},
 	{
@@ -122,6 +122,18 @@ static const struct mcu_feature mcu_list[] = {
 	},
 	{
 		MCU_BM1684X_SM7M_V1_0, "EVB", "BM1684X", "STM32",
+		.cmd = 0x14,
+	},
+	{
+		MCU_BM1684X_SE7_V2_0, "EVB", "BM1684X", "STM32",
+		.cmd = 0x14,
+	},
+	{
+		MCU_BM1684X_SM7_AIRBOX, "EVB", "BM1684X", "STM32",
+		.cmd = 0x14,
+	},
+	{
+		MCU_BM1684X_SM7M_V1_0_RB_CTRL, "EVB", "BM1684X", "STM32",
 		.cmd = 0x14,
 	},
 };
