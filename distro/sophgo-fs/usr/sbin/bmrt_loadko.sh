@@ -29,6 +29,14 @@ function load_ko()
 	fi
 }
 
+function invoke_board_setup() {
+    local board setup
+    board="$(tr -d '\0' </proc/device-tree/info/file-name)"
+    setup="/usr/sbin/$(basename $board .dtb)-setup.sh"
+    test -x "$setup" && "$setup"
+}
+
 echo load bmrt ko ...
 load_ko
+invoke_board_setup
 exit 0

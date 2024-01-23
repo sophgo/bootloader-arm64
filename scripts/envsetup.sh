@@ -463,12 +463,6 @@ function build_debs()
 	dpkg-deb -b $DISTRO_MOD_DIR/sophgo-fs sophgo-bsp-rootfs_${version}_arm64.deb
 	install_debs "sophgo-bsp-rootfs_${version}_arm64.deb"
 
-	echo make BSP qt5 deb...
-	local version=$(echo $(cat $DISTRO_MOD_DIR/sophgo-qt5/DEBIAN/control | grep Version) | cut -d ' ' -f 2)
-	rm -f $DEB_INSTALL_DIR/sophgo-bsp-qt5_*_arm64.deb
-	dpkg-deb -b $DISTRO_MOD_DIR/sophgo-qt5 sophgo-bsp-qt5_${version}_arm64.deb
-	install_debs "sophgo-bsp-qt5_${version}_arm64.deb"
-
 	if [ "$PRODUCT" != "" ] && [ -d $DISTRO_MOD_DIR/product-$PRODUCT ]; then
 		echo make product-$PRODUCT deb...
 		local version=$(echo $(cat $DISTRO_MOD_DIR/product-$PRODUCT/DEBIAN/control | grep Version) | cut -d ' ' -f 2)
@@ -996,6 +990,81 @@ function clean_bootp()
 {
 	rm -f $OUTPUT_DIR/boot.tgz
 	rm -f $OUTPUT_DIR/recovery.tgz
+}
+
+function build_athena2_rootp()
+{
+	echo cleanup previous build...
+	mkdir -p $OUTPUT_DIR/rootfs
+	sudo rm -rf $OUTPUT_DIR/rootfs
+	rm -f $OUTPUT_DIR/rootfs.tgz
+	mkdir $OUTPUT_DIR/rootfs
+
+	echo copy distro rootfs files from ${DISTRO_BASE_PKT}...
+	zcat $DISTRO_BASE_PKT | sudo tar -C $OUTPUT_DIR/rootfs -x -f -
+
+	echo copy linux debs...
+	sudo mkdir -p $OUTPUT_DIR/rootfs/home/linaro
+	sudo cp -r $DEB_INSTALL_DIR $OUTPUT_DIR/rootfs/home/linaro/
+
+	echo copy overlay file to rootfs...
+	if [ -d $DISTRO_OVERLAY_DIR/common/rootfs ]; then
+		echo copy common rootfs overlay files...
+		sudo cp -rf $DISTRO_OVERLAY_DIR/common/rootfs/* $OUTPUT_DIR/rootfs
+	fi
+	if [ -d $DISTRO_OVERLAY_DIR/$PROJECT_NAME/rootfs ]; then
+		echo copy project rootfs overlay files...
+		sudo cp -rf $DISTRO_OVERLAY_DIR/$PROJECT_NAME/rootfs/* $OUTPUT_DIR/rootfs
+	fi
+	# debs will be installed later after chroot and then deleted
+	sudo cp -rf $DISTRO_MOD_DIR/debs $OUTPUT_DIR/rootfs
+
+	if [ "$PRODUCT" != "" ] && [ -d $DISTRO_OVERLAY_DIR/$PRODUCT/debs ]; then
+		echo copy product $PRODUCT debs overlay files...
+		sudo cp -rf $DISTRO_OVERLAY_DIR/$PRODUCT/debs/* $OUTPUT_DIR/rootfs/debs/
+	fi
+
+	echo install packages...
+	pushd $OUTPUT_DIR/rootfs
+# following lines must not be started with space or tab.
+# install bsp images first, so it won't run flash_update
+sudo chroot . /bin/bash << "EOT"
+
+if [  -d /debs ] && [ $(ls /debs/*.deb | wc -l) -gt 0 ]; then
+	dpkg -i -R /debs
+	while [ $? -ne 0 ];
+	do
+		sleep 1
+		dpkg -i -R /debs
+	done
+fi
+for file in /debs/*
+do
+	file=$(basename $file)
+	if  [ "${file##*.}" == "whl" ]; then
+		pip3 install --no-index --find-links=file:///debs ${file%%-*}
+	fi
+done
+rm -rf /debs
+
+if [  -d /home/linaro/debs ] && [ $(ls /home/linaro//debs/*.deb | wc -l) -gt 0 ]; then
+	dpkg -i -R /home/linaro/debs
+	while [ $? -ne 0 ];
+	do
+		sleep 1
+		dpkg -i -R /home/linaro/debs
+	done
+fi
+
+exit
+EOT
+	popd
+
+	echo packing rootfs...
+	pushd $OUTPUT_DIR/rootfs
+	sudo chown 1000:1000 -R data
+	sudo tar -czf ../rootfs.tgz *
+	popd
 }
 
 function build_rootp()

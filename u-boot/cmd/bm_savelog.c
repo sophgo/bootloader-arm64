@@ -14,6 +14,7 @@
 #include <fs.h>
 #include <blk.h>
 #include <div64.h>
+#include <display_options.h>
 #include <linux/math64.h>
 #include <asm/global_data.h>
 DECLARE_GLOBAL_DATA_PTR;
@@ -25,9 +26,8 @@ int do_savelog(struct cmd_tbl *cmdtp, int flag, int argc, char * const argv[])
 	unsigned long time;
 	loff_t len;
 	int ret;
-	unsigned long addr = (volatile unsigned long)gd->console_out.start;
-
-	//printf("do_savelog %d  %lu  %lx bytes ", argc, addr, gd->console_out.start);
+	unsigned long head_addr = (volatile unsigned long)gd->console_out.head;
+	unsigned long tail_addr = (volatile unsigned long)gd->console_out.tail;
 
 	if (argc != 4)
 		return CMD_RET_USAGE;
@@ -36,14 +36,17 @@ int do_savelog(struct cmd_tbl *cmdtp, int flag, int argc, char * const argv[])
 		return 1;
 
 	filename = argv[3];
-	bytes = CONFIG_CONSOLE_RECORD_OUT_SIZE;
+	bytes = head_addr - tail_addr;
+	if (bytes <= 0)
+		return 1;
 
 	time = get_timer(0);
-	ret = fs_write(filename, (unsigned long)addr, 0, bytes, &len);
+	ret = fs_write(filename, (unsigned long)tail_addr, 0, bytes, &len);
 	time = get_timer(time);
 	if (ret < 0)
 		return 1;
 
+	membuff_purge((struct membuff *)&gd->console_out);
 	printf("bm savelog %llu bytes written in %lu ms", len, time);
 	if (time > 0) {
 		puts(" (");
@@ -52,7 +55,6 @@ int do_savelog(struct cmd_tbl *cmdtp, int flag, int argc, char * const argv[])
 	}
 	puts("\n");
 
-	membuff_purge(&gd->console_out);
 	return 0;
 }
 

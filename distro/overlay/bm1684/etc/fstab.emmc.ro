@@ -1,9 +1,0 @@
-/dev/mmcblk0p1	/boot		    vfat	rw			    	        0	1
-/dev/mmcblk0p2	/recovery       ext4	defaults			        0	0
-# /dev/mmcblk0p3 is misc partition, no filesystem
-/dev/mmcblk0p4	/media/root-ro	ext4	ro,errors=remount-ro,noauto	0	0
-/dev/mmcblk0p5	/media/root-rw  ext4	defaults                    0	0
-/dev/mmcblk0p6	/opt            ext4	defaults                    0	0
-/dev/mmcblk0p7	/data           ext4	defaults                    0	0
-# tmpfs		    /tmp            tmpfs	nodev,nosuid,size=1G		0	0
-/media/root-ro	/		overlay	lowerdir=/media/root-ro,upperdir=/media/root-rw/overlay,workdir=/media/root-rw/overlay-workdir	0	0

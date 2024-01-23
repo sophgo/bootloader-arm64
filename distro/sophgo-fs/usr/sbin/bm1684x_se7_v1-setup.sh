@@ -27,7 +27,9 @@ toggle USB20_5V_EN
 toggle WIFI_PWR_EN
 
 # reset sata power
+sleep 3
 toggle SATA_PWR_EN
+sleep 3
 
 # reset 4g pwr
 toggle 4G_PWR_SW
@@ -47,6 +49,10 @@ if [ -L /etc/systemd/system/multi-user.target.wants/ec20.service ]; then
        systemctl stop ec20.service
        systemctl disable ec20.service
 fi
+# se7 powerkey monitor
+echo "start poweroff button server"
+chmod +x /usr/sbin/bm_se7_powerkey_monitor
+systemd-run --unit=bm-se7-powerkey-monitor /usr/sbin/bm_se7_powerkey_monitor
 
 echo done
 
