@@ -157,7 +157,6 @@ static int dp83869_config_port_mirroring(struct phy_device *phydev)
 	return 0;
 }
 
-#ifdef CONFIG_DM_ETH
 static const int dp83869_internal_delay[] = {250, 500, 750, 1000, 1250, 1500,
 					     1750, 2000, 2250, 2500, 2750, 3000,
 					     3250, 3500, 3750, 4000};
@@ -269,19 +268,6 @@ static int dp83869_of_init(struct phy_device *phydev)
 
 	return 0;
 }
-#else
-static int dp83869_of_init(struct phy_device *phydev)
-{
-	struct dp83869_private *dp83869 = phydev->priv;
-
-	dp83869->rx_int_delay = DP83869_RGMIIDCTL_2_25_NS;
-	dp83869->tx_int_delay = DP83869_RGMIIDCTL_2_75_NS;
-	dp83869->fifo_depth = DEFAULT_FIFO_DEPTH;
-	dp83869->io_impedance = -EINVAL;
-
-	return 0;
-}
-#endif /* CONFIG_OF_MDIO */
 
 static int dp83869_configure_rgmii(struct phy_device *phydev,
 				   struct dp83869_private *dp83869)
@@ -487,7 +473,7 @@ static int dp83869_probe(struct phy_device *phydev)
 	return 0;
 }
 
-static struct phy_driver DP83869_driver = {
+U_BOOT_PHY_DRIVER(dp83869) = {
 	.name = "TI DP83869",
 	.uid = 0x2000a0f1,
 	.mask = 0xfffffff0,
@@ -499,9 +485,3 @@ static struct phy_driver DP83869_driver = {
 	.readext = dp83869_readext,
 	.writeext = dp83869_writeext
 };
-
-int phy_dp83869_init(void)
-{
-	phy_register(&DP83869_driver);
-	return 0;
-}

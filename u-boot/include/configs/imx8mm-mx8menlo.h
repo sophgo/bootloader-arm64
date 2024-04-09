@@ -9,8 +9,8 @@
 #include <configs/verdin-imx8mm.h>
 
 /* Custom initial environment variables */
-#undef CONFIG_EXTRA_ENV_SETTINGS
-#define CONFIG_EXTRA_ENV_SETTINGS					\
+#undef CFG_EXTRA_ENV_SETTINGS
+#define CFG_EXTRA_ENV_SETTINGS					\
 	BOOTENV								\
 	MEM_LAYOUT_ENV_SETTINGS						\
 	"devtype=mmc\0"							\
@@ -25,7 +25,7 @@
 		"fi ; "							\
 		"boot\0"						\
 	"boot_file=fitImage\0"						\
-	"console=ttymxc1\0"						\
+	"console=ttymxc0\0"						\
 	"fdt_addr=0x43000000\0"						\
 	"initrd_addr=0x43800000\0"					\
 	"kernel_image=fitImage\0"

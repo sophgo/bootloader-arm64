@@ -8,8 +8,8 @@
 #ifndef __VEXPRESS_AEMV8A_H
 #define __VEXPRESS_AEMV8A_H
 
-//#define CONFIG_ARCH_BM1686_PLD
-//#define CONFIG_ARCH_BM1686_FPGA
+//#define CFG_ARCH_BM1686_PLD
+//#define CFG_ARCH_BM1686_FPGA
 
 #define USE_GRUB 0
 
@@ -44,6 +44,7 @@ enum {
 	BM1684_SM5M_V0_2_TB = 21,
 	BM1684_SM5M_V3_0_TB = 31,
 	BM1684_SM5M_V3_1_TB = 36,
+	BM1684_SM5M_V3_3_TB = 37,
 	BM1684_SE6_CTRL = 27,
 	BM1684_SC5_EP = 38,
 	BM1684_SC5_MIX = 39,
@@ -66,13 +67,12 @@ enum {
 	BM1684X_SE7_V2_0 = 141,
 	BM1684X_SM7_AIRBOX = 142,
 	BM1684X_SM7M_V1_0_RB_CTRL = 143,
-
+	BM1684X_M2_CUST02_V0_0 = 144,
 };
 #endif
 
 /* CONFIG_LEGACY_IMAGE_FORMAT, moved to defconfig file */
-
-#define CONFIG_REMAKE_ELF
+/* CONFIG_REMAKE_ELF, moved to defconfig file */
 
 /* Link Definitions, ATF loads u-boot here */
 /* CONFIG_SYS_TEXT_BASE, moved to defconfig file */
@@ -81,13 +81,10 @@ enum {
 #define GICD_BASE			(0x50001000)
 #define GICC_BASE			(0x50002000)
 
-/* For network descriptor, should be enabled when mmu is okay */
-#define CONFIG_SYS_NONCACHED_MEMORY	BIT(20) /* 1 MiB */
-
 /* include/generated/autoconf.h would define CONFIG_BAUDRATE from drivers/serial/Kconfig (default 115200) */
 
 /* Physical Memory Map */
-#ifdef CONFIG_ARCH_BM1686_FPGA
+#ifdef CFG_ARCH_BM1686_FPGA
 #define PHYS_SDRAM		(0x400000000 + 0x40000) /* skip BL31's 256KB */
 #else
 #define PHYS_SDRAM		(0x300000000 + 0x40000) /* skip BL31's 256KB */
@@ -101,10 +98,10 @@ enum {
 #define PHYS_SRAM			(0x10000000)
 #define PHYS_SRAM_SIZE		(0x200000) /* 2MB */
 
-#define CONFIG_SYS_SDRAM_BASE	PHYS_SDRAM
+#define CFG_SYS_SDRAM_BASE	PHYS_SDRAM
 
 /* Memory layout, starts from 256MB offset */
-#ifdef CONFIG_ARCH_BM1686_FPGA
+#ifdef CFG_ARCH_BM1686_FPGA
 #define ENV_MEM_LAYOUT_SETTINGS		\
 	"scriptaddr=0x400040000\0"	\
 	"pxefile_addr_r=0x400040000\0"	\
@@ -132,7 +129,7 @@ enum {
 /* CONFIG_SYS_MEMTEST_END, moved to defconfig file */
 
 /* Initial environment variables */
-#define CONFIG_EXTRA_ENV_SETTINGS	\
+#define CFG_EXTRA_ENV_SETTINGS	\
 	"netdev=eth0\0"		\
 	"consoledev=ttyS0\0"	\
 	"baudrate=115200\0"	\
@@ -172,31 +169,31 @@ enum {
 	func(MMC, mmc, 1) \
 	func(MMC, mmc, 0)
 
-#ifdef CONFIG_ARCH_BM1686_PLD
-#define CONFIG_RAMBOOTCOMMAND						\
+#ifdef CFG_ARCH_BM1686_PLD
+#define CFG_RAMBOOTCOMMAND						\
 	"setenv bootargs console=${consoledev},9600 ${othbootargs};"	\
 	"bootm ${ramdisk_addr_r}#config-pcb${board_type};"
 #else
-#define CONFIG_RAMBOOTCOMMAND						\
+#define CFG_RAMBOOTCOMMAND						\
 	"setenv bootargs console=${consoledev},${baudrate} ${othbootargs};"	\
 	"bootm ${ramdisk_addr_r}#config-pcb${board_type};"
 #endif
 
-#define CONFIG_RECBOOTCOMMAND							\
+#define CFG_RECBOOTCOMMAND							\
 	"setenv bootargs console=${consoledev},${baudrate} ${othbootargs};"	\
 	"load mmc 0:2 ${ramdisk_addr_r} recovery.itb;"				\
 	"bootm ${ramdisk_addr_r}#config-pcb${board_type};"
 
-#define CONFIG_PCIEBOOTCOMMAND									\
+#define CFG_PCIEBOOTCOMMAND									\
 	"setenv bootargs console=${consoledev},${baudrate} clk_ignore_unused ${othbootargs};"   \
 	"bootm ${ramdisk_addr_r}#config-pcb${board_type};"
 
-#define CONFIG_IPADDR			192.168.1.250
-#define CONFIG_NETMASK			255.255.255.0
-#define CONFIG_GATEWAYIP		192.168.1.1
-#define CONFIG_SERVERIP			192.168.1.100
-#define CONFIG_HOSTNAME			"unknown"
-#define CONFIG_ROOTPATH			"/home/share/nfsroot"
+/* CONFIG_IPADDR, moved to defconfig file */
+/* CONFIG_NETMASK, moved to defconfig file */
+/* CONFIG_GATEWAYIP, moved to defconfig file */
+/* CONFIG_SERVERIP, moved to defconfig file */
+/* CONFIG_HOSTNAME, moved to defconfig file */
+/* CONFIG_ROOTPATH, moved to defconfig file */
 
 #define BM_SPIF_BASE			0x06000000
 
@@ -217,8 +214,8 @@ enum {
  * so we use a fixed buffer instead of memalign~
  */
 #define BM_SPIF_BUFFER_ADDR		(PHYS_SDRAM + PHYS_SDRAM_SIZE)
-#define CONFIG_ENV_OFFSET		0x1C0000 // 2MB - 256KB
-#define CONFIG_ENV_SECT_SIZE		0x10000  // 64KB
+/* CONFIG_ENV_OFFSET=0x1C0000, 2MB - 256KB, moved to defconfig fONFIG_ENV_SIZEile */
+/* CONFIG_ENV_SECT_SIZE=0x10000, 64KB, moved to defconfig file */
 #elif defined(CONFIG_ENV_IS_IN_FAT)
 /*
  * otherwise, emmc 1st partition which is fat32 format.

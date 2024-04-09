@@ -244,7 +244,7 @@ static int sw_hash_digest_wd(struct udevice *dev, enum HASH_ALGO algo,
 	if (rc)
 		return rc;
 
-	if (CONFIG_IS_ENABLED(HW_WATCHDOG) || CONFIG_IS_ENABLED(WATCHDOG)) {
+	if (IS_ENABLED(CONFIG_HW_WATCHDOG) || CONFIG_IS_ENABLED(WATCHDOG)) {
 		cur = ibuf;
 		end = ibuf + ilen;
 
@@ -258,7 +258,7 @@ static int sw_hash_digest_wd(struct udevice *dev, enum HASH_ALGO algo,
 				return rc;
 
 			cur += chunk;
-			WATCHDOG_RESET();
+			schedule();
 		}
 	} else {
 		rc = sw_hash_update(dev, ctx, ibuf, ilen);

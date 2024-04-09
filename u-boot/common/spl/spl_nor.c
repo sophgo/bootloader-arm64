@@ -20,13 +20,13 @@ static ulong spl_nor_load_read(struct spl_load_info *load, ulong sector,
 
 unsigned long __weak spl_nor_get_uboot_base(void)
 {
-	return CONFIG_SYS_UBOOT_BASE;
+	return CFG_SYS_UBOOT_BASE;
 }
 
 static int spl_nor_load_image(struct spl_image_info *spl_image,
 			      struct spl_boot_device *bootdev)
 {
-	__maybe_unused const struct image_header *header;
+	__maybe_unused const struct legacy_img_hdr *header;
 	__maybe_unused struct spl_load_info load;
 
 	/*
@@ -41,7 +41,7 @@ static int spl_nor_load_image(struct spl_image_info *spl_image,
 		 * Load Linux from its location in NOR flash to its defined
 		 * location in SDRAM
 		 */
-		header = (const struct image_header *)CONFIG_SYS_OS_BASE;
+		header = (const struct legacy_img_hdr *)CONFIG_SYS_OS_BASE;
 #ifdef CONFIG_SPL_LOAD_FIT
 		if (image_get_magic(header) == FDT_MAGIC) {
 			int ret;
@@ -72,7 +72,7 @@ static int spl_nor_load_image(struct spl_image_info *spl_image,
 
 			memcpy((void *)spl_image->load_addr,
 			       (void *)(CONFIG_SYS_OS_BASE +
-					sizeof(struct image_header)),
+					sizeof(struct legacy_img_hdr)),
 			       spl_image->size);
 #ifdef CONFIG_SYS_SPL_ARGS_ADDR
 			spl_image->arg = (void *)CONFIG_SYS_SPL_ARGS_ADDR;
@@ -92,7 +92,7 @@ static int spl_nor_load_image(struct spl_image_info *spl_image,
 	 * defined location in SDRAM
 	 */
 #ifdef CONFIG_SPL_LOAD_FIT
-	header = (const struct image_header *)spl_nor_get_uboot_base();
+	header = (const struct legacy_img_hdr *)spl_nor_get_uboot_base();
 	if (image_get_magic(header) == FDT_MAGIC) {
 		debug("Found FIT format U-Boot\n");
 		load.bl_len = 1;
@@ -111,10 +111,14 @@ static int spl_nor_load_image(struct spl_image_info *spl_image,
 
 	/* Legacy image handling */
 	if (IS_ENABLED(CONFIG_SPL_LEGACY_IMAGE_FORMAT)) {
+		struct legacy_img_hdr hdr;
+
 		load.bl_len = 1;
 		load.read = spl_nor_load_read;
+		spl_nor_load_read(&load, spl_nor_get_uboot_base(), sizeof(hdr), &hdr);
 		return spl_load_legacy_img(spl_image, bootdev, &load,
-					   spl_nor_get_uboot_base());
+					   spl_nor_get_uboot_base(),
+					   &hdr);
 	}
 
 	return 0;

@@ -1351,7 +1351,7 @@ int fsl_esdhc_mmc_init(struct bd_info *bis)
 	struct fsl_esdhc_cfg *cfg;
 
 	cfg = calloc(sizeof(struct fsl_esdhc_cfg), 1);
-	cfg->esdhc_base = CONFIG_SYS_FSL_ESDHC_ADDR;
+	cfg->esdhc_base = CFG_SYS_FSL_ESDHC_ADDR;
 	cfg->sdhc_clk = gd->arch.sdhc_clk;
 	return fsl_esdhc_initialize(bis, cfg);
 }
@@ -1360,7 +1360,7 @@ int fsl_esdhc_mmc_init(struct bd_info *bis)
 #if CONFIG_IS_ENABLED(OF_LIBFDT)
 __weak int esdhc_status_fixup(void *blob, const char *compat)
 {
-	if (IS_ENABLED(FSL_ESDHC_PIN_MUX) && !hwconfig("esdhc")) {
+	if (IS_ENABLED(CONFIG_FSL_ESDHC_PIN_MUX) && !hwconfig("esdhc")) {
 		do_fixup_by_compat(blob, compat, "status", "disabled",
 				sizeof("disabled"), 1);
 		return 1;
@@ -1519,8 +1519,6 @@ static int fsl_esdhc_probe(struct udevice *dev)
 	 * work as expected.
 	 */
 
-	init_clk_usdhc(dev_seq(dev));
-
 #if CONFIG_IS_ENABLED(CLK)
 	/* Assigned clock already set clock */
 	ret = clk_get_by_name(dev, "per", &priv->per_clk);
@@ -1536,6 +1534,8 @@ static int fsl_esdhc_probe(struct udevice *dev)
 
 	priv->sdhc_clk = clk_get_rate(&priv->per_clk);
 #else
+	init_clk_usdhc(dev_seq(dev));
+
 	priv->sdhc_clk = mxc_get_clock(MXC_ESDHC_CLK + dev_seq(dev));
 	if (priv->sdhc_clk <= 0) {
 		dev_err(dev, "Unable to get clk for %s\n", dev->name);

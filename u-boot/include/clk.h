@@ -88,8 +88,9 @@ struct clk_bulk {
 	unsigned int count;
 };
 
-#if CONFIG_IS_ENABLED(OF_CONTROL) && CONFIG_IS_ENABLED(CLK)
 struct phandle_1_arg;
+
+#if CONFIG_IS_ENABLED(OF_CONTROL) && CONFIG_IS_ENABLED(CLK)
 /**
  * clk_get_by_phandle() - Get a clock by its phandle information (of-platadata)
  * @dev: Device containing the phandle
@@ -166,7 +167,7 @@ int clk_get_bulk(struct udevice *dev, struct clk_bulk *bulk);
  * clk_get_by_name() - Get/request a clock by name.
  * @dev:	The client device.
  * @name:	The name of the clock to request, within the client's list of
- *		clocks.
+ *		clocks, or NULL to request the first clock in the list.
  * @clk:	A pointer to a clock struct to initialize.
  *
  * This looks up and requests a clock. The name is relative to the client
@@ -183,7 +184,7 @@ int clk_get_by_name(struct udevice *dev, const char *name, struct clk *clk);
  * clk_get_by_name_nodev - Get/request a clock by name without a device.
  * @node:	The client ofnode.
  * @name:	The name of the clock to request, within the client's list of
- *		clocks.
+ *		clocks, or NULL to request the first clock in the list.
  * @clk:	A pointer to a clock struct to initialize.
  *
  * Return: 0 if OK, or a negative error code.
@@ -258,8 +259,22 @@ int clk_release_all(struct clk *clk, int count);
 void devm_clk_put(struct udevice *dev, struct clk *clk);
 
 #else
+
+static inline int clk_get_by_phandle(struct udevice *dev, const
+				     struct phandle_1_arg *cells,
+				     struct clk *clk)
+{
+	return -ENOSYS;
+}
+
 static inline int clk_get_by_index(struct udevice *dev, int index,
 				   struct clk *clk)
+{
+	return -ENOSYS;
+}
+
+static inline int clk_get_by_index_nodev(ofnode node, int index,
+					 struct clk *clk)
 {
 	return -ENOSYS;
 }
@@ -275,6 +290,17 @@ static inline int clk_get_by_name(struct udevice *dev, const char *name,
 	return -ENOSYS;
 }
 
+static inline struct clk *devm_clk_get(struct udevice *dev, const char *id)
+{
+	return ERR_PTR(-ENOSYS);
+}
+
+static inline struct clk *devm_clk_get_optional(struct udevice *dev,
+						const char *id)
+{
+	return ERR_PTR(-ENOSYS);
+}
+
 static inline int
 clk_get_by_name_nodev(ofnode node, const char *name, struct clk *clk)
 {
@@ -284,6 +310,10 @@ clk_get_by_name_nodev(ofnode node, const char *name, struct clk *clk)
 static inline int clk_release_all(struct clk *clk, int count)
 {
 	return -ENOSYS;
+}
+
+static inline void devm_clk_put(struct udevice *dev, struct clk *clk)
+{
 }
 #endif
 
@@ -444,7 +474,7 @@ struct clk *clk_get_parent(struct clk *clk);
  *
  * Return: clock rate in Hz, or -ve error code.
  */
-long long clk_get_parent_rate(struct clk *clk);
+ulong clk_get_parent_rate(struct clk *clk);
 
 /**
  * clk_round_rate() - Adjust a rate to the exact rate a clock can provide
@@ -577,7 +607,7 @@ static inline struct clk *clk_get_parent(struct clk *clk)
 	return ERR_PTR(-ENOSYS);
 }
 
-static inline long long clk_get_parent_rate(struct clk *clk)
+static inline ulong clk_get_parent_rate(struct clk *clk)
 {
 	return -ENOSYS;
 }

@@ -15,7 +15,7 @@
 int spl_ubi_load_image(struct spl_image_info *spl_image,
 		       struct spl_boot_device *bootdev)
 {
-	struct image_header *header;
+	struct legacy_img_hdr *header;
 	struct ubispl_info info;
 	struct ubispl_load volumes[2];
 	int ret = 1;
@@ -31,7 +31,7 @@ int spl_ubi_load_image(struct spl_image_info *spl_image,
 #ifdef CONFIG_SPL_ONENAND_SUPPORT
 	case BOOT_DEVICE_ONENAND:
 		info.read = onenand_spl_read_block;
-		info.peb_size = CONFIG_SYS_ONENAND_BLOCK_SIZE;
+		info.peb_size = CFG_SYS_ONENAND_BLOCK_SIZE;
 		break;
 #endif
 	default:
@@ -54,7 +54,7 @@ int spl_ubi_load_image(struct spl_image_info *spl_image,
 
 		ret = ubispl_load_volumes(&info, volumes, 2);
 		if (!ret) {
-			header = (struct image_header *)volumes[0].load_addr;
+			header = (struct legacy_img_hdr *)volumes[0].load_addr;
 			spl_parse_image_header(spl_image, bootdev, header);
 			puts("Linux loaded.\n");
 			goto out;

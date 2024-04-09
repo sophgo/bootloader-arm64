@@ -19,6 +19,7 @@
 	.globl  plat_secondary_cold_boot_setup
 	.globl  plat_get_my_entrypoint
 	.globl  plat_is_my_cpu_primary
+	.globl	invalidate_icache_all
 
 func plat_my_core_pos
 	mrs	x0, mpidr_el1
@@ -134,3 +135,8 @@ func plat_crash_console_flush
 	b	console_pl011_core_flush
 endfunc plat_crash_console_flush
 
+func invalidate_icache_all
+	ic	ialluis
+	isb	sy
+	ret
+endfunc invalidate_icache_all

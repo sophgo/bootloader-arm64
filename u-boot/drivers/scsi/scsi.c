@@ -4,8 +4,11 @@
  * Denis Peter, MPL AG Switzerland
  */
 
+#define LOG_CATEGORY	UCLASS_SCSI
+
 #include <common.h>
 #include <blk.h>
+#include <bootdev.h>
 #include <bootstage.h>
 #include <dm.h>
 #include <env.h>
@@ -18,8 +21,8 @@
 #include <dm/uclass-internal.h>
 
 #if !defined(CONFIG_DM_SCSI)
-# ifdef CONFIG_SCSI_DEV_LIST
-#  define SCSI_DEV_LIST CONFIG_SCSI_DEV_LIST
+# ifdef CFG_SCSI_DEV_LIST
+#  define SCSI_DEV_LIST CFG_SCSI_DEV_LIST
 # else
 #  ifdef CONFIG_SATA_ULI5288
 
@@ -456,7 +459,7 @@ static void scsi_init_dev_desc(struct blk_desc *dev_desc, int devnum)
 {
 	dev_desc->lba = 0;
 	dev_desc->blksz = 0;
-	dev_desc->if_type = IF_TYPE_SCSI;
+	dev_desc->uclass_id = UCLASS_SCSI;
 	dev_desc->devnum = devnum;
 	dev_desc->part_type = PART_TYPE_UNKNOWN;
 
@@ -558,7 +561,7 @@ static int do_scsi_scan_one(struct udevice *dev, int id, int lun, bool verbose)
 	struct udevice *bdev;
 	struct blk_desc bd;
 	struct blk_desc *bdesc;
-	char str[10];
+	char str[10], *name;
 
 	/*
 	 * detect the scsi driver to get information about its geometry (block
@@ -574,12 +577,16 @@ static int do_scsi_scan_one(struct udevice *dev, int id, int lun, bool verbose)
 	* block devices created
 	*/
 	snprintf(str, sizeof(str), "id%dlun%d", id, lun);
-	ret = blk_create_devicef(dev, "scsi_blk", str, IF_TYPE_SCSI, -1,
-			bd.blksz, bd.lba, &bdev);
+	name = strdup(str);
+	if (!name)
+		return log_msg_ret("nam", -ENOMEM);
+	ret = blk_create_devicef(dev, "scsi_blk", name, UCLASS_SCSI, -1,
+				 bd.blksz, bd.lba, &bdev);
 	if (ret) {
 		debug("Can't create device\n");
 		return ret;
 	}
+	device_set_name_alloced(bdev);
 
 	bdesc = dev_get_uclass_plat(bdev);
 	bdesc->target = id;
@@ -598,7 +605,11 @@ static int do_scsi_scan_one(struct udevice *dev, int id, int lun, bool verbose)
 	ret = blk_probe_or_unbind(bdev);
 	if (ret < 0)
 		/* TODO: undo create */
-		return ret;
+		return log_msg_ret("pro", ret);
+
+	ret = bootdev_setup_sibling_blk(bdev, "scsi_bootdev");
+	if (ret)
+		return log_msg_ret("bd", ret);
 
 	if (verbose) {
 		printf("  Device %d: ", bdesc->devnum);
@@ -638,11 +649,22 @@ int scsi_scan(bool verbose)
 	if (verbose)
 		printf("scanning bus for devices...\n");
 
-	blk_unbind_all(IF_TYPE_SCSI);
-
 	ret = uclass_get(UCLASS_SCSI, &uc);
 	if (ret)
 		return ret;
+
+	/* remove all children of the SCSI devices */
+	uclass_foreach_dev(dev, uc) {
+		log_debug("unbind %s\n", dev->name);
+		ret = device_chld_remove(dev, NULL, DM_REMOVE_NORMAL);
+		if (!ret)
+			ret = device_chld_unbind(dev, NULL);
+		if (ret) {
+			if (verbose)
+				printf("unable to unbind devices (%dE)\n", ret);
+			return log_msg_ret("unb", ret);
+		}
+	}
 
 	uclass_foreach_dev(dev, uc) {
 		ret = scsi_scan_dev(dev, verbose);
@@ -706,8 +728,8 @@ U_BOOT_DRIVER(scsi_blk) = {
 };
 #else
 U_BOOT_LEGACY_BLK(scsi) = {
-	.if_typename	= "scsi",
-	.if_type	= IF_TYPE_SCSI,
+	.uclass_idname	= "scsi",
+	.uclass_id	= UCLASS_SCSI,
 	.max_devs	= SCSI_MAX_DEVICE,
 	.desc		= scsi_dev_desc,
 };

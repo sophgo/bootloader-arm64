@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2021-2022, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -62,10 +62,12 @@
 #define CMD_EXTCSD_HS_TIMING		185
 #define CMD_EXTCSD_PART_SWITCH_TIME	199
 #define CMD_EXTCSD_SEC_CNT		212
+#define CMD_EXTCSD_BOOT_SIZE_MULT	226
 
 #define EXT_CSD_PART_CONFIG_ACC_MASK	GENMASK(2, 0)
 #define PART_CFG_BOOT_PARTITION1_ENABLE	(U(1) << 3)
 #define PART_CFG_BOOT_PARTITION1_ACCESS (U(1) << 0)
+#define PART_CFG_BOOT_PARTITION_NO_ACCESS	U(0)
 #define PART_CFG_BOOT_PART_EN_MASK		GENMASK(5, 3)
 #define PART_CFG_BOOT_PART_EN_SHIFT		3
 #define PART_CFG_CURRENT_BOOT_PARTITION(x)	(((x) & PART_CFG_BOOT_PART_EN_MASK) >> \
@@ -110,12 +112,17 @@
 #define MMC_STATE_SLP			10
 
 #define MMC_FLAG_CMD23			(U(1) << 0)
+#define MMC_FLAG_SD_CMD6		(U(1) << 1)
 
 #define CMD8_CHECK_PATTERN		U(0xAA)
 #define VHS_2_7_3_6_V			BIT(8)
 
 #define SD_SCR_BUS_WIDTH_1		BIT(8)
 #define SD_SCR_BUS_WIDTH_4		BIT(10)
+
+#define SD_SWITCH_FUNC_CHECK		0U
+#define SD_SWITCH_FUNC_SWITCH		BIT(31)
+#define SD_SWITCH_ALL_GROUPS_MASK	GENMASK(23, 0)
 
 struct mmc_cmd {
 	unsigned int	cmd_idx;
@@ -226,6 +233,27 @@ struct mmc_csd_sd_v2 {
 	unsigned int		reserved_7:		8;
 } __packed;
 
+struct sd_switch_status {
+	unsigned short		max_current;
+	unsigned short		support_g6;
+	unsigned short		support_g5;
+	unsigned short		support_g4;
+	unsigned short		support_g3;
+	unsigned short		support_g2;
+	unsigned short		support_g1;
+	unsigned char		sel_g6_g5;
+	unsigned char		sel_g4_g3;
+	unsigned char		sel_g2_g1;
+	unsigned char		data_struct_ver;
+	unsigned short		busy_g6;
+	unsigned short		busy_g5;
+	unsigned short		busy_g4;
+	unsigned short		busy_g3;
+	unsigned short		busy_g2;
+	unsigned short		busy_g1;
+	unsigned short		reserved[17];
+};
+
 enum mmc_device_type {
 	MMC_IS_EMMC,
 	MMC_IS_SD,
@@ -243,9 +271,9 @@ struct mmc_device_info {
 size_t mmc_read_blocks(int lba, uintptr_t buf, size_t size);
 size_t mmc_write_blocks(int lba, const uintptr_t buf, size_t size);
 size_t mmc_erase_blocks(int lba, size_t size);
-size_t mmc_rpmb_read_blocks(int lba, uintptr_t buf, size_t size);
-size_t mmc_rpmb_write_blocks(int lba, const uintptr_t buf, size_t size);
-size_t mmc_rpmb_erase_blocks(int lba, size_t size);
+int mmc_part_switch_current_boot(void);
+int mmc_part_switch_user(void);
+size_t mmc_boot_part_size(void);
 size_t mmc_boot_part_read_blocks(int lba, uintptr_t buf, size_t size);
 int mmc_init(const struct mmc_ops *ops_ptr, unsigned int clk,
 	     unsigned int width, unsigned int flags,

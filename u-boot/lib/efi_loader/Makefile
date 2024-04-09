@@ -12,12 +12,18 @@ ccflags-y += -DHOST_ARCH="$(HOST_ARCH)"
 CFLAGS_efi_boottime.o += \
   -DFW_VERSION="0x$(VERSION)" \
   -DFW_PATCHLEVEL="0x$(PATCHLEVEL)"
+CFLAGS_boothart.o := $(CFLAGS_EFI) -Os -ffreestanding
+CFLAGS_REMOVE_boothart.o := $(CFLAGS_NON_EFI)
 CFLAGS_helloworld.o := $(CFLAGS_EFI) -Os -ffreestanding
 CFLAGS_REMOVE_helloworld.o := $(CFLAGS_NON_EFI)
 CFLAGS_dtbdump.o := $(CFLAGS_EFI) -Os -ffreestanding
 CFLAGS_REMOVE_dtbdump.o := $(CFLAGS_NON_EFI)
 CFLAGS_initrddump.o := $(CFLAGS_EFI) -Os -ffreestanding
 CFLAGS_REMOVE_initrddump.o := $(CFLAGS_NON_EFI)
+
+ifdef CONFIG_RISCV
+always += boothart.efi
+endif
 
 ifneq ($(CONFIG_CMD_BOOTEFI_HELLO_COMPILE),)
 always += helloworld.efi
@@ -66,9 +72,9 @@ obj-$(CONFIG_EFI_VARIABLES_PRESEED) += efi_var_seed.o
 endif
 obj-y += efi_watchdog.o
 obj-$(CONFIG_EFI_ESRT) += efi_esrt.o
-obj-$(CONFIG_DM_VIDEO) += efi_gop.o
+obj-$(CONFIG_VIDEO) += efi_gop.o
 obj-$(CONFIG_BLK) += efi_disk.o
-obj-$(CONFIG_NET) += efi_net.o
+obj-$(CONFIG_NETDEVICES) += efi_net.o
 obj-$(CONFIG_GENERATE_ACPI_TABLE) += efi_acpi.o
 obj-$(CONFIG_GENERATE_SMBIOS_TABLE) += efi_smbios.o
 obj-$(CONFIG_EFI_RNG_PROTOCOL) += efi_rng.o

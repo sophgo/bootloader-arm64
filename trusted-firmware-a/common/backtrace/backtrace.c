@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2018-2022, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -37,25 +37,9 @@ struct frame_record {
 	uintptr_t return_addr;
 };
 
-const char *get_el_str(unsigned int el)
+static inline uintptr_t extract_address(uintptr_t address)
 {
-	if (el == 3U) {
-		return "EL3";
-	} else if (el == 2U) {
-		return "EL2";
-	} else {
-		return "S-EL1";
-	}
-}
-
-/*
- * Returns true if the address points to a virtual address that can be read at
- * the current EL, false otherwise.
- */
-#ifdef __aarch64__
-static bool is_address_readable(uintptr_t addr)
-{
-	unsigned int el = get_current_el();
+	uintptr_t ret = address;
 
 #if ENABLE_PAUTH
 	/*
@@ -63,8 +47,23 @@ static bool is_address_readable(uintptr_t addr)
 	 * stack contains a PAC. It must be stripped to retrieve the return
 	 * address.
 	 */
-	xpaci(addr);
+
+	xpaci(ret);
 #endif
+
+	return ret;
+}
+
+/*
+ * Returns true if the address points to a virtual address that can be read at
+ * the current EL, false otherwise.
+ */
+#ifdef __aarch64__
+static bool is_address_readable(uintptr_t address)
+{
+	unsigned int el = get_current_el();
+	uintptr_t addr = extract_address(address);
+
 	if (el == 3U) {
 		ats1e3r(addr);
 	} else if (el == 2U) {
@@ -185,7 +184,8 @@ static void unwind_stack(struct frame_record *fr, uintptr_t current_pc,
 		return;
 	}
 
-	if (fr->return_addr != link_register) {
+	call_site = extract_address(fr->return_addr);
+	if (call_site != link_register) {
 		printf("ERROR: Corrupted stack (frame record address = %p)\n",
 		       fr);
 		return;
@@ -207,16 +207,9 @@ static void unwind_stack(struct frame_record *fr, uintptr_t current_pc,
 		 * call was made is the instruction before the return address,
 		 * which is always 4 bytes before it.
 		 */
-		call_site = fr->return_addr - 4U;
 
-#if ENABLE_PAUTH
-		/*
-		 * When pointer authentication is enabled, the LR value saved on
-		 * the stack contains a PAC. It must be stripped to retrieve the
-		 * return address.
-		 */
-		xpaci(call_site);
-#endif
+		call_site = extract_address(fr->return_addr) - 4U;
+
 		/*
 		 * If the address is invalid it means that the frame record is
 		 * probably corrupted.

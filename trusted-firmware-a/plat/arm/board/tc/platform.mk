@@ -1,13 +1,20 @@
-# Copyright (c) 2021, Arm Limited. All rights reserved.
+# Copyright (c) 2021-2022, Arm Limited. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
 include common/fdt_wrappers.mk
 
-ifeq ($(filter ${TARGET_PLATFORM}, 0 1),)
-        $(error TARGET_PLATFORM must be 0 or 1)
+ifeq ($(TARGET_PLATFORM), 0)
+$(warning Platform ${PLAT}$(TARGET_PLATFORM) is deprecated. \
+Some of the features might not work as expected)
 endif
+
+ifeq ($(shell expr $(TARGET_PLATFORM) \<= 2), 0)
+        $(error TARGET_PLATFORM must be less than or equal to 2)
+endif
+
+$(eval $(call add_define,TARGET_PLATFORM))
 
 CSS_LOAD_SCP_IMAGES	:=	1
 
@@ -19,7 +26,7 @@ SDEI_SUPPORT		:=	0
 
 EL3_EXCEPTION_HANDLING	:=	0
 
-HANDLE_EA_EL3_FIRST	:=	0
+HANDLE_EA_EL3_FIRST_NS	:=	0
 
 # System coherency is managed in hardware
 HW_ASSISTED_COHERENCY	:=	1
@@ -61,19 +68,25 @@ TC_BASE	=	plat/arm/board/tc
 
 PLAT_INCLUDES		+=	-I${TC_BASE}/include/
 
-# Common CPU libraries
-TC_CPU_SOURCES	:=	lib/cpus/aarch64/cortex_a510.S
-
 # CPU libraries for TARGET_PLATFORM=0
 ifeq (${TARGET_PLATFORM}, 0)
-TC_CPU_SOURCES	+=	lib/cpus/aarch64/cortex_a710.S \
+TC_CPU_SOURCES	+=	lib/cpus/aarch64/cortex_a510.S	\
+			lib/cpus/aarch64/cortex_a710.S	\
 			lib/cpus/aarch64/cortex_x2.S
 endif
 
 # CPU libraries for TARGET_PLATFORM=1
 ifeq (${TARGET_PLATFORM}, 1)
-TC_CPU_SOURCES	+=	lib/cpus/aarch64/cortex_makalu.S \
-			lib/cpus/aarch64/cortex_makalu_elp_arm.S
+TC_CPU_SOURCES	+=	lib/cpus/aarch64/cortex_a510.S \
+			lib/cpus/aarch64/cortex_a715.S \
+			lib/cpus/aarch64/cortex_x3.S
+endif
+
+# CPU libraries for TARGET_PLATFORM=2
+ifeq (${TARGET_PLATFORM}, 2)
+TC_CPU_SOURCES	+=	lib/cpus/aarch64/cortex_hayes.S \
+			lib/cpus/aarch64/cortex_hunter.S \
+			lib/cpus/aarch64/cortex_hunter_elp_arm.S
 endif
 
 INTERCONNECT_SOURCES	:=	${TC_BASE}/tc_interconnect.c
@@ -86,7 +99,6 @@ BL1_SOURCES		+=	${INTERCONNECT_SOURCES}	\
 				${TC_BASE}/tc_trusted_boot.c	\
 				${TC_BASE}/tc_err.c	\
 				drivers/arm/sbsa/sbsa.c
-
 
 BL2_SOURCES		+=	${TC_BASE}/tc_security.c	\
 				${TC_BASE}/tc_err.c		\
@@ -154,6 +166,32 @@ override ENABLE_AMU_FCONF := 1
 
 override ENABLE_MPMM := 1
 override ENABLE_MPMM_FCONF := 1
+
+# Include Measured Boot makefile before any Crypto library makefile.
+# Crypto library makefile may need default definitions of Measured Boot build
+# flags present in Measured Boot makefile.
+ifeq (${MEASURED_BOOT},1)
+    MEASURED_BOOT_MK := drivers/measured_boot/rss/rss_measured_boot.mk
+    $(info Including ${MEASURED_BOOT_MK})
+    include ${MEASURED_BOOT_MK}
+    $(info Including rss_comms.mk)
+    include drivers/arm/rss/rss_comms.mk
+
+    BL1_SOURCES		+=	${MEASURED_BOOT_SOURCES} \
+				plat/arm/board/tc/tc_common_measured_boot.c \
+				plat/arm/board/tc/tc_bl1_measured_boot.c \
+				lib/psa/measured_boot.c			 \
+				${RSS_COMMS_SOURCES}
+
+    BL2_SOURCES		+=	${MEASURED_BOOT_SOURCES} \
+				plat/arm/board/tc/tc_common_measured_boot.c \
+				plat/arm/board/tc/tc_bl2_measured_boot.c \
+				lib/psa/measured_boot.c			 \
+				${RSS_COMMS_SOURCES}
+
+PLAT_INCLUDES		+=	-Iinclude/lib/psa
+
+endif
 
 include plat/arm/common/arm_common.mk
 include plat/arm/css/common/css_common.mk

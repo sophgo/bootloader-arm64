@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2015-2021, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2022, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2023, NVIDIA Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -10,6 +11,7 @@
 #include <arch_helpers.h>
 #include <common/debug.h>
 #include <common/interrupt_props.h>
+#include <drivers/arm/gic600_multichip.h>
 #include <drivers/arm/gicv3.h>
 #include <lib/spinlock.h>
 
@@ -169,6 +171,8 @@ void __init gicv3_driver_init(const gicv3_driver_data_t *plat_driver_data)
 	flush_dcache_range((uintptr_t)gicv3_driver_data,
 		sizeof(*gicv3_driver_data));
 #endif
+	gicv3_check_erratas_applies(plat_driver_data->gicd_base);
+
 	INFO("GICv%u with%s legacy support detected.\n", gic_version,
 				(gicv2_compat == 0U) ? "" : "out");
 	INFO("ARM GICv%u driver initialized in EL3\n", gic_version);
@@ -362,9 +366,17 @@ void gicv3_cpuif_disable(unsigned int proc_num)
 	/* Add DSB to ensure visibility of System register writes */
 	dsb();
 
-	/* Mark the connected core as asleep */
 	gicr_base = gicv3_driver_data->rdistif_base_addrs[proc_num];
-	assert(gicr_base != 0U);
+	assert(gicr_base != 0UL);
+
+	/*
+	 * dsb() already issued previously after clearing the CPU group
+	 * enabled, apply below workaround to toggle the "DPG*"
+	 * bits of GICR_CTLR register for unblocking event.
+	 */
+	gicv3_apply_errata_wa_2384374(gicr_base);
+
+	/* Mark the connected core as asleep */
 	gicv3_rdistif_mark_core_asleep(gicr_base);
 }
 
@@ -419,6 +431,7 @@ unsigned int gicv3_get_interrupt_type(unsigned int id, unsigned int proc_num)
 {
 	unsigned int igroup, grpmodr;
 	uintptr_t gicr_base;
+	uintptr_t gicd_base;
 
 	assert(IS_IN_EL3());
 	assert(gicv3_driver_data != NULL);
@@ -442,8 +455,9 @@ unsigned int gicv3_get_interrupt_type(unsigned int id, unsigned int proc_num)
 	} else {
 		/* SPIs: 32-1019, ESPIs: 4096-5119 */
 		assert(gicv3_driver_data->gicd_base != 0U);
-		igroup = gicd_get_igroupr(gicv3_driver_data->gicd_base, id);
-		grpmodr = gicd_get_igrpmodr(gicv3_driver_data->gicd_base, id);
+		gicd_base = gicv3_get_multichip_base(id, gicv3_driver_data->gicd_base);
+		igroup = gicd_get_igroupr(gicd_base, id);
+		grpmodr = gicd_get_igrpmodr(gicd_base, id);
 	}
 
 	/*
@@ -919,6 +933,8 @@ unsigned int gicv3_get_running_priority(void)
  ******************************************************************************/
 unsigned int gicv3_get_interrupt_active(unsigned int id, unsigned int proc_num)
 {
+	uintptr_t gicd_base;
+
 	assert(gicv3_driver_data != NULL);
 	assert(gicv3_driver_data->gicd_base != 0U);
 	assert(proc_num < gicv3_driver_data->rdistif_num);
@@ -932,7 +948,8 @@ unsigned int gicv3_get_interrupt_active(unsigned int id, unsigned int proc_num)
 	}
 
 	/* For SPIs: 32-1019 and ESPIs: 4096-5119 */
-	return gicd_get_isactiver(gicv3_driver_data->gicd_base, id);
+	gicd_base = gicv3_get_multichip_base(id, gicv3_driver_data->gicd_base);
+	return gicd_get_isactiver(gicd_base, id);
 }
 
 /*******************************************************************************
@@ -942,6 +959,8 @@ unsigned int gicv3_get_interrupt_active(unsigned int id, unsigned int proc_num)
  ******************************************************************************/
 void gicv3_enable_interrupt(unsigned int id, unsigned int proc_num)
 {
+	uintptr_t gicd_base;
+
 	assert(gicv3_driver_data != NULL);
 	assert(gicv3_driver_data->gicd_base != 0U);
 	assert(proc_num < gicv3_driver_data->rdistif_num);
@@ -960,7 +979,8 @@ void gicv3_enable_interrupt(unsigned int id, unsigned int proc_num)
 			gicv3_driver_data->rdistif_base_addrs[proc_num], id);
 	} else {
 		/* For SPIs: 32-1019 and ESPIs: 4096-5119 */
-		gicd_set_isenabler(gicv3_driver_data->gicd_base, id);
+		gicd_base = gicv3_get_multichip_base(id, gicv3_driver_data->gicd_base);
+		gicd_set_isenabler(gicd_base, id);
 	}
 }
 
@@ -971,6 +991,8 @@ void gicv3_enable_interrupt(unsigned int id, unsigned int proc_num)
  ******************************************************************************/
 void gicv3_disable_interrupt(unsigned int id, unsigned int proc_num)
 {
+	uintptr_t gicd_base;
+
 	assert(gicv3_driver_data != NULL);
 	assert(gicv3_driver_data->gicd_base != 0U);
 	assert(proc_num < gicv3_driver_data->rdistif_num);
@@ -992,10 +1014,11 @@ void gicv3_disable_interrupt(unsigned int id, unsigned int proc_num)
 			gicv3_driver_data->rdistif_base_addrs[proc_num]);
 	} else {
 		/* For SPIs: 32-1019 and ESPIs: 4096-5119 */
-		gicd_set_icenabler(gicv3_driver_data->gicd_base, id);
+		gicd_base = gicv3_get_multichip_base(id, gicv3_driver_data->gicd_base);
+		gicd_set_icenabler(gicd_base, id);
 
 		/* Write to clear enable requires waiting for pending writes */
-		gicd_wait_for_pending_write(gicv3_driver_data->gicd_base);
+		gicd_wait_for_pending_write(gicd_base);
 	}
 
 	dsbishst();
@@ -1009,6 +1032,7 @@ void gicv3_set_interrupt_priority(unsigned int id, unsigned int proc_num,
 		unsigned int priority)
 {
 	uintptr_t gicr_base;
+	uintptr_t gicd_base;
 
 	assert(gicv3_driver_data != NULL);
 	assert(gicv3_driver_data->gicd_base != 0U);
@@ -1022,7 +1046,8 @@ void gicv3_set_interrupt_priority(unsigned int id, unsigned int proc_num,
 		gicr_set_ipriorityr(gicr_base, id, priority);
 	} else {
 		/* For SPIs: 32-1019 and ESPIs: 4096-5119 */
-		gicd_set_ipriorityr(gicv3_driver_data->gicd_base, id, priority);
+		gicd_base = gicv3_get_multichip_base(id, gicv3_driver_data->gicd_base);
+		gicd_set_ipriorityr(gicd_base, id, priority);
 	}
 }
 
@@ -1036,6 +1061,7 @@ void gicv3_set_interrupt_type(unsigned int id, unsigned int proc_num,
 {
 	bool igroup = false, grpmod = false;
 	uintptr_t gicr_base;
+	uintptr_t gicd_base;
 
 	assert(gicv3_driver_data != NULL);
 	assert(gicv3_driver_data->gicd_base != 0U);
@@ -1075,21 +1101,24 @@ void gicv3_set_interrupt_type(unsigned int id, unsigned int proc_num,
 		/* Serialize read-modify-write to Distributor registers */
 		spin_lock(&gic_lock);
 
-		igroup ? gicd_set_igroupr(gicv3_driver_data->gicd_base, id) :
-			 gicd_clr_igroupr(gicv3_driver_data->gicd_base, id);
-		grpmod ? gicd_set_igrpmodr(gicv3_driver_data->gicd_base, id) :
-			 gicd_clr_igrpmodr(gicv3_driver_data->gicd_base, id);
+		gicd_base = gicv3_get_multichip_base(id, gicv3_driver_data->gicd_base);
+
+		igroup ? gicd_set_igroupr(gicd_base, id) :
+			 gicd_clr_igroupr(gicd_base, id);
+		grpmod ? gicd_set_igrpmodr(gicd_base, id) :
+			 gicd_clr_igrpmodr(gicd_base, id);
 
 		spin_unlock(&gic_lock);
 	}
 }
 
 /*******************************************************************************
- * This function raises the specified Secure Group 0 SGI.
+ * This function raises the specified SGI of the specified group.
  *
  * The target parameter must be a valid MPIDR in the system.
  ******************************************************************************/
-void gicv3_raise_secure_g0_sgi(unsigned int sgi_num, u_register_t target)
+void gicv3_raise_sgi(unsigned int sgi_num, gicv3_irq_group_t group,
+		u_register_t target)
 {
 	unsigned int tgt, aff3, aff2, aff1, aff0;
 	uint64_t sgi_val;
@@ -1119,7 +1148,22 @@ void gicv3_raise_secure_g0_sgi(unsigned int sgi_num, u_register_t target)
 	 * interrupt trigger are observed before raising SGI.
 	 */
 	dsbishst();
-	write_icc_sgi0r_el1(sgi_val);
+
+	switch (group) {
+	case GICV3_G0:
+		write_icc_sgi0r_el1(sgi_val);
+		break;
+	case GICV3_G1NS:
+		write_icc_asgi1r(sgi_val);
+		break;
+	case GICV3_G1S:
+		write_icc_sgi1r(sgi_val);
+		break;
+	default:
+		assert(false);
+		break;
+	}
+
 	isb();
 }
 
@@ -1138,6 +1182,7 @@ void gicv3_set_spi_routing(unsigned int id, unsigned int irm, u_register_t mpidr
 {
 	unsigned long long aff;
 	uint64_t router;
+	uintptr_t gicd_base;
 
 	assert(gicv3_driver_data != NULL);
 	assert(gicv3_driver_data->gicd_base != 0U);
@@ -1147,14 +1192,15 @@ void gicv3_set_spi_routing(unsigned int id, unsigned int irm, u_register_t mpidr
 	assert(IS_SPI(id));
 
 	aff = gicd_irouter_val_from_mpidr(mpidr, irm);
-	gicd_write_irouter(gicv3_driver_data->gicd_base, id, aff);
+	gicd_base = gicv3_get_multichip_base(id, gicv3_driver_data->gicd_base);
+	gicd_write_irouter(gicd_base, id, aff);
 
 	/*
 	 * In implementations that do not require 1 of N distribution of SPIs,
 	 * IRM might be RAZ/WI. Read back and verify IRM bit.
 	 */
 	if (irm == GICV3_IRM_ANY) {
-		router = gicd_read_irouter(gicv3_driver_data->gicd_base, id);
+		router = gicd_read_irouter(gicd_base, id);
 		if (((router >> IROUTER_IRM_SHIFT) & IROUTER_IRM_MASK) == 0U) {
 			ERROR("GICv3 implementation doesn't support routing ANY\n");
 			panic();
@@ -1169,6 +1215,8 @@ void gicv3_set_spi_routing(unsigned int id, unsigned int irm, u_register_t mpidr
  ******************************************************************************/
 void gicv3_clear_interrupt_pending(unsigned int id, unsigned int proc_num)
 {
+	uintptr_t gicd_base;
+
 	assert(gicv3_driver_data != NULL);
 	assert(gicv3_driver_data->gicd_base != 0U);
 	assert(proc_num < gicv3_driver_data->rdistif_num);
@@ -1186,7 +1234,8 @@ void gicv3_clear_interrupt_pending(unsigned int id, unsigned int proc_num)
 			gicv3_driver_data->rdistif_base_addrs[proc_num], id);
 	} else {
 		/* For SPIs: 32-1019 and ESPIs: 4096-5119 */
-		gicd_set_icpendr(gicv3_driver_data->gicd_base, id);
+		gicd_base = gicv3_get_multichip_base(id, gicv3_driver_data->gicd_base);
+		gicd_set_icpendr(gicd_base, id);
 	}
 
 	dsbishst();
@@ -1199,6 +1248,8 @@ void gicv3_clear_interrupt_pending(unsigned int id, unsigned int proc_num)
  ******************************************************************************/
 void gicv3_set_interrupt_pending(unsigned int id, unsigned int proc_num)
 {
+	uintptr_t gicd_base;
+
 	assert(gicv3_driver_data != NULL);
 	assert(gicv3_driver_data->gicd_base != 0U);
 	assert(proc_num < gicv3_driver_data->rdistif_num);
@@ -1217,7 +1268,8 @@ void gicv3_set_interrupt_pending(unsigned int id, unsigned int proc_num)
 			gicv3_driver_data->rdistif_base_addrs[proc_num], id);
 	} else {
 		/* For SPIs: 32-1019 and ESPIs: 4096-5119 */
-		gicd_set_ispendr(gicv3_driver_data->gicd_base, id);
+		gicd_base = gicv3_get_multichip_base(id, gicv3_driver_data->gicd_base);
+		gicd_set_ispendr(gicd_base, id);
 	}
 }
 

@@ -71,10 +71,15 @@ BL2_SOURCES		+=	drivers/io/io_storage.c			\
 				plat/bitmain/${BM_CHIP}/bm_bl2_mem_params_desc.c	\
 				plat/bitmain/${BM_CHIP}/bm_image_load.c			\
 				plat/bitmain/${BM_CHIP}/lpddr.c			\
+				plat/bitmain/${BM_CHIP}/lpddr_pmu_train_string.c	\
 				plat/bitmain/${BM_CHIP}/lpddr_pld.c		\
 				plat/bitmain/${BM_CHIP}/bm_pcie.c		\
 				common/desc_image_load.c			\
 				lib/crc/crc16.c					\
+				lib/cli/cli_readline.c			\
+				lib/cli/cli_simple.c			\
+				lib/ymodem/ymodem.c			\
+				lib/ymodem/xyzModem.c			\
 				${FATFS_LIB_SOURCES}
 
 include drivers/arm/gic/v2/gicv2.mk
@@ -93,6 +98,7 @@ BL31_SOURCES		+=	drivers/bitmain/i2c/dw_i2c.c		\
 				plat/bitmain/${BM_CHIP}/plat_helpers.S	\
 				plat/bitmain/${BM_CHIP}/plat_suspend.S	\
 				plat/bitmain/${BM_CHIP}/bm_bl31_setup.c	\
+				plat/bitmain/${BM_CHIP}/bm_svc.c	\
 				${BM_GICV2_SOURCES}
 
 SEPARATE_CODE_AND_RODATA := 1

@@ -396,7 +396,7 @@ index 0000000..2234c87
         """Test for enabling/disabling commands using preprocesor"""
         pm = PatchMaker()
         pm.add_line('common/main.c', '#undef CONFIG_CMD_WHICH')
-        self.check_single_message(pm, 'DEFINE_CONFIG_CMD', 'error')
+        self.check_single_message(pm, 'DEFINE_CONFIG_SYM', 'error')
 
     def test_barred_include_in_hdr(self):
         """Test for using a barred include in a header file"""
@@ -451,6 +451,12 @@ index 0000000..2234c87
         """Check for uses of strn(cat|cpy)"""
         self.check_strl("cat");
         self.check_strl("cpy");
+
+    def test_schema(self):
+        """Check for uses of strn(cat|cpy)"""
+        pm = PatchMaker()
+        pm.add_line('arch/sandbox/dts/sandbox.dtsi', '\tu-boot,dm-pre-proper;')
+        self.check_single_message(pm, 'PRE_SCHEMA', 'error')
 
 if __name__ == "__main__":
     unittest.main()

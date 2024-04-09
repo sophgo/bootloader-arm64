@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2020, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2023, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -46,6 +46,9 @@
  * define a limit to number of CPUs that can be initialised.
  */
 #define PSCI_MAX_CPUS_INDEX	0xFFFFU
+
+/* Invalid parent */
+#define PSCI_PARENT_NODE_INVALID	0xFFFFFFFFU
 
 /*
  * Helper functions to get/set the fields of PSCI per-cpu data.
@@ -291,9 +294,8 @@ unsigned int psci_find_max_off_lvl(const psci_power_state_t *state_info);
 unsigned int psci_find_target_suspend_lvl(const psci_power_state_t *state_info);
 void psci_set_pwr_domains_to_run(unsigned int end_pwrlvl);
 void psci_print_power_domain_map(void);
-unsigned int psci_is_last_on_cpu(void);
+bool psci_is_last_on_cpu(void);
 int psci_spd_migrate_info(u_register_t *mpidr);
-void psci_do_pwrdown_sequence(unsigned int power_level);
 
 /*
  * CPU power down is directly called only when HW_ASSISTED_COHERENCY is
@@ -301,6 +303,9 @@ void psci_do_pwrdown_sequence(unsigned int power_level);
  * handled in assembly.
  */
 void prepare_cpu_pwr_dwn(unsigned int power_level);
+
+/* This function applies various CPU errata during power down. */
+void apply_cpu_pwr_dwn_errata(void);
 
 /* Private exported functions from psci_on.c */
 int psci_cpu_on_start(u_register_t target_cpu,

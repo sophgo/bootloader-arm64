@@ -11,11 +11,13 @@ General
 
    codingstyle
    designprinciples
+   docstyle
    patman
    process
    release_cycle
-   system_configuration
+   security
    sending_patches
+   system_configuration
 
 Implementation
 --------------
@@ -23,15 +25,18 @@ Implementation
 .. toctree::
    :maxdepth: 1
 
+   directories
    bloblist
    bootstd
    ci_testing
    commands
    config_binding
+   cyclic
    devicetree/index
    distro
    driver-model/index
    environment
+   expo
    event
    global_data
    logging

@@ -205,21 +205,19 @@ SANDBOX_CMDLINE_OPT_SHORT(default_fdt, 'D', 0,
 static int sandbox_cmdline_cb_test_fdt(struct sandbox_state *state,
 				       const char *arg)
 {
-	const char *fmt = "/arch/sandbox/dts/test.dtb";
-	char *p;
+	char buf[256];
 	char *fname;
 	int len;
 
-	len = strlen(state->argv[0]) + strlen(fmt) + 1;
+	len = state_get_rel_filename("arch/sandbox/dts/test.dtb", buf,
+				     sizeof(buf));
+	if (len < 0)
+		return len;
+
 	fname = os_malloc(len);
 	if (!fname)
 		return -ENOMEM;
-	strcpy(fname, state->argv[0]);
-	p = strrchr(fname, '/');
-	if (!p)
-		p = fname + strlen(fname);
-	len -= p - fname;
-	snprintf(p, len, fmt);
+	strcpy(fname, buf);
 	state->fdt_fname = fname;
 
 	return 0;
@@ -245,6 +243,36 @@ static int sandbox_cmdline_cb_jump(struct sandbox_state *state,
 	return 0;
 }
 SANDBOX_CMDLINE_OPT_SHORT(jump, 'j', 1, "Jumped from previous U-Boot");
+
+static int sandbox_cmdline_cb_program(struct sandbox_state *state,
+				      const char *arg)
+{
+	/*
+	 * Record the program name to use when jumping to future phases. This
+	 * is the original executable which holds all the phases. We need to
+	 * use this instead of argv[0] since each phase is started by
+	 * extracting a particular binary from the full program, then running
+	 * it. Therefore in that binary, argv[0] contains only the
+	 * current-phase executable.
+	 *
+	 * For example, sandbox TPL may be started using image file:
+	 *
+	 *     ./image.bin
+	 *
+	 * but then TPL needs to run VPL, which it does by extracting the VPL
+	 * image from the image.bin file.
+	 *
+	 *    ./temp-vpl
+	 *
+	 * When VPL runs it needs access to the original image.bin so it can
+	 * extract the next phase (SPL). This works if we use '-f image.bin'
+	 * when starting the original image.bin file.
+	 */
+	state->prog_fname = arg;
+
+	return 0;
+}
+SANDBOX_CMDLINE_OPT_SHORT(program, 'p', 1, "U-Boot program name");
 
 static int sandbox_cmdline_cb_memory(struct sandbox_state *state,
 				     const char *arg)
@@ -507,7 +535,7 @@ int sandbox_main(int argc, char *argv[])
 	}
 
 #if CONFIG_VAL(SYS_MALLOC_F_LEN)
-	gd->malloc_base = CONFIG_MALLOC_F_ADDR;
+	gd->malloc_base = CFG_MALLOC_F_ADDR;
 #endif
 #if CONFIG_IS_ENABLED(LOG)
 	gd->default_log_level = state->default_log_level;

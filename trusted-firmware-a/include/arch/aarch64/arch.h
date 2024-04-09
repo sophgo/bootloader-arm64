@@ -79,6 +79,7 @@
  ******************************************************************************/
 #define ICC_IGRPEN1_EL1		S3_0_C12_C12_7
 #define ICC_SGI1R		S3_0_C12_C11_5
+#define ICC_ASGI1R		S3_0_C12_C11_6
 #define ICC_SRE_EL1		S3_0_C12_C12_5
 #define ICC_SRE_EL2		S3_4_C12_C9_5
 #define ICC_SRE_EL3		S3_6_C12_C12_5
@@ -261,6 +262,15 @@
 #define ID_AA64ISAR1_SB_SUPPORTED	ULL(0x1)
 #define ID_AA64ISAR1_SB_NOT_SUPPORTED	ULL(0x0)
 
+/* ID_AA64ISAR2_EL1 definitions */
+#define ID_AA64ISAR2_EL1		S3_0_C0_C6_2
+
+#define ID_AA64ISAR2_GPA3_SHIFT		U(8)
+#define ID_AA64ISAR2_GPA3_MASK		ULL(0xf)
+
+#define ID_AA64ISAR2_APA3_SHIFT		U(12)
+#define ID_AA64ISAR2_APA3_MASK		ULL(0xf)
+
 /* ID_AA64MMFR0_EL1 definitions */
 #define ID_AA64MMFR0_EL1_PARANGE_SHIFT	U(0)
 #define ID_AA64MMFR0_EL1_PARANGE_MASK	ULL(0xf)
@@ -352,6 +362,12 @@
 
 #define ID_AA64PFR1_EL1_MTE_SHIFT	U(8)
 #define ID_AA64PFR1_EL1_MTE_MASK	ULL(0xf)
+
+#define ID_AA64PFR1_EL1_RNDR_TRAP_SHIFT	U(28)
+#define ID_AA64PFR1_EL1_RNDR_TRAP_MASK	U(0xf)
+
+#define ID_AA64PFR1_EL1_RNG_TRAP_SUPPORTED	ULL(0x1)
+#define ID_AA64PFR1_EL1_RNG_TRAP_NOT_SUPPORTED	ULL(0x0)
 
 /* Memory Tagging Extension is not implemented */
 #define MTE_UNIMPLEMENTED	U(0)
@@ -485,6 +501,7 @@
 #define SCR_GPF_BIT		(UL(1) << 48)
 #define SCR_TWEDEL_SHIFT	U(30)
 #define SCR_TWEDEL_MASK		ULL(0xf)
+#define SCR_TRNDR_BIT		(UL(1) << 40)
 #define SCR_HXEn_BIT		(UL(1) << 38)
 #define SCR_ENTP2_SHIFT		U(41)
 #define SCR_ENTP2_BIT		(UL(1) << SCR_ENTP2_SHIFT)

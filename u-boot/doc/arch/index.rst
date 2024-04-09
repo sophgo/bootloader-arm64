@@ -11,7 +11,8 @@ Architecture-specific doc
    m68k
    mips
    nios2
-   sandbox
+   riscv
+   sandbox/index
    sh
    x86
    xtensa

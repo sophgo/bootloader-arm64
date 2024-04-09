@@ -247,7 +247,7 @@ static int mmc_send_cmd_retry(struct mmc *mmc, struct mmc_cmd *cmd,
 static int mmc_send_cmd_quirks(struct mmc *mmc, struct mmc_cmd *cmd,
 			       struct mmc_data *data, u32 quirk, uint retries)
 {
-	if (CONFIG_IS_ENABLED(MMC_QUIRKS) && mmc->quirks & quirk)
+	if (IS_ENABLED(CONFIG_MMC_QUIRKS) && mmc->quirks & quirk)
 		return mmc_send_cmd_retry(mmc, cmd, data, retries);
 	else
 		return mmc_send_cmd(mmc, cmd, data);
@@ -2432,6 +2432,9 @@ static int mmc_startup_v4(struct mmc *mmc)
 
 	mmc->wr_rel_set = ext_csd[EXT_CSD_WR_REL_SET];
 
+	mmc->can_trim =
+		!!(ext_csd[EXT_CSD_SEC_FEATURE] & EXT_CSD_SEC_FEATURE_TRIM_EN);
+
 	return 0;
 error:
 	if (mmc->ext_csd) {
@@ -3113,10 +3116,12 @@ int mmc_init_device(int num)
 	}
 
 	m = mmc_get_mmc_dev(dev);
-	m->user_speed_mode = MMC_MODES_END; /* Initialising user set speed mode */
-
 	if (!m)
 		return 0;
+
+	/* Initialising user set speed mode */
+	m->user_speed_mode = MMC_MODES_END;
+
 	if (m->preinit)
 		mmc_start_init(m);
 
@@ -3125,9 +3130,10 @@ int mmc_init_device(int num)
 #endif
 
 #ifdef CONFIG_CMD_BKOPS_ENABLE
-int mmc_set_bkops_enable(struct mmc *mmc)
+int mmc_set_bkops_enable(struct mmc *mmc, bool autobkops, bool enable)
 {
 	int err;
+	u32 bit = autobkops ? BIT(1) : BIT(0);
 	ALLOC_CACHE_ALIGN_BUFFER(u8, ext_csd, MMC_MAX_BLOCK_LEN);
 
 	err = mmc_send_ext_csd(mmc, ext_csd);
@@ -3141,18 +3147,21 @@ int mmc_set_bkops_enable(struct mmc *mmc)
 		return -EMEDIUMTYPE;
 	}
 
-	if (ext_csd[EXT_CSD_BKOPS_EN] & 0x1) {
+	if (enable && (ext_csd[EXT_CSD_BKOPS_EN] & bit)) {
 		puts("Background operations already enabled\n");
 		return 0;
 	}
 
-	err = mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL, EXT_CSD_BKOPS_EN, 1);
+	err = mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL, EXT_CSD_BKOPS_EN,
+			 enable ? bit : 0);
 	if (err) {
-		puts("Failed to enable manual background operations\n");
+		printf("Failed to %sable manual background operations\n",
+		       enable ? "en" : "dis");
 		return err;
 	}
 
-	puts("Enabled manual background operations\n");
+	printf("%sabled %s background operations\n",
+	       enable ? "En" : "Dis", autobkops ? "auto" : "manual");
 
 	return 0;
 }

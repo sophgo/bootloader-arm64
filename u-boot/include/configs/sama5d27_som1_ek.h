@@ -11,11 +11,9 @@
 
 #include "at91-sama5_common.h"
 
-#undef CONFIG_SYS_AT91_MAIN_CLOCK
-#define CONFIG_SYS_AT91_MAIN_CLOCK      24000000 /* from 24 MHz crystal */
+#undef CFG_SYS_AT91_MAIN_CLOCK
+#define CFG_SYS_AT91_MAIN_CLOCK      24000000 /* from 24 MHz crystal */
 
 /* SPL */
-
-#define CONFIG_SYS_MONITOR_LEN		(512 << 10)
 
 #endif

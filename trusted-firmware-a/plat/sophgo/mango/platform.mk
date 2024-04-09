@@ -84,6 +84,8 @@ BL2_SOURCES		+=	drivers/io/io_storage.c			\
 				plat/sophgo/${BM_CHIP}/mango_image_load.c	\
 				drivers/sophgo/pcie/mango_pcie.c	\
 				drivers/sophgo/ddr/mango_ddr.c 		\
+				drivers/sophgo/ddr/spd.c 		\
+				drivers/sophgo/ddr/mango_ddr_register.c 		\
 				drivers/sophgo/ddr/mango_ddr_pld.c	\
 				drivers/sophgo/ddr/mango_ddr_asic.c	\
 				$(wildcard ${PLAT_PATH}/icn/*.c)	\

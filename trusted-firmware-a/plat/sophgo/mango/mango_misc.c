@@ -12,6 +12,7 @@
 #include <lib/cli.h>
 #include <i2c.h>
 #include <dw_gpio.h>
+#include <lib/fatfs/ff.h>
 
 #define MANGO_FORCE_ENABLE_RISCV
 /* disable SLC for a53 only */
@@ -101,8 +102,8 @@
 #define MANGO_RVFW_TAG		0x57465652
 
 /* load zsbl from spi flash */
-#define ZSBL_IMAGE_NAME		"zsbl"
 #define DISK_PART_TABLE_ADDR	0x600000
+#define CONV_FR(a) (0 - (a)) // convert fatfs result to ATF style
 
 enum {
 	DPT_MAGIC	= 0x55aa55aa,
@@ -638,8 +639,8 @@ static int mango_load_from_sf(uint64_t lma, uint32_t start, int size)
 	return plat_spif_read(lma, start, size);
 }
 
-static int mango_load_image(uint32_t addr, const char *name,
-			    struct part_info *info)
+static int mango_load_image_sf(uint32_t addr, const char *name,
+			       struct part_info *info)
 {
 	int ret;
 
@@ -661,13 +662,53 @@ static int mango_load_image(uint32_t addr, const char *name,
 	return 0;
 }
 
+static int mango_load_image_sd(const char *name)
+{
+	static FATFS SDC_FS;
+	FIL fp;
+	size_t length;
+	UINT br;
+	FRESULT f_ret;
+	int result = -ENOENT;
+
+	f_ret = f_mount(&SDC_FS, "0:", 1);
+	if (f_ret != FR_OK)
+		return CONV_FR(f_ret);
+
+	f_ret = f_open(&fp, "0:zsbl.bin", FA_READ);
+	result = CONV_FR(f_ret);
+	if (result) {
+		NOTICE("failed to open %s\n", name);
+		f_unmount("0:");
+		return result;
+	}
+
+	length = f_size(&fp);
+	f_ret = f_read(&fp, (void *)ZSBL_BASE, length, &br);
+	result = CONV_FR(f_ret);
+	if (result || length != br)
+		NOTICE("failed to read %s\n", name);
+
+	f_close(&fp);
+	f_unmount("0:");
+
+	flush_dcache_range(ZSBL_BASE, length);
+
+	return result;
+}
+
 static int mango_load_zsbl(void)
 {
 	int i, ret;
 	struct part_info info;
 	struct mango_topology *tp;
+	int fip_src;
 
-	ret = mango_load_image(DISK_PART_TABLE_ADDR, ZSBL_IMAGE_NAME, &info);
+	fip_src = mmio_read_32(FIP_SOURCE_REG);
+	if (fip_src == FIP_SRC_SDFT)
+		ret = mango_load_image_sd(ZSBL_IMAGE_NAME);
+	else
+		ret = mango_load_image_sf(DISK_PART_TABLE_ADDR, ZSBL_IMAGE_NAME, &info);
 	if (ret) {
 		ERROR("failed to load %s image %d\n", ZSBL_IMAGE_NAME, ret);
 #ifdef MANGO_FORCE_ENABLE_RISCV
@@ -681,7 +722,10 @@ static int mango_load_zsbl(void)
 
 	for (i = 0; i < MANGO_SOCKET_MAX; ++i) {
 		if (tp->socket[i].present) {
-			mango_set_rv_reset_addr(i, info.lma);
+			if (fip_src == FIP_SRC_SDFT)
+				mango_set_rv_reset_addr(i, ZSBL_BASE);
+			else
+				mango_set_rv_reset_addr(i, info.lma);
 			mango_set_rp_sys_en(i, true);
 		}
 	}

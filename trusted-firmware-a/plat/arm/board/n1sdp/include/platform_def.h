@@ -15,8 +15,9 @@
 #define PLAT_ARM_BOOT_UART_BASE			0x2A400000
 #define PLAT_ARM_BOOT_UART_CLK_IN_HZ		50000000
 
-#define PLAT_ARM_RUN_UART_BASE		0x2A410000
-#define PLAT_ARM_RUN_UART_CLK_IN_HZ	50000000
+/* IOFPGA UART0 */
+#define PLAT_ARM_RUN_UART_BASE			0x1C090000
+#define PLAT_ARM_RUN_UART_CLK_IN_HZ		24000000
 
 #define PLAT_ARM_SP_MIN_RUN_UART_BASE		0x2A410000
 #define PLAT_ARM_SP_MIN_RUN_UART_CLK_IN_HZ	50000000
@@ -91,7 +92,7 @@
  * PLAT_ARM_MAX_BL1_RW_SIZE is calculated using the current BL1 RW debug size
  * plus a little space for growth.
  */
-#define PLAT_ARM_MAX_BL1_RW_SIZE	0xE000
+#define PLAT_ARM_MAX_BL1_RW_SIZE	0xC000
 
 /*
  * PLAT_ARM_MAX_ROMLIB_RW_SIZE is define to use a full page
@@ -110,12 +111,16 @@
  * little space for growth.
  */
 #if TRUSTED_BOARD_BOOT
-# define PLAT_ARM_MAX_BL2_SIZE		0x20000
+# define PLAT_ARM_MAX_BL2_SIZE		0x22000
 #else
 # define PLAT_ARM_MAX_BL2_SIZE		0x14000
 #endif
 
-#define PLAT_ARM_MAX_BL31_SIZE		UL(0x3B000)
+#define PLAT_ARM_MAX_BL31_SIZE		UL(0x40000)
+
+#define PLAT_ARM_SPMC_BASE		U(0x08000000)
+#define PLAT_ARM_SPMC_SIZE		UL(0x02000000)  /* 32 MB */
+
 
 /*******************************************************************************
  * N1SDP topology related constants

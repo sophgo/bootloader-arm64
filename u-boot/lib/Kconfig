@@ -15,6 +15,9 @@ config SYS_NUM_ADDR_MAP
 	help
 	  Sets the number of entries in the virtual-physical mapping table.
 
+config SYS_TIMER_COUNTS_DOWN
+	bool "System timer counts down rather than up"
+
 config PHYSMEM
 	bool "Access to physical memory region (> 4G)"
 	help
@@ -70,6 +73,57 @@ config HAVE_PRIVATE_LIBGCC
 
 config LIB_UUID
 	bool
+
+config SPL_LIB_UUID
+	depends on SPL
+	bool
+
+config SEMIHOSTING
+	bool "Support semihosting"
+	depends on ARM || RISCV
+	help
+	  Semihosting is a method for a target to communicate with a host
+	  debugger. It uses special instructions which the debugger will trap
+	  on and interpret. This allows U-Boot to read/write files, print to
+	  the console, and execute arbitrary commands on the host system.
+
+	  Enabling this option will add support for reading and writing files
+	  on the host system. If you don't have a debugger attached then trying
+	  to do this will likely cause U-Boot to hang. Say 'n' if you are unsure.
+
+config SEMIHOSTING_FALLBACK
+	bool "Recover gracefully when semihosting fails"
+	depends on SEMIHOSTING && (ARM64 || RISCV)
+	default y
+	help
+	  Normally, if U-Boot makes a semihosting call and no debugger is
+	  attached, then it will panic due to a synchronous abort
+	  exception. This config adds an exception handler which will allow
+	  U-Boot to recover. Say 'y' if unsure.
+
+config SPL_SEMIHOSTING
+	bool "Support semihosting in SPL"
+	depends on SPL && (ARM || RISCV)
+	help
+	  Semihosting is a method for a target to communicate with a host
+	  debugger. It uses special instructions which the debugger will trap
+	  on and interpret. This allows U-Boot to read/write files, print to
+	  the console, and execute arbitrary commands on the host system.
+
+	  Enabling this option will add support for reading and writing files
+	  on the host system. If you don't have a debugger attached then trying
+	  to do this will likely cause U-Boot to hang. Say 'n' if you are unsure.
+
+config SPL_SEMIHOSTING_FALLBACK
+	bool "Recover gracefully when semihosting fails in SPL"
+	depends on SPL_SEMIHOSTING && (ARM64 || RISCV)
+	select ARMV8_SPL_EXCEPTION_VECTORS if ARM64
+	default y
+	help
+	  Normally, if U-Boot makes a semihosting call and no debugger is
+	  attached, then it will panic due to a synchronous abort
+	  exception. This config adds an exception handler which will allow
+	  U-Boot to recover. Say 'y' if unsure.
 
 config PRINTF
 	bool
@@ -227,9 +281,17 @@ config SUPPORT_ACPI
 	  U-Boot can generate these tables and pass them to the Operating
 	  System.
 
+config ACPI
+	bool "Enable support for ACPI libraries"
+	depends on SUPPORT_ACPI
+	help
+	  Provides library functions for dealing with ACPI tables. This does
+	  not necessarily include generation of tables
+	  (see GENERATE_ACPI_TABLE), but allows for tables to be located.
+
 config GENERATE_ACPI_TABLE
 	bool "Generate an ACPI (Advanced Configuration and Power Interface) table"
-	depends on SUPPORT_ACPI
+	depends on ACPI
 	select QFW if QEMU
 	help
 	  The Advanced Configuration and Power Interface (ACPI) specification
@@ -266,7 +328,7 @@ config BITREVERSE
 config TRACE
 	bool "Support for tracing of function calls and timing"
 	imply CMD_TRACE
-	select TIMER_EARLY
+	imply TIMER_EARLY
 	help
 	  Enables function tracing within U-Boot. This allows recording of call
 	  traces including timing information. The command can write data to
@@ -318,7 +380,7 @@ config TRACE_EARLY_SIZE
 config TRACE_EARLY_CALL_DEPTH_LIMIT
 	int "Early trace call depth limit"
 	depends on TRACE_EARLY
-	default 200
+	default 15
 	help
 	  Sets the maximum call depth up to which function calls are recorded
 	  during early tracing.
@@ -372,6 +434,7 @@ config TPM
 config SPL_TPM
 	bool "Trusted Platform Module (TPM) Support in SPL"
 	depends on SPL_DM
+	imply SPL_CRC8
 	help
 	  This enables support for TPMs which can be used to provide security
 	  features for your board. The TPM can be connected via LPC or I2C
@@ -528,6 +591,26 @@ config SPL_SHA_PROG_HW_ACCEL
 
 endif
 
+config VPL_SHA1
+	bool "Enable SHA1 support in VPL"
+	depends on VPL
+	default y if SHA1
+	help
+	  This option enables support of hashing using SHA1 algorithm.
+	  The hash is calculated in software.
+	  The SHA1 algorithm produces a 160-bit (20-byte) hash value
+	  (digest).
+
+config VPL_SHA256
+	bool "Enable SHA256 support in VPL"
+	depends on VPL
+	default y if SHA256
+	help
+	  This option enables support of hashing using SHA256 algorithm.
+	  The hash is calculated in software.
+	  The SHA256 algorithm produces a 256-bit (32-byte) hash value
+	  (digest).
+
 if SHA_HW_ACCEL
 
 config SHA512_HW_ACCEL
@@ -566,6 +649,23 @@ config SPL_MD5
 	  data. It has a number of vulnerabilities which preclude its use in
 	  security applications, but it can be useful for providing a quick
 	  checksum of a block of data.
+
+config CRC8
+	def_bool y
+	help
+	  Enables CRC8 support in U-Boot. This is normally required. CRC8 is
+	  a simple and fast checksumming algorithm which does a bytewise
+	  checksum with feedback to produce an 8-bit result. The code is small
+	  and it does not require a lookup table (unlike CRC32).
+
+config SPL_CRC8
+	bool "Support CRC8 in SPL"
+	depends on SPL
+	help
+	  Enables CRC8 support in SPL. This is not normally required. CRC8 is
+	  a simple and fast checksumming algorithm which does a bytewise
+	  checksum with feedback to produce an 8-bit result. The code is small
+	  and it does not require a lookup table (unlike CRC32).
 
 config CRC32
 	def_bool y
@@ -643,6 +743,27 @@ config ZSTD
 	select XXHASH
 	help
 	  This enables Zstandard decompression library.
+
+if ZSTD
+
+config ZSTD_LIB_MINIFY
+	bool "Minify Zstandard code"
+	default y
+	help
+	  This disables various optional components and changes the
+	  compilation flags to prioritize space-saving.
+
+	  For detailed info, see zstd's lib/README.md
+
+	  https://github.com/facebook/zstd/blob/dev/lib/README.md
+
+endif
+
+config SPL_BZIP2
+	bool "Enable bzip2 decompression support for SPL build"
+	depends on SPL
+	help
+	  This enables support for bzip2 compression algorithm for SPL boot.
 
 config SPL_LZ4
 	bool "Enable LZ4 decompression support in SPL"
@@ -944,7 +1065,6 @@ config LMB
 
 config LMB_USE_MAX_REGIONS
 	bool "Use a common number of memory and reserved regions in lmb lib"
-	depends on LMB
 	default y
 	help
 	  Define the number of supported memory regions in the library logical
@@ -954,15 +1074,15 @@ config LMB_USE_MAX_REGIONS
 
 config LMB_MAX_REGIONS
 	int "Number of memory and reserved regions in lmb lib"
-	depends on LMB && LMB_USE_MAX_REGIONS
-	default 8
+	depends on LMB_USE_MAX_REGIONS
+	default 16
 	help
 	  Define the number of supported regions, memory and reserved, in the
 	  library logical memory blocks.
 
 config LMB_MEMORY_REGIONS
 	int "Number of memory regions in lmb lib"
-	depends on LMB && !LMB_USE_MAX_REGIONS
+	depends on !LMB_USE_MAX_REGIONS
 	default 8
 	help
 	  Define the number of supported memory regions in the library logical
@@ -971,10 +1091,23 @@ config LMB_MEMORY_REGIONS
 
 config LMB_RESERVED_REGIONS
 	int "Number of reserved regions in lmb lib"
-	depends on LMB && !LMB_USE_MAX_REGIONS
+	depends on !LMB_USE_MAX_REGIONS
 	default 8
 	help
 	  Define the number of supported reserved regions in the library logical
 	  memory blocks.
+
+config PHANDLE_CHECK_SEQ
+	bool "Enable phandle check while getting sequence number"
+	help
+	  When there are multiple device tree nodes with same name,
+          enable this config option to distinguish them using
+	  phandles in fdtdec_get_alias_seq() function.
+
+endmenu
+
+menu "FWU Multi Bank Updates"
+
+source lib/fwu_updates/Kconfig
 
 endmenu

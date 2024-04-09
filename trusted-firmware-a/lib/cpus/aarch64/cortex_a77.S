@@ -199,6 +199,58 @@ func check_errata_1791578
 	b	cpu_rev_var_ls
 endfunc check_errata_1791578
 
+	/* --------------------------------------------------
+	 * Errata Workaround for Cortex A77 Errata #2356587.
+	 * This applies to revisions r0p0, r1p0, and r1p1 and is still open.
+	 * x0: variant[4:7] and revision[0:3] of current cpu.
+	 * Shall clobber: x0-x17
+	 * --------------------------------------------------
+	 */
+func errata_a77_2356587_wa
+	/* Check workaround compatibility. */
+	mov	x17, x30
+	bl	check_errata_2356587
+	cbz	x0, 1f
+
+	/* Set bit 0 in ACTLR2_EL1 */
+	mrs	x1, CORTEX_A77_ACTLR2_EL1
+	orr	x1, x1, #CORTEX_A77_ACTLR2_EL1_BIT_0
+	msr	CORTEX_A77_ACTLR2_EL1, x1
+	isb
+1:
+	ret	x17
+endfunc errata_a77_2356587_wa
+
+func check_errata_2356587
+	/* Applies to r0p0, r1p0, and r1p1 right now */
+	mov	x1, #0x11
+	b	cpu_rev_var_ls
+endfunc check_errata_2356587
+
+	/* -----------------------------------------------------------------
+	 * Errata Workaround for Cortex A77 Errata #2743100
+	 * This applies to revisions r0p0, r1p0, and r1p1 and is still open.
+	 * x0: variant[4:7] and revision[0:3] of current cpu.
+	 * Shall clobber: x0-x17
+	 * -----------------------------------------------------------------
+	 */
+func errata_a77_2743100_wa
+	mov	x17, x30
+	bl	check_errata_2743100
+	cbz	x0, 1f
+
+	/* dsb before isb of power down sequence */
+	dsb	sy
+1:
+	ret	x17
+endfunc errata_a77_2743100_wa
+
+func check_errata_2743100
+	/* Applies to r0p0, r1p0, and r1p1 right now */
+	mov	x1, #0x11
+	b	cpu_rev_var_ls
+endfunc check_errata_2743100
+
 func check_errata_cve_2022_23960
 #if WORKAROUND_CVE_2022_23960
 	mov	x0, #ERRATA_APPLIES
@@ -207,6 +259,35 @@ func check_errata_cve_2022_23960
 #endif
 	ret
 endfunc check_errata_cve_2022_23960
+
+	/* --------------------------------------------------
+	 * Errata Workaround for Cortex A77 Errata #1800714.
+	 * This applies to revision <= r1p1 of Cortex A77.
+	 * Inputs:
+	 * x0: variant[4:7] and revision[0:3] of current cpu.
+	 * Shall clobber: x0-x17
+	 * --------------------------------------------------
+	 */
+func errata_a77_1800714_wa
+	/* Compare x0 against revision <= r1p1 */
+	mov	x17, x30
+	bl	check_errata_1800714
+	cbz	x0, 1f
+
+	/* Disable allocation of splintered pages in the L2 TLB */
+	mrs	x1, CORTEX_A77_CPUECTLR_EL1
+	orr	x1, x1, CORTEX_A77_CPUECTLR_EL1_BIT_53
+	msr	CORTEX_A77_CPUECTLR_EL1, x1
+	isb
+1:
+	ret	x17
+endfunc errata_a77_1800714_wa
+
+func check_errata_1800714
+	/* Applies to everything <= r1p1 */
+	mov	x1, #0x11
+	b	cpu_rev_var_ls
+endfunc check_errata_1800714
 
 	/* -------------------------------------------------
 	 * The CPU Ops reset function for Cortex-A77.
@@ -238,6 +319,11 @@ func cortex_a77_reset_func
 	bl	errata_a77_1791578_wa
 #endif
 
+#if ERRATA_A77_2356587
+	mov	x0, x18
+	bl	errata_a77_2356587_wa
+#endif
+
 #if IMAGE_BL31 && WORKAROUND_CVE_2022_23960
 	/*
 	 * The Cortex-A77 generic vectors are overridden to apply errata
@@ -246,6 +332,11 @@ func cortex_a77_reset_func
 	adr	x0, wa_cve_vbar_cortex_a77
 	msr	vbar_el3, x0
 #endif /* IMAGE_BL31 && WORKAROUND_CVE_2022_23960 */
+
+#if ERRATA_A77_1800714
+	mov	x0, x18
+	bl	errata_a77_1800714_wa
+#endif
 
 	isb
 	ret	x19
@@ -263,6 +354,12 @@ func cortex_a77_core_pwr_dwn
 	mrs	x0, CORTEX_A77_CPUPWRCTLR_EL1
 	orr	x0, x0, #CORTEX_A77_CPUPWRCTLR_EL1_CORE_PWRDN_BIT
 	msr	CORTEX_A77_CPUPWRCTLR_EL1, x0
+#if ERRATA_A77_2743100
+	mov	x15, x30
+	bl	cpu_get_rev_var
+	bl	errata_a77_2743100_wa
+	mov	x30, x15
+#endif /* ERRATA_A77_2743100 */
 	isb
 	ret
 endfunc cortex_a77_core_pwr_dwn
@@ -282,9 +379,12 @@ func cortex_a77_errata_report
 	 * checking functions of each errata.
 	 */
 	report_errata ERRATA_A77_1508412, cortex_a77, 1508412
+	report_errata ERRATA_A77_1791578, cortex_a77, 1791578
+	report_errata ERRATA_A77_1800714, cortex_a77, 1800714
 	report_errata ERRATA_A77_1925769, cortex_a77, 1925769
 	report_errata ERRATA_A77_1946167, cortex_a77, 1946167
-	report_errata ERRATA_A77_1791578, cortex_a77, 1791578
+	report_errata ERRATA_A77_2356587, cortex_a77, 2356587
+	report_errata ERRATA_A77_2743100, cortex_a77, 2743100
 	report_errata WORKAROUND_CVE_2022_23960, cortex_a77, cve_2022_23960
 
 	ldp	x8, x30, [sp], #16

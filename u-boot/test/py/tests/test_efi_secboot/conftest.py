@@ -2,17 +2,11 @@
 # Copyright (c) 2019, Linaro Limited
 # Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
 
-import os
-import os.path
-from subprocess import call, check_call, check_output, CalledProcessError
+"""Fixture for UEFI secure boot test."""
+
+from subprocess import call, check_call, CalledProcessError
 import pytest
 from defs import *
-
-
-#
-# Fixture for UEFI secure boot test
-#
-
 
 @pytest.fixture(scope='session')
 def efi_boot_env(request, u_boot_config):
@@ -77,17 +71,17 @@ def efi_boot_env(request, u_boot_config):
                    % (mnt_point, EFITOOLS_PATH, GUID, EFITOOLS_PATH),
                    shell=True)
         # dbx_hash (digest of TEST_db certificate)
-        check_call('cd %s; %scert-to-efi-hash-list -g %s -t 0 -s 256 db.crt dbx_hash.crl; %ssign-efi-sig-list -t "2020-04-05" -c KEK.crt -k KEK.key dbx dbx_hash.crl dbx_hash.auth'
+        check_call('cd %s; %scert-to-efi-hash-list -g %s -s 256 db.crt dbx_hash.crl; %ssign-efi-sig-list -t "2020-04-05" -c KEK.crt -k KEK.key dbx dbx_hash.crl dbx_hash.auth'
                    % (mnt_point, EFITOOLS_PATH, GUID, EFITOOLS_PATH),
                    shell=True)
-        check_call('cd %s; %scert-to-efi-hash-list -g %s -t 0 -s 384 db.crt dbx_hash384.crl; %ssign-efi-sig-list -t "2020-04-05" -c KEK.crt -k KEK.key dbx dbx_hash384.crl dbx_hash384.auth'
+        check_call('cd %s; %scert-to-efi-hash-list -g %s -s 384 db.crt dbx_hash384.crl; %ssign-efi-sig-list -t "2020-04-05" -c KEK.crt -k KEK.key dbx dbx_hash384.crl dbx_hash384.auth'
                    % (mnt_point, EFITOOLS_PATH, GUID, EFITOOLS_PATH),
                    shell=True)
-        check_call('cd %s; %scert-to-efi-hash-list -g %s -t 0 -s 512 db.crt dbx_hash512.crl; %ssign-efi-sig-list -t "2020-04-05" -c KEK.crt -k KEK.key dbx dbx_hash512.crl dbx_hash512.auth'
+        check_call('cd %s; %scert-to-efi-hash-list -g %s -s 512 db.crt dbx_hash512.crl; %ssign-efi-sig-list -t "2020-04-05" -c KEK.crt -k KEK.key dbx dbx_hash512.crl dbx_hash512.auth'
                    % (mnt_point, EFITOOLS_PATH, GUID, EFITOOLS_PATH),
                    shell=True)
         # dbx_hash1 (digest of TEST_db1 certificate)
-        check_call('cd %s; %scert-to-efi-hash-list -g %s -t 0 -s 256 db1.crt dbx_hash1.crl; %ssign-efi-sig-list -t "2020-04-06" -c KEK.crt -k KEK.key dbx dbx_hash1.crl dbx_hash1.auth'
+        check_call('cd %s; %scert-to-efi-hash-list -g %s -s 256 db1.crt dbx_hash1.crl; %ssign-efi-sig-list -t "2020-04-06" -c KEK.crt -k KEK.key dbx dbx_hash1.crl dbx_hash1.auth'
                    % (mnt_point, EFITOOLS_PATH, GUID, EFITOOLS_PATH),
                    shell=True)
         # dbx_db (with TEST_db certificate)
@@ -138,7 +132,9 @@ def efi_boot_env(request, u_boot_config):
 
 @pytest.fixture(scope='session')
 def efi_boot_env_intca(request, u_boot_config):
-    """Set up a file system to be used in UEFI secure boot test
+    """Set up file system for secure boot test.
+
+    Set up a file system to be used in UEFI secure boot test
     of intermediate certificates.
 
     Args:

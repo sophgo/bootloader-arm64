@@ -4,6 +4,8 @@
  * Copyright (C) 2018, Bin Meng <bmeng.cn@gmail.com>
  */
 
+#define LOG_CATEGORY UCLASS_VIRTIO
+
 #include <common.h>
 #include <blk.h>
 #include <dm.h>
@@ -42,6 +44,8 @@ static ulong virtio_blk_do_req(struct udevice *dev, u64 sector,
 		sgs[num_out + num_in++] = &data_sg;
 
 	sgs[num_out + num_in++] = &status_sg;
+	log_debug("dev=%s, active=%d, priv=%p, priv->vq=%p\n", dev->name,
+		  device_active(dev), priv, priv->vq);
 
 	ret = virtqueue_add(priv->vq, sgs, num_out, num_in);
 	if (ret)
@@ -49,8 +53,10 @@ static ulong virtio_blk_do_req(struct udevice *dev, u64 sector,
 
 	virtqueue_kick(priv->vq);
 
+	log_debug("wait...");
 	while (!virtqueue_get_buf(priv->vq, NULL))
 		;
+	log_debug("done\n");
 
 	return status == VIRTIO_BLK_S_OK ? blkcnt : -EIO;
 }
@@ -58,6 +64,7 @@ static ulong virtio_blk_do_req(struct udevice *dev, u64 sector,
 static ulong virtio_blk_read(struct udevice *dev, lbaint_t start,
 			     lbaint_t blkcnt, void *buffer)
 {
+	log_debug("read %s\n", dev->name);
 	return virtio_blk_do_req(dev, start, blkcnt, buffer,
 				 VIRTIO_BLK_T_IN);
 }
@@ -75,14 +82,14 @@ static int virtio_blk_bind(struct udevice *dev)
 	struct blk_desc *desc = dev_get_uclass_plat(dev);
 	int devnum;
 
-	desc->if_type = IF_TYPE_VIRTIO;
+	desc->uclass_id = UCLASS_VIRTIO;
 	/*
 	 * Initialize the devnum to -ENODEV. This is to make sure that
 	 * blk_next_free_devnum() works as expected, since the default
 	 * value 0 is a valid devnum.
 	 */
 	desc->devnum = -ENODEV;
-	devnum = blk_next_free_devnum(IF_TYPE_VIRTIO);
+	devnum = blk_next_free_devnum(UCLASS_VIRTIO);
 	if (devnum < 0)
 		return devnum;
 	desc->devnum = devnum;

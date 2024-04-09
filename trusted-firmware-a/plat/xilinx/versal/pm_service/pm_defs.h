@@ -39,9 +39,7 @@
 
 /* PM API Versions */
 #define PM_API_BASE_VERSION		1U
-#define PM_API_VERSION_2                2U
-
-#define PM_API_QUERY_DATA_VERSION	2U
+#define PM_API_VERSION_2		2U
 
 /* PM API ids */
 #define PM_REGISTER_NOTIFIER		5U
@@ -62,6 +60,7 @@
 
 /* Loader API ids */
 #define PM_LOAD_PDI			0x701U
+#define PM_LOAD_GET_HANDOFF_PARAMS	0x70BU
 
 /* IOCTL IDs for clock driver */
 #define IOCTL_SET_PLL_FRAC_MODE		8U

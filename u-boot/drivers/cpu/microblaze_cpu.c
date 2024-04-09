@@ -29,7 +29,7 @@ static int microblaze_cpu_probe_all(void *ctx, struct event *event)
 
 	return 0;
 }
-EVENT_SPY(EVT_DM_POST_INIT, microblaze_cpu_probe_all);
+EVENT_SPY(EVT_DM_POST_INIT_F, microblaze_cpu_probe_all);
 
 static void microblaze_set_cpuinfo_pvr(struct microblaze_cpuinfo *ci)
 {
@@ -97,8 +97,10 @@ static int microblaze_cpu_get_desc(const struct udevice *dev, char *buf,
 	ret = snprintf(buf, size,
 		       "MicroBlaze @ %uMHz, Rev: %s, FPGA family: %s",
 		       cpu_freq_mhz, cpu_ver, fpga_family);
+	if (ret < 0)
+		return ret;
 
-	return 0;
+	return (ret >= size) ? -ENOSPC : 0;
 }
 
 static int microblaze_cpu_get_info(const struct udevice *dev,

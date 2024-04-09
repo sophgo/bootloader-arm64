@@ -12,10 +12,10 @@ import tempfile
 import unittest
 
 from binman import elf
-from patman import command
-from patman import test_util
-from patman import tools
-from patman import tout
+from u_boot_pylib import command
+from u_boot_pylib import test_util
+from u_boot_pylib import tools
+from u_boot_pylib import tout
 
 binman_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
 
@@ -242,7 +242,7 @@ class TestElf(unittest.TestCase):
         end = offset['embed_end'].offset
         data = tools.read_file(fname)
         embed_data = data[start:end]
-        expect = struct.pack('<III', 0x1234, 0x5678, 0)
+        expect = struct.pack('<IIIII', 2, 3, 0x1234, 0x5678, 0)
         self.assertEqual(expect, embed_data)
 
     def testEmbedFail(self):
@@ -347,6 +347,27 @@ class TestElf(unittest.TestCase):
                           str(e.exception))
         finally:
             elf.ELF_TOOLS = old_val
+
+    def test_is_valid(self):
+        """Test is_valid()"""
+        self.assertEqual(False, elf.is_valid(b''))
+        self.assertEqual(False, elf.is_valid(b'1234'))
+
+        fname = self.ElfTestFile('elf_sections')
+        data = tools.read_file(fname)
+        self.assertEqual(True, elf.is_valid(data))
+        self.assertEqual(False, elf.is_valid(data[4:]))
+
+    def test_get_symbol_offset(self):
+        fname = self.ElfTestFile('embed_data')
+        syms = elf.GetSymbols(fname, ['embed_start', 'embed'])
+        expected = syms['embed'].address - syms['embed_start'].address
+        val = elf.GetSymbolOffset(fname, 'embed', 'embed_start')
+        self.assertEqual(expected, val)
+
+        with self.assertRaises(KeyError) as e:
+            elf.GetSymbolOffset(fname, 'embed')
+        self.assertIn('__image_copy_start', str(e.exception))
 
 
 if __name__ == '__main__':

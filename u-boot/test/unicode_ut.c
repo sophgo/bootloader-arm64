@@ -67,6 +67,17 @@ static int unicode_test_u16_strlen(struct unit_test_state *uts)
 }
 UNICODE_TEST(unicode_test_u16_strlen);
 
+static int unicode_test_u16_strnlen(struct unit_test_state *uts)
+{
+	ut_asserteq(0, u16_strnlen(c1, 0));
+	ut_asserteq(4, u16_strnlen(c1, 4));
+	ut_asserteq(6, u16_strnlen(c1, 6));
+	ut_asserteq(6, u16_strnlen(c1, 7));
+
+	return 0;
+}
+UNICODE_TEST(unicode_test_u16_strnlen);
+
 static int unicode_test_u16_strdup(struct unit_test_state *uts)
 {
 	u16 *copy = u16_strdup(c4);
@@ -181,7 +192,7 @@ static int unicode_test_utf8_get(struct unit_test_state *uts)
 		if (!code)
 			break;
 	}
-	ut_asserteq_ptr(s, d2 + 9)
+	ut_asserteq_ptr(s, d2 + 9);
 
 	/* Check characters less than 0x10000 */
 	s = d3;
@@ -192,7 +203,7 @@ static int unicode_test_utf8_get(struct unit_test_state *uts)
 		if (!code)
 			break;
 	}
-	ut_asserteq_ptr(s, d3 + 9)
+	ut_asserteq_ptr(s, d3 + 9);
 
 	/* Check character greater 0xffff */
 	s = d4;
@@ -217,7 +228,7 @@ static int unicode_test_utf8_put(struct unit_test_state *uts)
 
 	/* Commercial at, translates to one character */
 	pos = buffer;
-	ut_assert(!utf8_put('@', &pos))
+	ut_assert(!utf8_put('@', &pos));
 	ut_asserteq(1, pos - buffer);
 	ut_asserteq('@', buffer[0]);
 	ut_assert(!buffer[1]);
@@ -612,6 +623,31 @@ static int unicode_test_utf_to_upper(struct unit_test_state *uts)
 	return 0;
 }
 UNICODE_TEST(unicode_test_utf_to_upper);
+
+static int unicode_test_u16_strcasecmp(struct unit_test_state *uts)
+{
+	ut_assert(u16_strcasecmp(u"abcd", u"abcd") == 0);
+	ut_assert(u16_strcasecmp(u"aBcd", u"abcd") == 0);
+	ut_assert(u16_strcasecmp(u"abcd", u"abCd") == 0);
+	ut_assert(u16_strcasecmp(u"abcdE", u"abcd") > 0);
+	ut_assert(u16_strcasecmp(u"abcd", u"abcdE") < 0);
+	ut_assert(u16_strcasecmp(u"abcE", u"abcd") > 0);
+	ut_assert(u16_strcasecmp(u"abcd", u"abcE") < 0);
+	ut_assert(u16_strcasecmp(u"abcd", u"abcd") == 0);
+	ut_assert(u16_strcasecmp(u"abcd", u"abcd") == 0);
+	if (CONFIG_IS_ENABLED(EFI_UNICODE_CAPITALIZATION)) {
+		/* Cyrillic letters */
+		ut_assert(u16_strcasecmp(u"\x043a\x043d\x0438\x0433\x0430",
+					 u"\x041a\x041d\x0418\x0413\x0410") == 0);
+		ut_assert(u16_strcasecmp(u"\x043a\x043d\x0438\x0433\x0430",
+					 u"\x041a\x041d\x0418\x0413\x0411") < 0);
+		ut_assert(u16_strcasecmp(u"\x043a\x043d\x0438\x0433\x0431",
+					 u"\x041a\x041d\x0418\x0413\x0410") > 0);
+	}
+
+	return 0;
+}
+UNICODE_TEST(unicode_test_u16_strcasecmp);
 
 static int unicode_test_u16_strncmp(struct unit_test_state *uts)
 {

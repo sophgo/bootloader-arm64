@@ -300,7 +300,7 @@ static int do_mem_cmp(struct cmd_tbl *cmdtp, int flag, int argc,
 
 		/* reset watchdog from time to time */
 		if ((ngood % (64 << 10)) == 0)
-			WATCHDOG_RESET();
+			schedule();
 	}
 	unmap_sysmem(buf1);
 	unmap_sysmem(buf2);
@@ -818,8 +818,8 @@ static ulong mem_test_alt(vu_long *buf, ulong start_addr, ulong end_addr,
 	 *
 	 * Returns:     0 if the test succeeds, 1 if the test fails.
 	 */
-	pattern = (vu_long) 0xaaaaaaaa;
-	anti_pattern = (vu_long) 0x55555555;
+	pattern = (vu_long)0xaaaaaaaaaaaaaaaa;
+	anti_pattern = (vu_long)0x5555555555555555;
 
 	debug("%s:%d: length = 0x%.8lx\n", __func__, __LINE__, num_words);
 	/*
@@ -848,7 +848,7 @@ static ulong mem_test_alt(vu_long *buf, ulong start_addr, ulong end_addr,
 		}
 	}
 	addr[test_offset] = pattern;
-	WATCHDOG_RESET();
+	schedule();
 
 	/*
 	 * Check for addr bits stuck low or shorted.
@@ -890,7 +890,7 @@ static ulong mem_test_alt(vu_long *buf, ulong start_addr, ulong end_addr,
 	 * Fill memory with a known pattern.
 	 */
 	for (pattern = 1, offset = 0; offset < num_words; pattern++, offset++) {
-		WATCHDOG_RESET();
+		schedule();
 		addr[offset] = pattern;
 	}
 
@@ -898,7 +898,7 @@ static ulong mem_test_alt(vu_long *buf, ulong start_addr, ulong end_addr,
 	 * Check each location and invert it for the second pass.
 	 */
 	for (pattern = 1, offset = 0; offset < num_words; pattern++, offset++) {
-		WATCHDOG_RESET();
+		schedule();
 		temp = addr[offset];
 		if (temp != pattern) {
 			printf("\nFAILURE (read/write) @ 0x%.8lx:"
@@ -918,7 +918,7 @@ static ulong mem_test_alt(vu_long *buf, ulong start_addr, ulong end_addr,
 	 * Check each location for the inverted pattern and zero it.
 	 */
 	for (pattern = 1, offset = 0; offset < num_words; pattern++, offset++) {
-		WATCHDOG_RESET();
+		schedule();
 		anti_pattern = ~pattern;
 		temp = addr[offset];
 		if (temp != anti_pattern) {
@@ -970,9 +970,9 @@ static ulong test_bitflip_comparison(volatile unsigned long *bufa,
 
 	max = sizeof(unsigned long) * 8;
 	for (k = 0; k < max; k++) {
-		q = 0x00000001L << k;
+		q = 1UL << k;
 		for (j = 0; j < 8; j++) {
-			WATCHDOG_RESET();
+			schedule();
 			q = ~q;
 			p1 = (volatile unsigned long *)bufa;
 			p2 = (volatile unsigned long *)bufb;
@@ -1009,6 +1009,7 @@ static ulong mem_test_quick(vu_long *buf, ulong start_addr, ulong end_addr,
 	ulong errs = 0;
 	ulong incr, length;
 	ulong val, readback;
+	const int plen = 2 * sizeof(ulong);
 
 	/* Alternate the pattern */
 	incr = 1;
@@ -1020,20 +1021,20 @@ static ulong mem_test_quick(vu_long *buf, ulong start_addr, ulong end_addr,
 		 * the "negative" patterns and increment the "positive"
 		 * patterns to preserve this feature.
 		 */
-		if (pattern & 0x80000000)
+		if (pattern > (ulong)LONG_MAX)
 			pattern = -pattern;	/* complement & increment */
 		else
 			pattern = ~pattern;
 	}
 	length = (end_addr - start_addr) / sizeof(ulong);
 	end = buf + length;
-	printf("\rPattern %08lX  Writing..."
+	printf("\rPattern %0*lX  Writing..."
 		"%12s"
 		"\b\b\b\b\b\b\b\b\b\b",
-		pattern, "");
+		plen, pattern, "");
 
 	for (addr = buf, val = pattern; addr < end; addr++) {
-		WATCHDOG_RESET();
+		schedule();
 		*addr = val;
 		val += incr;
 	}
@@ -1041,15 +1042,14 @@ static ulong mem_test_quick(vu_long *buf, ulong start_addr, ulong end_addr,
 	puts("Reading...");
 
 	for (addr = buf, val = pattern; addr < end; addr++) {
-		WATCHDOG_RESET();
+		schedule();
 		readback = *addr;
 		if (readback != val) {
 			ulong offset = addr - buf;
 
-			printf("\nMem error @ 0x%08X: "
-				"found %08lX, expected %08lX\n",
-				(uint)(uintptr_t)(start_addr + offset*sizeof(vu_long)),
-				readback, val);
+			printf("\nMem error @ 0x%0*lX: found %0*lX, expected %0*lX\n",
+			       plen, start_addr + offset * sizeof(vu_long),
+			       plen, readback, plen, val);
 			errs++;
 			if (ctrlc())
 				return -1;
@@ -1135,11 +1135,7 @@ static int do_mem_mtest(struct cmd_tbl *cmdtp, int flag, int argc,
 
 	unmap_sysmem((void *)buf);
 
-	if (errs == -1UL) {
-		/* Memory test was aborted - write a newline to finish off */
-		putc('\n');
-	}
-	printf("Tested %d iteration(s) with %lu errors.\n", iteration, count);
+	printf("\nTested %d iteration(s) with %lu errors.\n", iteration, count);
 
 	return errs != 0;
 }

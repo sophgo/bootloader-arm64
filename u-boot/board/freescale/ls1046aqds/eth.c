@@ -268,7 +268,7 @@ int board_eth_init(struct bd_info *bis)
 {
 	int i, idx, lane, slot, interface;
 	struct memac_mdio_info dtsec_mdio_info;
-	struct ccsr_gur *gur = (void *)(CONFIG_SYS_FSL_GUTS_ADDR);
+	struct ccsr_gur *gur = (void *)(CFG_SYS_FSL_GUTS_ADDR);
 	u32 srds_s1, srds_s2;
 	u8 brdcfg12;
 
@@ -285,7 +285,7 @@ int board_eth_init(struct bd_info *bis)
 		mdio_mux[i] = EMI_NONE;
 
 	dtsec_mdio_info.regs =
-		(struct memac_mdio_controller *)CONFIG_SYS_FM1_DTSEC_MDIO_ADDR;
+		(struct memac_mdio_controller *)CFG_SYS_FM1_DTSEC_MDIO_ADDR;
 
 	dtsec_mdio_info.name = DEFAULT_FM_MDIO_NAME;
 
@@ -349,7 +349,7 @@ int board_eth_init(struct bd_info *bis)
 		/* SGMII on slot 4, MAC 2 */
 		fm_info_set_phy_address(FM1_DTSEC2, SGMII_CARD_PORT1_PHY_ADDR);
 
-	for (i = FM1_DTSEC1; i < FM1_DTSEC1 + CONFIG_SYS_NUM_FM1_DTSEC; i++) {
+	for (i = FM1_DTSEC1; i < FM1_DTSEC1 + CFG_SYS_NUM_FM1_DTSEC; i++) {
 		idx = i - FM1_DTSEC1;
 		interface = fm_info_get_enet_if(i);
 		switch (interface) {

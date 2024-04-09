@@ -20,9 +20,12 @@
 		mkimage {
 			filename = "idbloader.img";
 			args = "-n", CONFIG_SYS_SOC, "-T", "rksd";
-#ifdef CONFIG_TPL
 			multiple-data-files;
 
+#ifdef CONFIG_ROCKCHIP_EXTERNAL_TPL
+			rockchip-tpl {
+			};
+#elif defined(CONFIG_TPL)
 			u-boot-tpl {
 			};
 #endif
@@ -30,14 +33,100 @@
 			};
 		};
 
-#ifdef CONFIG_ARM64
-		blob {
+#if defined(CONFIG_SPL_FIT) && defined(CONFIG_ARM64)
+		fit: fit {
+			description = "FIT image for U-Boot with bl31 (TF-A)";
+			#address-cells = <1>;
+			fit,fdt-list = "of-list";
 			filename = "u-boot.itb";
+			fit,external-offset = <CONFIG_FIT_EXTERNAL_OFFSET>;
+			fit,align = <512>;
+			offset = <CONFIG_SPL_PAD_TO>;
+			images {
+				u-boot {
+					description = "U-Boot (64-bit)";
+					type = "standalone";
+					os = "U-Boot";
+					arch = "arm64";
+					compression = "none";
+					load = <CONFIG_TEXT_BASE>;
+					entry = <CONFIG_TEXT_BASE>;
+					u-boot-nodtb {
+					};
+#ifdef CONFIG_SPL_FIT_SIGNATURE
+					hash {
+						algo = "sha256";
+					};
+#endif
+				};
+
+				@atf-SEQ {
+					fit,operation = "split-elf";
+					description = "ARM Trusted Firmware";
+					type = "firmware";
+					arch = "arm64";
+					os = "arm-trusted-firmware";
+					compression = "none";
+					fit,load;
+					fit,entry;
+					fit,data;
+
+					atf-bl31 {
+					};
+#ifdef CONFIG_SPL_FIT_SIGNATURE
+					hash {
+						algo = "sha256";
+					};
+#endif
+				};
+				@tee-SEQ {
+					fit,operation = "split-elf";
+					description = "TEE";
+					type = "tee";
+					arch = "arm64";
+					os = "tee";
+					compression = "none";
+					fit,load;
+					fit,entry;
+					fit,data;
+
+					tee-os {
+						optional;
+					};
+#ifdef CONFIG_SPL_FIT_SIGNATURE
+					hash {
+						algo = "sha256";
+					};
+#endif
+				};
+
+				@fdt-SEQ {
+					description = "fdt-NAME";
+					compression = "none";
+					type = "flat_dt";
+#ifdef CONFIG_SPL_FIT_SIGNATURE
+					hash {
+						algo = "sha256";
+					};
+#endif
+				};
+			};
+
+			configurations {
+				default = "@config-DEFAULT-SEQ";
+				@config-SEQ {
+					description = "NAME.dtb";
+					fdt = "fdt-SEQ";
+					fit,firmware = "atf-1", "u-boot";
+					fit,loadables;
+				};
+			};
+		};
 #else
 		u-boot-img {
-#endif
 			offset = <CONFIG_SPL_PAD_TO>;
 		};
+#endif
 	};
 
 #ifdef CONFIG_ROCKCHIP_SPI_IMAGE
@@ -48,9 +137,12 @@
 		mkimage {
 			filename = "idbloader-spi.img";
 			args = "-n", CONFIG_SYS_SOC, "-T", "rkspi";
-#ifdef CONFIG_TPL
 			multiple-data-files;
 
+#ifdef CONFIG_ROCKCHIP_EXTERNAL_TPL
+			rockchip-tpl {
+			};
+#elif defined(CONFIG_TPL)
 			u-boot-tpl {
 			};
 #endif
@@ -59,7 +151,8 @@
 		};
 
 #ifdef CONFIG_ARM64
-		blob {
+		fit {
+			type = "blob";
 			filename = "u-boot.itb";
 #else
 		u-boot-img {
@@ -68,6 +161,6 @@
 			offset = <CONFIG_SYS_SPI_U_BOOT_OFFS>;
 		};
 	};
-#endif
+#endif /* CONFIG_ROCKCHIP_SPI_IMAGE */
 };
-#endif
+#endif /* CONFIG_SPL */

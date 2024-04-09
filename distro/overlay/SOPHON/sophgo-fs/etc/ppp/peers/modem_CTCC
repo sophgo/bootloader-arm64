@@ -1,0 +1,20 @@
+nodetach
+lock
+/dev/ttyUSB1
+115200
+nocrtscts
+debug
+logfile /tmp/logfile
+modem
+hide-password
+usepeerdns
+noauth
+noipdefault
+novj
+novjccomp
+noccp
+defaultroute
+ipcp-accept-local
+ipcp-accept-remote
+connect 'chat -s -v -f /etc/ppp/peers/chat-modem-connect-ctcc'
+disconnect 'chat -s -v -f /etc/ppp/peers/chat-modem-disconnect'

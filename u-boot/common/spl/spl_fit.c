@@ -10,7 +10,7 @@
 #include <gzip.h>
 #include <image.h>
 #include <log.h>
-#include <malloc.h>
+#include <memalign.h>
 #include <mapmem.h>
 #include <spl.h>
 #include <sysinfo.h>
@@ -20,24 +20,12 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#ifndef CONFIG_SPL_LOAD_FIT_APPLY_OVERLAY_BUF_SZ
-#define CONFIG_SPL_LOAD_FIT_APPLY_OVERLAY_BUF_SZ (64 * 1024)
-#endif
-
-#ifndef CONFIG_SYS_BOOTM_LEN
-#define CONFIG_SYS_BOOTM_LEN	(64 << 20)
-#endif
-
 struct spl_fit_info {
 	const void *fit;	/* Pointer to a valid FIT blob */
 	size_t ext_data_offset;	/* Offset to FIT external data (end of FIT) */
 	int images_node;	/* FDT offset to "/images" node */
 	int conf_node;		/* FDT offset to selected configuration node */
 };
-
-__weak void board_spl_fit_post_load(const void *fit)
-{
-}
 
 __weak ulong board_spl_fit_size_align(ulong size)
 {
@@ -408,7 +396,7 @@ static int spl_fit_append_fdt(struct spl_image_info *spl_image,
 	if (CONFIG_IS_ENABLED(FIT_IMAGE_TINY))
 		return 0;
 
-	if (CONFIG_IS_ENABLED(LOAD_FIT_APPLY_OVERLAY)) {
+#if CONFIG_IS_ENABLED(LOAD_FIT_APPLY_OVERLAY)
 		void *tmpbuffer = NULL;
 
 		for (; ; index++) {
@@ -429,7 +417,9 @@ static int spl_fit_append_fdt(struct spl_image_info *spl_image,
 				 * depending on how the overlay is stored, so
 				 * don't fail yet if the allocation failed.
 				 */
-				tmpbuffer = malloc(CONFIG_SPL_LOAD_FIT_APPLY_OVERLAY_BUF_SZ);
+				size_t size = CONFIG_SPL_LOAD_FIT_APPLY_OVERLAY_BUF_SZ;
+
+				tmpbuffer = malloc_cache_aligned(size);
 				if (!tmpbuffer)
 					debug("%s: unable to allocate space for overlays\n",
 					      __func__);
@@ -460,7 +450,7 @@ static int spl_fit_append_fdt(struct spl_image_info *spl_image,
 		free(tmpbuffer);
 		if (ret)
 			return ret;
-	}
+#endif
 	/* Try to make space, so we can inject details on the loadables */
 	ret = fdt_shrink_to_minimum(spl_image->fdt_addr, 8192);
 	if (ret < 0)
@@ -537,7 +527,7 @@ static void *spl_get_fit_load_buffer(size_t size)
 {
 	void *buf;
 
-	buf = malloc(size);
+	buf = malloc_cache_aligned(size);
 	if (!buf) {
 		pr_err("Could not get FIT buffer of %lu bytes\n", (ulong)size);
 		pr_err("\tcheck CONFIG_SYS_SPL_MALLOC_SIZE\n");
@@ -826,7 +816,7 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
 	}
 
 	/*
-	 * If a platform does not provide CONFIG_SYS_UBOOT_START, U-Boot's
+	 * If a platform does not provide CFG_SYS_UBOOT_START, U-Boot's
 	 * Makefile will set it to 0 and it will end up as the entry point
 	 * here. What it actually means is: use the load address.
 	 */
@@ -834,9 +824,6 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
 		spl_image->entry_point = spl_image->load_addr;
 
 	spl_image->flags |= SPL_FIT_FOUND;
-
-	if (IS_ENABLED(CONFIG_IMX_HAB))
-		board_spl_fit_post_load(ctx.fit);
 
 	return 0;
 }

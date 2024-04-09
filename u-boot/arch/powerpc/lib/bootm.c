@@ -41,11 +41,11 @@ static ulong get_sp (void);
 extern void ft_fixup_num_cores(void *blob);
 static void set_clocks_in_mhz (struct bd_info *kbd);
 
-#ifndef CONFIG_SYS_LINUX_LOWMEM_MAX_SIZE
-#define CONFIG_SYS_LINUX_LOWMEM_MAX_SIZE	(768*1024*1024)
+#ifndef CFG_SYS_LINUX_LOWMEM_MAX_SIZE
+#define CFG_SYS_LINUX_LOWMEM_MAX_SIZE	(768*1024*1024)
 #endif
 
-static void boot_jump_linux(bootm_headers_t *images)
+static void boot_jump_linux(struct bootm_headers *images)
 {
 	void	(*kernel)(struct bd_info *, ulong r4, ulong r5, ulong r6,
 			      ulong r7, ulong r8, ulong r9);
@@ -84,7 +84,7 @@ static void boot_jump_linux(bootm_headers_t *images)
 		 *   r9: 0
 		 */
 		debug("   Booting using OF flat tree...\n");
-		WATCHDOG_RESET ();
+		schedule();
 		(*kernel) ((struct bd_info *)of_flat_tree, 0, 0, EPAPR_MAGIC,
 			   env_get_bootm_mapsize(), 0, 0);
 		/* does not return */
@@ -108,12 +108,12 @@ static void boot_jump_linux(bootm_headers_t *images)
 		struct bd_info *kbd = images->kbd;
 
 		debug("   Booting using board info...\n");
-		WATCHDOG_RESET ();
+		schedule();
 		(*kernel) (kbd, initrd_start, initrd_end,
 			   cmd_start, cmd_end, 0, 0);
 		/* does not return */
 	}
-	return ;
+	return;
 }
 
 void arch_lmb_reserve(struct lmb *lmb)
@@ -126,14 +126,14 @@ void arch_lmb_reserve(struct lmb *lmb)
 
 #ifdef DEBUG
 	if (((u64)bootmap_base + bootm_size) >
-	    (CONFIG_SYS_SDRAM_BASE + (u64)gd->ram_size))
+	    (CFG_SYS_SDRAM_BASE + (u64)gd->ram_size))
 		puts("WARNING: bootm_low + bootm_size exceed total memory\n");
 	if ((bootmap_base + bootm_size) > get_effective_memsize())
 		puts("WARNING: bootm_low + bootm_size exceed eff. memory\n");
 #endif
 
 	size = min(bootm_size, get_effective_memsize());
-	size = min(size, (ulong)CONFIG_SYS_LINUX_LOWMEM_MAX_SIZE);
+	size = min(size, (ulong)CFG_SYS_LINUX_LOWMEM_MAX_SIZE);
 
 	if (size < bootm_size) {
 		ulong base = bootmap_base + size;
@@ -148,10 +148,10 @@ void arch_lmb_reserve(struct lmb *lmb)
 	cpu_mp_lmb_reserve(lmb);
 #endif
 
-	return ;
+	return;
 }
 
-static void boot_prep_linux(bootm_headers_t *images)
+static void boot_prep_linux(struct bootm_headers *images)
 {
 #ifdef CONFIG_MP
 	/*
@@ -163,7 +163,7 @@ static void boot_prep_linux(bootm_headers_t *images)
 #endif
 }
 
-static int boot_cmdline_linux(bootm_headers_t *images)
+static int boot_cmdline_linux(struct bootm_headers *images)
 {
 	ulong of_size = images->ft_len;
 	struct lmb *lmb = &images->lmb;
@@ -184,7 +184,7 @@ static int boot_cmdline_linux(bootm_headers_t *images)
 	return ret;
 }
 
-static int boot_bd_t_linux(bootm_headers_t *images)
+static int boot_bd_t_linux(struct bootm_headers *images)
 {
 	ulong of_size = images->ft_len;
 	struct lmb *lmb = &images->lmb;
@@ -205,7 +205,7 @@ static int boot_bd_t_linux(bootm_headers_t *images)
 	return ret;
 }
 
-static int boot_body_linux(bootm_headers_t *images)
+static int boot_body_linux(struct bootm_headers *images)
 {
 	int ret;
 
@@ -214,7 +214,7 @@ static int boot_body_linux(bootm_headers_t *images)
 	if (ret)
 		return ret;
 
-	if (CONFIG_IS_ENABLED(LMB)) {
+	if (IS_ENABLED(CONFIG_LMB)) {
 		ret = image_setup_linux(images);
 		if (ret)
 			return ret;
@@ -224,7 +224,7 @@ static int boot_body_linux(bootm_headers_t *images)
 }
 
 noinline int do_bootm_linux(int flag, int argc, char *const argv[],
-			    bootm_headers_t *images)
+			    struct bootm_headers *images)
 {
 	int	ret;
 
@@ -273,7 +273,7 @@ static void set_clocks_in_mhz (struct bd_info *kbd)
 }
 
 #if defined(CONFIG_BOOTM_VXWORKS)
-void boot_prep_vxworks(bootm_headers_t *images)
+void boot_prep_vxworks(struct bootm_headers *images)
 {
 #if defined(CONFIG_OF_LIBFDT)
 	int off;
@@ -305,7 +305,7 @@ void boot_prep_vxworks(bootm_headers_t *images)
 #endif
 }
 
-void boot_jump_vxworks(bootm_headers_t *images)
+void boot_jump_vxworks(struct bootm_headers *images)
 {
 	/* PowerPC VxWorks boot interface conforms to the ePAPR standard
 	 * general purpuse registers:
@@ -319,7 +319,7 @@ void boot_jump_vxworks(bootm_headers_t *images)
 	 *	r9: 0
 	 *	TCR: WRC = 0, no watchdog timer reset will occur
 	 */
-	WATCHDOG_RESET();
+	schedule();
 
 	((void (*)(void *, ulong, ulong, ulong,
 		ulong, ulong, ulong))images->ep)(images->ft_addr,

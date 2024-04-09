@@ -3,6 +3,11 @@
 #
 
 from optparse import OptionParser
+import os
+import pathlib
+
+BUILDMAN_DIR = pathlib.Path(__file__).parent
+HAS_TESTS = os.path.exists(BUILDMAN_DIR / "test.py")
 
 def ParseArgs():
     """Parse command line arguments from sys.argv[]
@@ -71,10 +76,18 @@ def ParseArgs():
           default=False, help="Don't convert y to 1 in configs")
     parser.add_option('-l', '--list-error-boards', action='store_true',
           default=False, help='Show a list of boards next to each error/warning')
+    parser.add_option('-L', '--no-lto', action='store_true',
+          default=False, help='Disable Link-time Optimisation (LTO) for builds')
     parser.add_option('--list-tool-chains', action='store_true', default=False,
           help='List available tool chains (use -v to see probing detail)')
     parser.add_option('-m', '--mrproper', action='store_true',
           default=False, help="Run 'make mrproper before reconfiguring")
+    parser.add_option(
+          '-M', '--allow-missing', action='store_true', default=False,
+          help='Tell binman to allow missing blobs and generate fake ones as needed'),
+    parser.add_option(
+          '--no-allow-missing', action='store_true', default=False,
+          help='Disable telling binman to allow missing blobs'),
     parser.add_option('-n', '--dry-run', action='store_true', dest='dry_run',
           default=False, help="Do a dry run (describe actions, but do nothing)")
     parser.add_option('-N', '--no-subdirs', action='store_true', dest='no_subdirs',
@@ -89,18 +102,21 @@ def ParseArgs():
           default=False, help="Use full toolchain path in CROSS_COMPILE")
     parser.add_option('-P', '--per-board-out-dir', action='store_true',
           default=False, help="Use an O= (output) directory per board rather than per thread")
+    parser.add_option('-r', '--reproducible-builds', action='store_true',
+          help='Set SOURCE_DATE_EPOCH=0 to suuport a reproducible build')
     parser.add_option('-R', '--regen-board-list', action='store_true',
           help='Force regeneration of the list of boards, like the old boards.cfg file')
     parser.add_option('-s', '--summary', action='store_true',
           default=False, help='Show a build summary')
     parser.add_option('-S', '--show-sizes', action='store_true',
           default=False, help='Show image size variation in summary')
-    parser.add_option('--skip-net-tests', action='store_true', default=False,
-                      help='Skip tests which need the network')
     parser.add_option('--step', type='int',
           default=1, help='Only build every n commits (0=just first and last)')
-    parser.add_option('-t', '--test', action='store_true', dest='test',
-                      default=False, help='run tests')
+    if HAS_TESTS:
+        parser.add_option('--skip-net-tests', action='store_true', default=False,
+                          help='Skip tests which need the network')
+        parser.add_option('-t', '--test', action='store_true', dest='test',
+                          default=False, help='run tests')
     parser.add_option('-T', '--threads', type='int',
           default=None,
           help='Number of builder threads to use (0=single-thread)')

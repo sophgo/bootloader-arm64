@@ -15,13 +15,11 @@
 #include <init.h>
 #include <log.h>
 #include <net.h>
-#include <asm/arch/sys_proto.h>
 #include <asm/arch/hardware.h>
 #include <asm/global_data.h>
 #include <asm/gpio.h>
 #include <asm/io.h>
 #include <spl.h>
-#include <asm/arch/sys_proto.h>
 #include <dm.h>
 #include <dm/uclass-internal.h>
 
@@ -57,7 +55,7 @@ int dram_init(void)
 	return 0;
 }
 
-ulong board_get_usable_ram_top(ulong total_size)
+phys_size_t board_get_usable_ram_top(phys_size_t total_size)
 {
 #ifdef CONFIG_PHYS_64BIT
 	/* Limit RAM used by U-Boot to the DDR low region */
@@ -71,13 +69,13 @@ ulong board_get_usable_ram_top(ulong total_size)
 int dram_init_banksize(void)
 {
 	/* Bank 0 declares the memory available in the DDR low region */
-	gd->bd->bi_dram[0].start = CONFIG_SYS_SDRAM_BASE;
+	gd->bd->bi_dram[0].start = CFG_SYS_SDRAM_BASE;
 	gd->bd->bi_dram[0].size = 0x80000000;
 	gd->ram_size = 0x80000000;
 
 #ifdef CONFIG_PHYS_64BIT
 	/* Bank 1 declares the memory available in the DDR high region */
-	gd->bd->bi_dram[1].start = CONFIG_SYS_SDRAM_BASE1;
+	gd->bd->bi_dram[1].start = CFG_SYS_SDRAM_BASE1;
 	gd->bd->bi_dram[1].size = 0x80000000;
 	gd->ram_size = 0x100000000;
 #endif
@@ -144,18 +142,9 @@ void spl_perform_fixups(struct spl_image_info *spl_image)
 #if defined(CONFIG_OF_LIBFDT) && defined(CONFIG_OF_BOARD_SETUP)
 int ft_board_setup(void *blob, struct bd_info *bd)
 {
-	int ret;
-
-	ret = fdt_fixup_msmc_ram(blob, "/bus@100000", "sram@70000000");
-	if (ret < 0)
-		ret = fdt_fixup_msmc_ram(blob, "/interconnect@100000",
-					 "sram@70000000");
-	if (ret)
-		printf("%s: fixing up msmc ram failed %d\n", __func__, ret);
-
 	detect_enable_hyperflash(blob);
 
-	return ret;
+	return 0;
 }
 #endif
 

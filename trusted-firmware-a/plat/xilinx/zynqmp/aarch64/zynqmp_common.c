@@ -29,7 +29,7 @@ const mmap_region_t plat_arm_mmap[] = {
 	{0}
 };
 
-static unsigned int zynqmp_get_silicon_ver(void)
+static uint32_t zynqmp_get_silicon_ver(void)
 {
 	static unsigned int ver;
 
@@ -43,7 +43,7 @@ static unsigned int zynqmp_get_silicon_ver(void)
 	return ver;
 }
 
-unsigned int zynqmp_get_uart_clk(void)
+uint32_t zynqmp_get_uart_clk(void)
 {
 	unsigned int ver = zynqmp_get_silicon_ver();
 
@@ -56,8 +56,8 @@ unsigned int zynqmp_get_uart_clk(void)
 
 #if LOG_LEVEL >= LOG_LEVEL_NOTICE
 static const struct {
-	unsigned int id;
-	unsigned int ver;
+	uint32_t id;
+	uint32_t ver;
 	char *name;
 	bool evexists;
 } zynqmp_devices[] = {
@@ -215,7 +215,8 @@ static const struct {
 #define ZYNQMP_PL_STATUS_MASK	BIT(ZYNQMP_PL_STATUS_BIT)
 #define ZYNQMP_CSU_VERSION_MASK	~(ZYNQMP_PL_STATUS_MASK)
 
-#define SILICON_ID_XCK26       0x4724093
+#define SILICON_ID_XCK24	0x4714093U
+#define SILICON_ID_XCK26	0x4724093U
 
 static char *zynqmp_get_silicon_idcode_name(void)
 {
@@ -251,9 +252,12 @@ static char *zynqmp_get_silicon_idcode_name(void)
 	}
 
 	if (i >= ARRAY_SIZE(zynqmp_devices)) {
-		if (chipid[0] == SILICON_ID_XCK26) {
+		switch (chipid[0]) {
+		case SILICON_ID_XCK24:
+			return "XCK24";
+		case SILICON_ID_XCK26:
 			return "XCK26";
-		} else {
+		default:
 			return "XCZUUNKN";
 		}
 	}
@@ -306,20 +310,20 @@ static char *zynqmp_print_silicon_idcode(void)
 	return zynqmp_get_silicon_idcode_name();
 }
 
-static unsigned int zynqmp_get_ps_ver(void)
+static uint32_t zynqmp_get_ps_ver(void)
 {
 	uint32_t ver = mmio_read_32(ZYNQMP_CSU_BASEADDR + ZYNQMP_CSU_VERSION_OFFSET);
 
 	ver &= ZYNQMP_PS_VER_MASK;
 	ver >>= ZYNQMP_PS_VER_SHIFT;
 
-	return ver + 1;
+	return ver + 1U;
 }
 
 static void zynqmp_print_platform_name(void)
 {
-	unsigned int ver = zynqmp_get_silicon_ver();
-	unsigned int rtl = zynqmp_get_rtl_ver();
+	uint32_t ver = zynqmp_get_silicon_ver();
+	uint32_t rtl = zynqmp_get_rtl_ver();
 	char *label = "Unknown";
 
 	switch (ver) {
@@ -343,7 +347,7 @@ static void zynqmp_print_platform_name(void)
 static inline void zynqmp_print_platform_name(void) { }
 #endif
 
-unsigned int zynqmp_get_bootmode(void)
+uint32_t zynqmp_get_bootmode(void)
 {
 	uint32_t r;
 	unsigned int ret;
@@ -375,9 +379,9 @@ void zynqmp_config_setup(void)
 	generic_delay_timer_init();
 }
 
-unsigned int plat_get_syscnt_freq2(void)
+uint32_t plat_get_syscnt_freq2(void)
 {
-	unsigned int ver = zynqmp_get_silicon_ver();
+	uint32_t ver = zynqmp_get_silicon_ver();
 
 	if (ver == ZYNQMP_CSU_VERSION_QEMU) {
 		return 65000000;

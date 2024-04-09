@@ -693,10 +693,6 @@ int gpt_enable(void)
 		return -EPERM;
 	}
 
-	/* Invalidate any stale TLB entries */
-	tlbipaallos();
-	dsb();
-
 	/* Write the base address of the L0 tables into GPTBR */
 	write_gptbr_el3(((gpt_config.plat_gpt_l0_base >> GPTBR_BADDR_VAL_SHIFT)
 			>> GPTBR_BADDR_SHIFT) & GPTBR_BADDR_MASK);
@@ -717,6 +713,15 @@ int gpt_enable(void)
 	/* Outer and Inner cacheability set to Normal memory, WB, RA, WA. */
 	gpccr_el3 |= SET_GPCCR_ORGN(GPCCR_ORGN_WB_RA_WA);
 	gpccr_el3 |= SET_GPCCR_IRGN(GPCCR_IRGN_WB_RA_WA);
+
+	/* Prepopulate GPCCR_EL3 but don't enable GPC yet */
+	write_gpccr_el3(gpccr_el3);
+	isb();
+
+	/* Invalidate any stale TLB entries and any cached register fields */
+	tlbipaallos();
+	dsb();
+	isb();
 
 	/* Enable GPT */
 	gpccr_el3 |= GPCCR_GPC_BIT;
@@ -1076,7 +1081,7 @@ int gpt_delegate_pas(uint64_t base, size_t size, unsigned int src_sec_state)
 		VERBOSE("      Caller: %u, Current GPI: %u\n", src_sec_state,
 			gpi_info.gpi);
 		spin_unlock(&gpt_lock);
-		return -EINVAL;
+		return -EPERM;
 	}
 
 	if (src_sec_state == SMC_FROM_SECURE) {
@@ -1197,7 +1202,7 @@ int gpt_undelegate_pas(uint64_t base, size_t size, unsigned int src_sec_state)
 		VERBOSE("      Caller: %u, Current GPI: %u\n", src_sec_state,
 			gpi_info.gpi);
 		spin_unlock(&gpt_lock);
-		return -EINVAL;
+		return -EPERM;
 	}
 
 

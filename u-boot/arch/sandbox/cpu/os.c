@@ -130,6 +130,23 @@ void os_exit(int exit_code)
 	exit(exit_code);
 }
 
+unsigned int os_alarm(unsigned int seconds)
+{
+	return alarm(seconds);
+}
+
+void os_set_alarm_handler(void (*handler)(int))
+{
+	if (!handler)
+		handler = SIG_DFL;
+	signal(SIGALRM, handler);
+}
+
+void os_raise_sigalrm(void)
+{
+	raise(SIGALRM);
+}
+
 int os_write_file(const char *fname, const void *buf, int size)
 {
 	int fd;
@@ -149,7 +166,7 @@ int os_write_file(const char *fname, const void *buf, int size)
 	return 0;
 }
 
-int os_filesize(int fd)
+off_t os_filesize(int fd)
 {
 	off_t size;
 
@@ -201,7 +218,7 @@ err:
 int os_map_file(const char *pathname, int os_flags, void **bufp, int *sizep)
 {
 	void *ptr;
-	int size;
+	off_t size;
 	int ifd;
 
 	ifd = os_open(pathname, os_flags);
@@ -212,6 +229,10 @@ int os_map_file(const char *pathname, int os_flags, void **bufp, int *sizep)
 	size = os_filesize(ifd);
 	if (size < 0) {
 		printf("Cannot get file size of '%s'\n", pathname);
+		return -EIO;
+	}
+	if ((unsigned long long)size > (unsigned long long)SIZE_MAX) {
+		printf("File '%s' too large to map\n", pathname);
 		return -EIO;
 	}
 
@@ -669,6 +690,11 @@ void os_puts(const char *str)
 		os_putc(*str++);
 }
 
+void os_flush(void)
+{
+	fflush(stdout);
+}
+
 int os_write_ram_buf(const char *fname)
 {
 	struct sandbox_state *state = state_get_current();
@@ -1012,8 +1038,24 @@ void *os_find_text_base(void)
 	return base;
 }
 
+/**
+ * os_unblock_signals() - unblock all signals
+ *
+ * If we are relaunching the sandbox in a signal handler, we have to unblock
+ * the respective signal before calling execv(). See signal(7) man-page.
+ */
+static void os_unblock_signals(void)
+{
+	sigset_t sigs;
+
+	sigfillset(&sigs);
+	sigprocmask(SIG_UNBLOCK, &sigs, NULL);
+}
+
 void os_relaunch(char *argv[])
 {
+	os_unblock_signals();
+
 	execv(argv[0], argv);
 	os_exit(1);
 }

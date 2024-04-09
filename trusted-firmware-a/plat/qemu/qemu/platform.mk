@@ -88,12 +88,12 @@ ifneq (${TRUSTED_BOARD_BOOT},0)
 
     $(ROT_KEY): | $(BUILD_PLAT)
 	@echo "  OPENSSL $@"
-	$(Q)openssl genrsa 2048 > $@ 2>/dev/null
+	$(Q)${OPENSSL_BIN_PATH}/openssl genrsa 2048 > $@ 2>/dev/null
 
     $(ROTPK_HASH): $(ROT_KEY)
 	@echo "  OPENSSL $@"
-	$(Q)openssl rsa -in $< -pubout -outform DER 2>/dev/null |\
-	openssl dgst -sha256 -binary > $@ 2>/dev/null
+	$(Q)${OPENSSL_BIN_PATH}/openssl rsa -in $< -pubout -outform DER 2>/dev/null |\
+	${OPENSSL_BIN_PATH}/openssl dgst -sha256 -binary > $@ 2>/dev/null
 endif
 
 # Include Measured Boot makefile before any Crypto library makefile.
@@ -103,6 +103,10 @@ ifeq (${MEASURED_BOOT},1)
     MEASURED_BOOT_MK := drivers/measured_boot/event_log/event_log.mk
     $(info Including ${MEASURED_BOOT_MK})
     include ${MEASURED_BOOT_MK}
+
+    ifneq (${MBOOT_EL_HASH_ALG}, sha256)
+        $(eval $(call add_define,TF_MBEDTLS_MBOOT_USE_SHA512))
+    endif
 
     BL2_SOURCES		+=	plat/qemu/qemu/qemu_measured_boot.c	\
 				plat/qemu/qemu/qemu_common_measured_boot.c	\
@@ -255,5 +259,8 @@ $(eval $(call add_define,ARM_LINUX_KERNEL_AS_BL33))
 ARM_PRELOADED_DTB_BASE := PLAT_QEMU_DT_BASE
 $(eval $(call add_define,ARM_PRELOADED_DTB_BASE))
 
-# Do not enable SVE
-ENABLE_SVE_FOR_NS	:=	0
+# Later QEMU versions support SME and SVE.
+ifneq (${ARCH},aarch32)
+	ENABLE_SVE_FOR_NS	:= 1
+	ENABLE_SME_FOR_NS	:= 1
+endif

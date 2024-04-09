@@ -6,6 +6,7 @@
  */
 
 #include <common.h>
+#include <cpu_func.h>
 #include <bootstage.h>
 #include <dm.h>
 #include <dm/platform_data/serial_mxc.h>
@@ -562,7 +563,7 @@ int board_mmc_init(struct bd_info *bis)
 	 * mmc0 USDHC2
 	 * mmc1 USDHC4
 	 */
-	for (i = 0; i < CONFIG_SYS_FSL_USDHC_NUM; i++) {
+	for (i = 0; i < CFG_SYS_FSL_USDHC_NUM; i++) {
 		switch (i) {
 		case 0:
 			SETUP_IOMUX_PADS(usdhc2_pads);
@@ -720,7 +721,7 @@ int board_fit_config_name_match(const char *name)
 	return -1;
 }
 
-void reset_cpu(ulong addr)
+void reset_cpu(void)
 {
 	puts("Hanging CPU for watchdog reset!\n");
 	hang();

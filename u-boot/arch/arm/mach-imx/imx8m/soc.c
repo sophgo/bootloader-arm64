@@ -100,6 +100,12 @@ void set_wdog_reset(struct wdog_regs *wdog)
 	setbits_le16(&wdog->wcr, WDOG_WDT_MASK | WDOG_WDZST_MASK);
 }
 
+#ifdef CONFIG_ARMV8_PSCI
+#define PTE_MAP_NS	PTE_BLOCK_NS
+#else
+#define PTE_MAP_NS	0
+#endif
+
 static struct mm_region imx8m_mem_map[] = {
 	{
 		/* ROM */
@@ -122,7 +128,7 @@ static struct mm_region imx8m_mem_map[] = {
 		.phys = 0x180000UL,
 		.size = 0x8000UL,
 		.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
-			 PTE_BLOCK_OUTER_SHARE
+			 PTE_BLOCK_OUTER_SHARE | PTE_MAP_NS
 	}, {
 		/* TCM */
 		.virt = 0x7C0000UL,
@@ -130,14 +136,14 @@ static struct mm_region imx8m_mem_map[] = {
 		.size = 0x80000UL,
 		.attrs = PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
 			 PTE_BLOCK_NON_SHARE |
-			 PTE_BLOCK_PXN | PTE_BLOCK_UXN
+			 PTE_BLOCK_PXN | PTE_BLOCK_UXN | PTE_MAP_NS
 	}, {
 		/* OCRAM */
 		.virt = 0x900000UL,
 		.phys = 0x900000UL,
 		.size = 0x200000UL,
 		.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
-			 PTE_BLOCK_OUTER_SHARE
+			 PTE_BLOCK_OUTER_SHARE | PTE_MAP_NS
 	}, {
 		/* AIPS */
 		.virt = 0xB00000UL,
@@ -152,7 +158,7 @@ static struct mm_region imx8m_mem_map[] = {
 		.phys = 0x40000000UL,
 		.size = PHYS_SDRAM_SIZE,
 		.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
-			 PTE_BLOCK_OUTER_SHARE
+			 PTE_BLOCK_OUTER_SHARE | PTE_MAP_NS
 #ifdef PHYS_SDRAM_2_SIZE
 	}, {
 		/* DRAM2 */
@@ -160,7 +166,7 @@ static struct mm_region imx8m_mem_map[] = {
 		.phys = 0x100000000UL,
 		.size = PHYS_SDRAM_2_SIZE,
 		.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
-			 PTE_BLOCK_OUTER_SHARE
+			 PTE_BLOCK_OUTER_SHARE | PTE_MAP_NS
 #endif
 	}, {
 		/* empty entrie to split table entry 5 if needed when TEEs are used */
@@ -178,7 +184,7 @@ static unsigned int imx8m_find_dram_entry_in_mem_map(void)
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(imx8m_mem_map); i++)
-		if (imx8m_mem_map[i].phys == CONFIG_SYS_SDRAM_BASE)
+		if (imx8m_mem_map[i].phys == CFG_SYS_SDRAM_BASE)
 			return i;
 
 	hang();	/* Entry not found, this must never happen. */
@@ -238,7 +244,7 @@ int dram_init(void)
 		return ret;
 
 	/* rom_pointer[1] contains the size of TEE occupies */
-	if (rom_pointer[1])
+	if (!IS_ENABLED(CONFIG_ARMV8_PSCI) && rom_pointer[1])
 		gd->ram_size = sdram_size - rom_pointer[1];
 	else
 		gd->ram_size = sdram_size;
@@ -267,7 +273,7 @@ int dram_init_banksize(void)
 	}
 
 	gd->bd->bi_dram[bank].start = PHYS_SDRAM;
-	if (rom_pointer[1]) {
+	if (!IS_ENABLED(CONFIG_ARMV8_PSCI) && rom_pointer[1]) {
 		phys_addr_t optee_start = (phys_addr_t)rom_pointer[0];
 		phys_size_t optee_size = (size_t)rom_pointer[1];
 
@@ -312,7 +318,7 @@ phys_size_t get_effective_memsize(void)
 			sdram_b1_size = sdram_size;
 		}
 
-		if (rom_pointer[1]) {
+		if (!IS_ENABLED(CONFIG_ARMV8_PSCI) && rom_pointer[1]) {
 			/* We will relocate u-boot to Top of dram1. Tee position has two cases:
 			 * 1. At the top of dram1,  Then return the size removed optee size.
 			 * 2. In the middle of dram1, return the size of dram1.
@@ -327,7 +333,7 @@ phys_size_t get_effective_memsize(void)
 	}
 }
 
-ulong board_get_usable_ram_top(ulong total_size)
+phys_size_t board_get_usable_ram_top(phys_size_t total_size)
 {
 	ulong top_addr;
 
@@ -344,7 +350,8 @@ ulong board_get_usable_ram_top(ulong total_size)
 	 * rom_pointer[1] stores the size TEE uses.
 	 * We need to reserve the memory region for TEE.
 	 */
-	if (rom_pointer[0] && rom_pointer[1] && top_addr > rom_pointer[0])
+	if (!IS_ENABLED(CONFIG_ARMV8_PSCI) && rom_pointer[0] &&
+	    rom_pointer[1] && top_addr > rom_pointer[0])
 		top_addr = rom_pointer[0];
 
 	return top_addr;
@@ -542,7 +549,7 @@ static int imx8m_check_clock(void *ctx, struct event *event)
 
 	return 0;
 }
-EVENT_SPY(EVT_DM_POST_INIT, imx8m_check_clock);
+EVENT_SPY(EVT_DM_POST_INIT_F, imx8m_check_clock);
 
 static void imx8m_setup_snvs(void)
 {
@@ -552,6 +559,29 @@ static void imx8m_setup_snvs(void)
 	writel(SNVS_LPPGDR_INIT, SNVS_BASE_ADDR + SNVS_LPLVDR);
 	/* Clear interrupt status */
 	writel(0xffffffff, SNVS_BASE_ADDR + SNVS_LPSR);
+}
+
+static void imx8m_setup_csu_tzasc(void)
+{
+	const uintptr_t tzasc_base[4] = {
+		0x301f0000, 0x301f0000, 0x301f0000, 0x301f0000
+	};
+	int i, j;
+
+	if (!IS_ENABLED(CONFIG_ARMV8_PSCI))
+		return;
+
+	/* CSU */
+	for (i = 0; i < 64; i++)
+		writel(0x00ff00ff, (void *)CSU_BASE_ADDR + (4 * i));
+
+	/* TZASC */
+	for (j = 0; j < 4; j++) {
+		writel(0x77777777, (void *)(tzasc_base[j]));
+		writel(0x77777777, (void *)(tzasc_base[j]) + 0x4);
+		for (i = 0; i <= 0x10; i += 4)
+			writel(0, (void *)(tzasc_base[j]) + 0x40 + i);
+	}
 }
 
 int arch_cpu_init(void)
@@ -606,6 +636,8 @@ int arch_cpu_init(void)
 
 	imx8m_setup_snvs();
 
+	imx8m_setup_csu_tzasc();
+
 	return 0;
 }
 
@@ -639,6 +671,7 @@ int spl_mmc_emmc_boot_partition(struct mmc *mmc)
 		/* Log entries with 1 parameter, skip 1 */
 		case 0x80: /* Start to perform the device initialization */
 		case 0x81: /* The boot device initialization completes */
+		case 0x82: /* Starts to execute boot device driver pre-config */
 		case 0x8f: /* The boot device initialization fails */
 		case 0x90: /* Start to read data from boot device */
 		case 0x91: /* Reading data from boot device completes */
@@ -882,6 +915,8 @@ static int low_drive_gpu_freq(void *blob)
 
 	if (cnt != 7)
 		printf("Warning: %s, assigned-clock-rates count %d\n", nodes_path_8mn[0], cnt);
+	if (cnt < 2)
+		return -1;
 
 	assignedclks[cnt - 1] = 200000000;
 	assignedclks[cnt - 2] = 200000000;
@@ -1363,40 +1398,6 @@ usb_modify_speed:
 }
 #endif
 
-#ifdef CONFIG_OF_BOARD_FIXUP
-#ifndef CONFIG_SPL_BUILD
-int board_fix_fdt(void *fdt)
-{
-	if (is_imx8mpul()) {
-		int i = 0;
-		int nodeoff, ret;
-		const char *status = "disabled";
-		static const char * const dsi_nodes[] = {
-			"/soc@0/bus@32c00000/mipi_dsi@32e60000",
-			"/soc@0/bus@32c00000/lcd-controller@32e80000",
-			"/dsi-host"
-		};
-
-		for (i = 0; i < ARRAY_SIZE(dsi_nodes); i++) {
-			nodeoff = fdt_path_offset(fdt, dsi_nodes[i]);
-			if (nodeoff > 0) {
-set_status:
-				ret = fdt_setprop(fdt, nodeoff, "status", status,
-						  strlen(status) + 1);
-				if (ret == -FDT_ERR_NOSPACE) {
-					ret = fdt_increase_size(fdt, 512);
-					if (!ret)
-						goto set_status;
-				}
-			}
-		}
-	}
-
-	return 0;
-}
-#endif
-#endif
-
 #if !CONFIG_IS_ENABLED(SYSRESET)
 void reset_cpu(void)
 {
@@ -1428,79 +1429,6 @@ int arch_misc_init(void)
 	return 0;
 }
 #endif
-
-void imx_tmu_arch_init(void *reg_base)
-{
-	if (is_imx8mm() || is_imx8mn()) {
-		/* Load TCALIV and TASR from fuses */
-		struct ocotp_regs *ocotp =
-			(struct ocotp_regs *)OCOTP_BASE_ADDR;
-		struct fuse_bank *bank = &ocotp->bank[3];
-		struct fuse_bank3_regs *fuse =
-			(struct fuse_bank3_regs *)bank->fuse_regs;
-
-		u32 tca_rt, tca_hr, tca_en;
-		u32 buf_vref, buf_slope;
-
-		tca_rt = fuse->ana0 & 0xFF;
-		tca_hr = (fuse->ana0 & 0xFF00) >> 8;
-		tca_en = (fuse->ana0 & 0x2000000) >> 25;
-
-		buf_vref = (fuse->ana0 & 0x1F00000) >> 20;
-		buf_slope = (fuse->ana0 & 0xF0000) >> 16;
-
-		writel(buf_vref | (buf_slope << 16), (ulong)reg_base + 0x28);
-		writel((tca_en << 31) | (tca_hr << 16) | tca_rt,
-		       (ulong)reg_base + 0x30);
-	}
-#ifdef CONFIG_IMX8MP
-	/* Load TCALIV0/1/m40 and TRIM from fuses */
-	struct ocotp_regs *ocotp = (struct ocotp_regs *)OCOTP_BASE_ADDR;
-	struct fuse_bank *bank = &ocotp->bank[38];
-	struct fuse_bank38_regs *fuse =
-		(struct fuse_bank38_regs *)bank->fuse_regs;
-	struct fuse_bank *bank2 = &ocotp->bank[39];
-	struct fuse_bank39_regs *fuse2 =
-		(struct fuse_bank39_regs *)bank2->fuse_regs;
-	u32 buf_vref, buf_slope, bjt_cur, vlsb, bgr;
-	u32 reg;
-	u32 tca40[2], tca25[2], tca105[2];
-
-	/* For blank sample */
-	if (!fuse->ana_trim2 && !fuse->ana_trim3 &&
-	    !fuse->ana_trim4 && !fuse2->ana_trim5) {
-		/* Use a default 25C binary codes */
-		tca25[0] = 1596;
-		tca25[1] = 1596;
-		writel(tca25[0], (ulong)reg_base + 0x30);
-		writel(tca25[1], (ulong)reg_base + 0x34);
-		return;
-	}
-
-	buf_vref = (fuse->ana_trim2 & 0xc0) >> 6;
-	buf_slope = (fuse->ana_trim2 & 0xF00) >> 8;
-	bjt_cur = (fuse->ana_trim2 & 0xF000) >> 12;
-	bgr = (fuse->ana_trim2 & 0xF0000) >> 16;
-	vlsb = (fuse->ana_trim2 & 0xF00000) >> 20;
-	writel(buf_vref | (buf_slope << 16), (ulong)reg_base + 0x28);
-
-	reg = (bgr << 28) | (bjt_cur << 20) | (vlsb << 12) | (1 << 7);
-	writel(reg, (ulong)reg_base + 0x3c);
-
-	tca40[0] = (fuse->ana_trim3 & 0xFFF0000) >> 16;
-	tca25[0] = (fuse->ana_trim3 & 0xF0000000) >> 28;
-	tca25[0] |= ((fuse->ana_trim4 & 0xFF) << 4);
-	tca105[0] = (fuse->ana_trim4 & 0xFFF00) >> 8;
-	tca40[1] = (fuse->ana_trim4 & 0xFFF00000) >> 20;
-	tca25[1] = fuse2->ana_trim5 & 0xFFF;
-	tca105[1] = (fuse2->ana_trim5 & 0xFFF000) >> 12;
-
-	/* use 25c for 1p calibration */
-	writel(tca25[0] | (tca105[0] << 16), (ulong)reg_base + 0x30);
-	writel(tca25[1] | (tca105[1] << 16), (ulong)reg_base + 0x34);
-	writel(tca40[0] | (tca40[1] << 16), (ulong)reg_base + 0x38);
-#endif
-}
 
 #if defined(CONFIG_SPL_BUILD)
 #if defined(CONFIG_IMX8MQ) || defined(CONFIG_IMX8MM) || defined(CONFIG_IMX8MN)
@@ -1610,4 +1538,9 @@ const struct rproc_att hostmap[] = {
 	{ 0x40000000, 0x40000000, 0x80000000 },
 	{ /* sentinel */ }
 };
+
+const struct rproc_att *imx_bootaux_get_hostmap(void)
+{
+	return hostmap;
+}
 #endif

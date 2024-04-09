@@ -699,8 +699,10 @@ sectr_mcu_core_poweron()
 	return
     fi
     sectr_print $PRINT_INFO "$FUNCNAME"
-    #val=$(sectr_i2c_write_mcu 0x03 0x01)
-    val=$(sectr_i2c_write_mcu 0x03 0x09)
+
+	#val=$(sectr_i2c_write_mcu 0x03 0x01)
+	val=$(sectr_i2c_write_mcu 0x03 0x09)
+
     if [ $val -eq 0 ]; then
 	echo "0"
     else
@@ -1137,27 +1139,43 @@ sectr_set_aiub_ipaddr()
 	sectr_print $PRINT_INFO "$FUNCNAME no permission"
 	return
     fi
-    num=10
-    for ((i=1; i<=6; i++))
-    do
-		case $i in
-			1 ) val=0x00;;
-			2 ) val=0x01;;
-			3 ) val=0x03;;
-			4 ) val=0x07;;
-			5 ) val=0x0f;;
-			6 ) val=0x1f;;
-	esac
-	sectr_i2c_write_cpld $CPLD_PCIEE_RST_REG $val $2
-	sectr_switch_mcu_i2c $i $2
-	sleep 1
-	let num++
-	sectr_set_core_ipaddr "$1$num"
-	sectr_set_core_id $2 $i
-	sectr_mcu_core_poweron
-	sleep 0.04
-    done
-	i2cset -f -y  2 $2 0x7 0x3f
+
+	product=$(cat /sys/bus/i2c/devices/1-0017/information | grep model | awk -F \" '{print $4}')
+	if [ "$product" = "SM7 CTRL" ] || [ "$product" = "SE8 CTRL" ]; then
+        num=10
+        for ((i=1; i<=6; i++))
+        do
+	    	case $i in
+		    	1 ) val=0x00;;
+		    	2 ) val=0x01;;
+	    		3 ) val=0x03;;
+	    		4 ) val=0x07;;
+	    		5 ) val=0x0f;;
+	    		6 ) val=0x1f;;
+	    esac
+	    sectr_i2c_write_cpld $CPLD_PCIEE_RST_REG $val $2
+	    sectr_switch_mcu_i2c $i $2
+	    sleep 1
+	    let num++
+	    sectr_set_core_ipaddr "$1$num"
+	    sectr_set_core_id $2 $i
+	    sectr_mcu_core_poweron
+	    sleep 0.04
+        done
+	    i2cset -f -y  2 $2 0x7 0x3f
+	else
+        num=10
+        for ((i=1; i<=6; i++))
+        do
+        sectr_switch_mcu_i2c $i $2
+        sleep 1
+        let num++
+        sectr_set_core_ipaddr "$1$num"
+        sectr_set_core_id $2 $i
+        sectr_mcu_core_poweron
+        sleep 0.5
+        done
+	fi
 }
 
 # $1: IP_STR0

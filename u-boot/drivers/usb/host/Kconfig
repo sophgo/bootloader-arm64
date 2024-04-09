@@ -178,6 +178,7 @@ config USB_EHCI_MARVELL
 	depends on ARCH_MVEBU || ARCH_KIRKWOOD || ARCH_ORION5X
 	default y
 	select USB_EHCI_IS_TDI if !ARM64
+	select USB_EHCI_IS_TDI if ALLEYCAT_5
 	---help---
 	  Enables support for the on-chip EHCI controller on MVEBU SoCs.
 
@@ -364,11 +365,6 @@ endif # USB_OHCI_HCD
 config SYS_USB_OHCI_SLOT_NAME
 	string "Display name for the OHCI controller"
 	depends on USB_OHCI_NEW && !DM_USB
-
-config SYS_USB_OHCI_MAX_ROOT_PORTS
-	int "Maximal number of ports of the root hub"
-	depends on USB_OHCI_NEW
-	default 1 if ARCH_SUNXI
 
 config SYS_OHCI_SWAP_REG_ACCESS
 	bool "Perform byte swapping on OHCI controller register accesses"

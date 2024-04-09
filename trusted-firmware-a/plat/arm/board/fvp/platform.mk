@@ -132,17 +132,18 @@ else
 					lib/cpus/aarch64/neoverse_n2.S		\
 					lib/cpus/aarch64/neoverse_e1.S		\
 					lib/cpus/aarch64/neoverse_v1.S		\
-					lib/cpus/aarch64/neoverse_demeter.S	\
+					lib/cpus/aarch64/neoverse_v2.S	\
 					lib/cpus/aarch64/cortex_a78_ae.S	\
 					lib/cpus/aarch64/cortex_a510.S		\
-					lib/cpus/aarch64/cortex_a710.S	\
-					lib/cpus/aarch64/cortex_makalu.S	\
-					lib/cpus/aarch64/cortex_makalu_elp_arm.S \
+					lib/cpus/aarch64/cortex_a710.S		\
+					lib/cpus/aarch64/cortex_a715.S		\
+					lib/cpus/aarch64/cortex_x3.S 		\
 					lib/cpus/aarch64/cortex_a65.S		\
 					lib/cpus/aarch64/cortex_a65ae.S		\
 					lib/cpus/aarch64/cortex_a78c.S		\
 					lib/cpus/aarch64/cortex_hayes.S		\
 					lib/cpus/aarch64/cortex_hunter.S	\
+					lib/cpus/aarch64/cortex_hunter_elp_arm.S \
 					lib/cpus/aarch64/cortex_x2.S		\
 					lib/cpus/aarch64/neoverse_poseidon.S
 	endif
@@ -341,10 +342,6 @@ ifeq ($(filter 1,${BL2_AT_EL3} ${ARM_XLAT_TABLES_LIB_V1}),)
     endif
 endif
 
-ifeq (${ENABLE_RME},1)
-    BL31_CPPFLAGS	+=	-DPLAT_XLAT_TABLES_DYNAMIC
-endif
-
 ifeq (${ALLOW_RO_XLAT_TABLES}, 1)
     ifeq (${ARCH},aarch32)
         BL32_CPPFLAGS	+=	-DPLAT_RO_XLAT_TABLES
@@ -375,6 +372,10 @@ ifeq (${MEASURED_BOOT},1)
     $(info Including ${RSS_MEASURED_BOOT_MK})
     include ${RSS_MEASURED_BOOT_MK}
 
+    ifneq (${MBOOT_RSS_HASH_ALG}, sha256)
+        $(eval $(call add_define,TF_MBEDTLS_MBOOT_USE_SHA512))
+    endif
+
     BL1_SOURCES		+=	${MEASURED_BOOT_SOURCES}
     BL2_SOURCES		+=	${MEASURED_BOOT_SOURCES}
 endif
@@ -391,12 +392,44 @@ BL2_SOURCES		+=	plat/arm/board/fvp/fvp_common_measured_boot.c	\
 				plat/arm/board/fvp/fvp_bl2_measured_boot.c	\
 				lib/psa/measured_boot.c
 
+# Note that attestation code does not depend on measured boot interfaces per se,
+# but the two features go together - attestation without boot measurements is
+# pretty much pointless...
+BL31_SOURCES		+=	lib/psa/delegated_attestation.c
+
 PLAT_INCLUDES		+=	-Iinclude/lib/psa
 
 # RSS is not supported on FVP right now. Thus, we use the mocked version
-# of PSA Measured Boot APIs. They return with success and hard-coded data.
+# of the provided PSA APIs. They return with success and hard-coded data.
 PLAT_RSS_NOT_SUPPORTED	:= 1
 
+# Even though RSS is not supported on FVP (see above), we support overriding
+# PLAT_RSS_NOT_SUPPORTED from the command line, just for the purpose of building
+# the code to detect any build regressions. The resulting firmware will not be
+# functional.
+ifneq (${PLAT_RSS_NOT_SUPPORTED},1)
+    $(warning "RSS is not supported on FVP. The firmware will not be functional.")
+    include drivers/arm/rss/rss_comms.mk
+    BL1_SOURCES		+=	${RSS_COMMS_SOURCES}
+    BL2_SOURCES		+=	${RSS_COMMS_SOURCES}
+    BL31_SOURCES	+=	${RSS_COMMS_SOURCES}		\
+				lib/psa/delegated_attestation.c
+
+    BL1_CFLAGS		+=	-DPLAT_RSS_COMMS_PAYLOAD_MAX_SIZE=0
+    BL2_CFLAGS		+=	-DPLAT_RSS_COMMS_PAYLOAD_MAX_SIZE=0
+    BL31_CFLAGS		+=	-DPLAT_RSS_COMMS_PAYLOAD_MAX_SIZE=0
+endif
+
+endif
+
+ifeq (${DRTM_SUPPORT}, 1)
+BL31_SOURCES   += plat/arm/board/fvp/fvp_drtm_addr.c	\
+		  plat/arm/board/fvp/fvp_drtm_dma_prot.c	\
+		  plat/arm/board/fvp/fvp_drtm_err.c	\
+		  plat/arm/board/fvp/fvp_drtm_measurement.c	\
+		  plat/arm/board/fvp/fvp_drtm_stub.c	\
+		  plat/arm/common/arm_dyn_cfg.c		\
+		  plat/arm/board/fvp/fvp_err.c
 endif
 
 ifeq (${TRUSTED_BOARD_BOOT}, 1)
@@ -428,4 +461,8 @@ ENABLE_TRF_FOR_NS		:= 1
 
 ifeq (${SPMC_AT_EL3}, 1)
 PLAT_BL_COMMON_SOURCES	+=	plat/arm/board/fvp/fvp_el3_spmc.c
+endif
+
+ifeq (${ERRATA_ABI_SUPPORT}, 1)
+include plat/arm/board/fvp/fvp_cpu_errata.mk
 endif

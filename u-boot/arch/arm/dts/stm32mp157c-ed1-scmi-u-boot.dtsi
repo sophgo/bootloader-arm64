@@ -3,9 +3,7 @@
  * Copyright : STMicroelectronics 2022
  */
 
-#include <dt-bindings/clock/stm32mp1-clksrc.h>
 #include "stm32mp15-scmi-u-boot.dtsi"
-#include "stm32mp15-ddr3-2x4Gb-1066-binG.dtsi"
 
 / {
 	aliases {
@@ -31,16 +29,16 @@
 };
 
 &uart4 {
-	u-boot,dm-pre-reloc;
+	bootph-all;
 };
 
 &uart4_pins_a {
-	u-boot,dm-pre-reloc;
+	bootph-all;
 	pins1 {
-		u-boot,dm-pre-reloc;
+		bootph-all;
 	};
 	pins2 {
-		u-boot,dm-pre-reloc;
+		bootph-all;
 		/* pull-up on rx to avoid floating level */
 		bias-pull-up;
 	};

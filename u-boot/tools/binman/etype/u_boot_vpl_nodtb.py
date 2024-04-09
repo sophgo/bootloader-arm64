@@ -5,7 +5,6 @@
 # Entry-type module for 'u-boot-vpl-nodtb.bin'
 #
 
-from binman import elf
 from binman.entry import Entry
 from binman.etype.blob import Entry_blob
 
@@ -22,21 +21,14 @@ class Entry_u_boot_vpl_nodtb(Entry_blob):
     expands to a section containing u-boot-vpl-dtb, u-boot-vpl-bss-pad and
     u-boot-vpl-dtb
 
-    VPL can access binman symbols at runtime. See:
-
-        'Access to binman entry offsets at run time (symbols)'
-
-    in the binman README for more information.
+    VPL can access binman symbols at runtime. See :ref:`binman_fdt`.
 
     The ELF file 'vpl/u-boot-vpl' must also be available for this to work, since
     binman uses that to look up symbols to write into the VPL binary.
     """
     def __init__(self, section, etype, node):
-        super().__init__(section, etype, node)
+        super().__init__(section, etype, node, auto_write_symbols=True)
         self.elf_fname = 'vpl/u-boot-vpl'
 
     def GetDefaultFilename(self):
         return 'vpl/u-boot-vpl-nodtb.bin'
-
-    def WriteSymbols(self, section):
-        elf.LookupAndWriteSymbols(self.elf_fname, self, section.GetImage())

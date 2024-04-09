@@ -55,45 +55,11 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-static struct pl01x_serial_plat serial0 = {
-#if CONFIG_CONS_INDEX == 0
-	.base = CONFIG_SYS_SERIAL0,
-#elif CONFIG_CONS_INDEX == 1
-	.base = CONFIG_SYS_SERIAL1,
-#else
-#error "Unsupported console index value."
-#endif
-	.type = TYPE_PL011,
-};
-
-U_BOOT_DRVINFO(nxp_serial0) = {
-	.name = "serial_pl01x",
-	.plat = &serial0,
-};
-
-static struct pl01x_serial_plat serial1 = {
-	.base = CONFIG_SYS_SERIAL1,
-	.type = TYPE_PL011,
-};
-
-U_BOOT_DRVINFO(nxp_serial1) = {
-	.name = "serial_pl01x",
-	.plat = &serial1,
-};
-
-static void uart_get_clock(void)
-{
-	serial0.clock = get_serial_clock();
-	serial1.clock = get_serial_clock();
-}
-
 int board_early_init_f(void)
 {
 #if defined(CONFIG_SYS_I2C_EARLY_INIT) && defined(CONFIG_SPL_BUILD)
 	i2c_early_init_f();
 #endif
-	/* get required clock for UART IP */
-	uart_get_clock();
 
 #ifdef CONFIG_EMC2305
 	select_i2c_ch_pca9547(I2C_MUX_CH_EMC2305, 0);
@@ -180,7 +146,7 @@ void esdhc_dspi_status_fixup(void *blob)
 	const char dspi1_path[] = "/soc/spi@2110000";
 	const char dspi2_path[] = "/soc/spi@2120000";
 
-	struct ccsr_gur __iomem *gur = (void *)(CONFIG_SYS_FSL_GUTS_ADDR);
+	struct ccsr_gur __iomem *gur = (void *)(CFG_SYS_FSL_GUTS_ADDR);
 	u32 sdhc1_base_pmux;
 	u32 sdhc2_base_pmux;
 	u32 iic5_pmux;
@@ -385,7 +351,7 @@ static void esdhc_adapter_card_ident(void)
 int config_board_mux(void)
 {
 	u8 reg11, reg5, reg13;
-	struct ccsr_gur __iomem *gur = (void *)(CONFIG_SYS_FSL_GUTS_ADDR);
+	struct ccsr_gur __iomem *gur = (void *)(CFG_SYS_FSL_GUTS_ADDR);
 	u32 sdhc1_base_pmux;
 	u32 sdhc2_base_pmux;
 	u32 iic5_pmux;
@@ -572,7 +538,7 @@ int board_init(void)
 	out_le32(irq_ccsr + IRQCR_OFFSET / 4, AQR107_IRQ_MASK);
 #endif
 
-#if !defined(CONFIG_SYS_EARLY_PCI_INIT) && defined(CONFIG_DM_ETH)
+#if !defined(CONFIG_SYS_EARLY_PCI_INIT)
 	pci_init();
 #endif
 	return 0;
@@ -642,7 +608,6 @@ u16 soc_get_fuse_vid(int vid_index)
 #endif
 
 #ifdef CONFIG_FSL_MC_ENET
-extern int fdt_fixup_board_phy(void *fdt);
 
 void fdt_fixup_board_enet(void *fdt)
 {
@@ -662,9 +627,6 @@ void fdt_fixup_board_enet(void *fdt)
 	if (get_mc_boot_status() == 0 &&
 	    (is_lazy_dpl_addr_valid() || get_dpl_apply_status() == 0)) {
 		fdt_status_okay(fdt, offset);
-#ifndef CONFIG_DM_ETH
-		fdt_fixup_board_phy(fdt);
-#endif
 	} else {
 		fdt_status_fail(fdt, offset);
 	}
@@ -676,7 +638,7 @@ void board_quiesce_devices(void)
 }
 #endif
 
-#if CONFIG_IS_ENABLED(TARGET_LX2160ARDB)
+#if IS_ENABLED(CONFIG_TARGET_LX2160ARDB)
 int fdt_fixup_add_thermal(void *blob, int mux_node, int channel, int reg)
 {
 	int err;
@@ -798,7 +760,7 @@ int ft_board_setup(void *blob, struct bd_info *bd)
 	u64 mc_memory_size = 0;
 	u16 total_memory_banks;
 	int err;
-#if CONFIG_IS_ENABLED(TARGET_LX2160ARDB)
+#if IS_ENABLED(CONFIG_TARGET_LX2160ARDB)
 	u8 board_rev;
 #endif
 
@@ -862,7 +824,7 @@ int ft_board_setup(void *blob, struct bd_info *bd)
 #endif
 	fdt_fixup_icid(blob);
 
-#if CONFIG_IS_ENABLED(TARGET_LX2160ARDB)
+#if IS_ENABLED(CONFIG_TARGET_LX2160ARDB)
 	board_rev = (QIXIS_READ(arch) & 0xf) - 1 + 'A';
 	if (board_rev == 'C')
 		fdt_fixup_i2c_thermal_node(blob);

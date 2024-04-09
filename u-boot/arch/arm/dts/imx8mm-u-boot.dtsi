@@ -9,22 +9,22 @@
 	};
 };
 
-&{/soc@0} {
-	u-boot,dm-pre-reloc;
-	u-boot,dm-spl;
+&soc {
+	bootph-all;
+	bootph-pre-ram;
 };
 
 &aips1 {
-	u-boot,dm-pre-reloc;
-	u-boot,dm-spl;
+	bootph-all;
+	bootph-pre-ram;
 };
 
 &aips2 {
-	u-boot,dm-spl;
+	bootph-pre-ram;
 };
 
 &aips3 {
-	u-boot,dm-spl;
+	bootph-pre-ram;
 };
 
 &binman {
@@ -81,7 +81,9 @@
 
 		fit {
 			description = "Configuration to load ATF before U-Boot";
+#ifndef CONFIG_IMX_HAB
 			fit,external-offset = <CONFIG_FIT_EXTERNAL_OFFSET>;
+#endif
 			fit,fdt-list = "of-list";
 			#address-cells = <1>;
 
@@ -90,7 +92,7 @@
 					arch = "arm64";
 					compression = "none";
 					description = "U-Boot (64-bit)";
-					load = <CONFIG_SYS_TEXT_BASE>;
+					load = <CONFIG_TEXT_BASE>;
 					type = "standalone";
 
 					uboot-blob {
@@ -99,6 +101,7 @@
 					};
 				};
 
+#ifndef CONFIG_ARMV8_PSCI
 				atf {
 					arch = "arm64";
 					compression = "none";
@@ -112,6 +115,7 @@
 						type = "atf-bl31";
 					};
 				};
+#endif
 
 				binman_fip: fip {
 					arch = "arm64";
@@ -140,7 +144,9 @@
 					description = "NAME";
 					fdt = "fdt-SEQ";
 					firmware = "uboot";
+#ifndef CONFIG_ARMV8_PSCI
 					loadables = "atf";
+#endif
 				};
 			};
 		};
@@ -185,28 +191,28 @@
 };
 
 &clk {
-	u-boot,dm-pre-reloc;
-	u-boot,dm-spl;
+	bootph-all;
+	bootph-pre-ram;
 	/delete-property/ assigned-clocks;
 	/delete-property/ assigned-clock-parents;
 	/delete-property/ assigned-clock-rates;
 };
 
 &iomuxc {
-	u-boot,dm-spl;
+	bootph-pre-ram;
 };
 
 &osc_24m {
-	u-boot,dm-pre-reloc;
-	u-boot,dm-spl;
+	bootph-all;
+	bootph-pre-ram;
 };
 
 &spba1 {
-	u-boot,dm-pre-reloc;
-	u-boot,dm-spl;
+	bootph-all;
+	bootph-pre-ram;
 };
 
 &spba2 {
-	u-boot,dm-pre-reloc;
-	u-boot,dm-spl;
+	bootph-all;
+	bootph-pre-ram;
 };

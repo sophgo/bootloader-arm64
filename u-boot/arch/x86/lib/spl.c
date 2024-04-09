@@ -66,7 +66,7 @@ static int x86_spl_init(void)
 	 * TODO(sjg@chromium.org): We use this area of RAM for the stack
 	 * and global_data in SPL. Once U-Boot starts up and releocates it
 	 * is not needed. We could make this a CONFIG option or perhaps
-	 * place it immediately below CONFIG_SYS_TEXT_BASE.
+	 * place it immediately below CONFIG_TEXT_BASE.
 	 */
 	__maybe_unused char *ptr = (char *)0x110000;
 #else
@@ -92,7 +92,7 @@ static int x86_spl_init(void)
 #ifndef CONFIG_TPL
 	ret = fsp_setup_pinctrl(NULL, NULL);
 	if (ret) {
-		debug("%s: arch_cpu_init_dm() failed\n", __func__);
+		debug("%s: fsp_setup_pinctrl() failed\n", __func__);
 		return ret;
 	}
 #endif
@@ -117,6 +117,8 @@ static int x86_spl_init(void)
 	}
 
 #ifndef CONFIG_SYS_COREBOOT
+	debug("BSS clear from %lx to %lx len %lx\n", (ulong)&__bss_start,
+	      (ulong)&__bss_end, (ulong)&__bss_end - (ulong)&__bss_start);
 	memset(&__bss_start, 0, (ulong)&__bss_end - (ulong)&__bss_start);
 # ifndef CONFIG_TPL
 
@@ -145,7 +147,6 @@ static int x86_spl_init(void)
 		debug("%s: SPI cache setup failed (err=%d)\n", __func__, ret);
 		return ret;
 	}
-	mtrr_commit(true);
 # else
 	ret = syscon_get_by_driver_data(X86_SYSCON_PUNIT, &punit);
 	if (ret)
@@ -184,7 +185,8 @@ void board_init_f(ulong flags)
 
 void board_init_f_r(void)
 {
-	init_cache_f_r();
+	mtrr_commit(false);
+	init_cache();
 	gd->flags &= ~GD_FLG_SERIAL_READY;
 	debug("cache status %d\n", dcache_status());
 	board_init_r(gd, 0);
@@ -209,22 +211,15 @@ static int spl_board_load_image(struct spl_image_info *spl_image,
 				struct spl_boot_device *bootdev)
 {
 	spl_image->size = CONFIG_SYS_MONITOR_LEN;
-	spl_image->entry_point = CONFIG_SYS_TEXT_BASE;
-	spl_image->load_addr = CONFIG_SYS_TEXT_BASE;
+	spl_image->entry_point = CONFIG_TEXT_BASE;
+	spl_image->load_addr = CONFIG_TEXT_BASE;
 	spl_image->os = IH_OS_U_BOOT;
 	spl_image->name = "U-Boot";
 
 	if (!IS_ENABLED(CONFIG_SYS_COREBOOT)) {
-		/*
-		 * Copy U-Boot from ROM
-		 * TODO(sjg@chromium.org): Figure out a way to get the text base
-		 * correctly here, and in the device-tree binman definition.
-		 *
-		 * Also consider using FIT so we get the correct image length
-		 * and parameters.
-		 */
-		memcpy((char *)spl_image->load_addr, (char *)0xfff00000,
-		       0x100000);
+		/* Copy U-Boot from ROM */
+		memcpy((void *)spl_image->load_addr,
+		       (void *)spl_get_image_pos(), spl_get_image_size());
 	}
 
 	debug("Loading to %lx\n", spl_image->load_addr);

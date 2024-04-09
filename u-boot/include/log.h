@@ -100,6 +100,8 @@ enum log_category_t {
 	LOGC_BOOT,
 	/** @LOGC_EVENT: Related to event and event handling */
 	LOGC_EVENT,
+	/** @LOGC_FS: Related to filesystems */
+	LOGC_FS,
 	/** @LOGC_COUNT: Number of log categories */
 	LOGC_COUNT,
 	/** @LOGC_END: Sentinel value for lists of log categories */
@@ -322,7 +324,10 @@ void __assert_fail(const char *assertion, const char *file, unsigned int line,
  *
  * or:
  *
- *	return log_msg_ret("fred failed", fred_call());
+ *	return log_msg_ret("get", fred_call());
+ *
+ * It is recommended to use <= 3 characters for the name since this will only
+ * use 4 bytes in rodata
  */
 #define log_ret(_ret) ({ \
 	int __ret = (_ret); \

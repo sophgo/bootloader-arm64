@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2016-2023, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -16,8 +16,10 @@
 #define MIDR_IMPL_SHIFT		U(24)
 #define MIDR_VAR_SHIFT		U(20)
 #define MIDR_VAR_BITS		U(4)
+#define MIDR_VAR_MASK		U(0xf)
 #define MIDR_REV_SHIFT		U(0)
 #define MIDR_REV_BITS		U(4)
+#define MIDR_REV_MASK		U(0xf)
 #define MIDR_PN_MASK		U(0xfff)
 #define MIDR_PN_SHIFT		U(4)
 
@@ -616,6 +618,12 @@
 #define ICC_SGI1R_EL1_64	p15, 0, c12
 #define ICC_ASGI1R_EL1_64	p15, 1, c12
 #define ICC_SGI0R_EL1_64	p15, 2, c12
+
+/* Fault registers. The format is: coproc, opt1, CRn, CRm, opt2 */
+#define DFSR		p15, 0, c5, c0, 0
+#define IFSR		p15, 0, c5, c0, 1
+#define DFAR		p15, 0, c6, c0, 0
+#define IFAR		p15, 0, c6, c0, 2
 
 /*******************************************************************************
  * Definitions of MAIR encodings for device and normal memory

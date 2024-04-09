@@ -11,19 +11,14 @@
 #define __COLIBRI_IMX6ULL_CONFIG_H
 
 #include "mx6_common.h"
-#define CONFIG_IOMUX_LPSR
 
 #define PHYS_SDRAM_SIZE			SZ_1G
 
 /* ENET1 */
 
 /* MMC Config */
-#define CONFIG_SYS_FSL_ESDHC_ADDR	0
-#define CONFIG_SYS_FSL_USDHC_NUM	1
-
-#define CONFIG_IPADDR			192.168.10.2
-#define CONFIG_NETMASK			255.255.255.0
-#define CONFIG_SERVERIP			192.168.10.1
+#define CFG_SYS_FSL_ESDHC_ADDR	0
+#define CFG_SYS_FSL_USDHC_NUM	1
 
 #if defined(CONFIG_TARGET_COLIBRI_IMX6ULL_EMMC)
 #define UBOOT_UPDATE \
@@ -43,11 +38,11 @@
 
 #define MEM_LAYOUT_ENV_SETTINGS \
 	"bootm_size=0x10000000\0" \
-	"fdt_addr_r=0x82100000\0" \
-	"kernel_addr_r=0x81000000\0" \
-	"pxefile_addr_r=0x87100000\0" \
-	"ramdisk_addr_r=0x82200000\0" \
-	"scriptaddr=0x87000000\0"
+	"fdt_addr_r=0x88200000\0" \
+	"kernel_addr_r=" __stringify(CONFIG_SYS_LOAD_ADDR) "\0" \
+	"pxefile_addr_r=0x88300000\0" \
+	"ramdisk_addr_r=0x88400000\0" \
+	"scriptaddr=0x88280000\0"
 
 #define UBI_BOOTCMD \
 	"ubiargs=ubi.mtd=ubi root=ubi0:rootfs rw rootfstype=ubifs " \
@@ -84,7 +79,7 @@
 #endif
 #include <config_distro_bootcmd.h>
 
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#define CFG_EXTRA_ENV_SETTINGS \
 	BOOTENV \
 	MEM_LAYOUT_ENV_SETTINGS \
 	UBI_BOOTCMD \
@@ -104,7 +99,7 @@
 		"${board}/flash_blk.img && source ${loadaddr}\0" \
 	"setup=setenv setupargs " \
 		"console=tty1 console=${console}" \
-		",${baudrate}n8 ${memargs} consoleblank=0\0" \
+		",${baudrate}n8 ${memargs} ${mtdparts} consoleblank=0\0" \
 	"setupdate=run setsdupdate || run setusbupdate || run setethupdate\0" \
 	"setusbupdate=usb start && setenv interface usb && " \
 		"fatload ${interface} 0:1 ${loadaddr} " \
@@ -116,28 +111,25 @@
 /* Physical Memory Map */
 #define PHYS_SDRAM			MMDC0_ARB_BASE_ADDR
 
-#define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM
-#define CONFIG_SYS_INIT_RAM_ADDR	IRAM_BASE_ADDR
-#define CONFIG_SYS_INIT_RAM_SIZE	IRAM_SIZE
+#define CFG_SYS_SDRAM_BASE		PHYS_SDRAM
+#define CFG_SYS_INIT_RAM_ADDR	IRAM_BASE_ADDR
+#define CFG_SYS_INIT_RAM_SIZE	IRAM_SIZE
 
 #ifdef CONFIG_TARGET_COLIBRI_IMX6ULL_NAND
 /* NAND stuff */
-#define CONFIG_SYS_MAX_NAND_DEVICE	1
-/* used to initialize CONFIG_SYS_NAND_BASE_LIST which is unused */
-#define CONFIG_SYS_NAND_BASE		-1
+/* used to initialize CFG_SYS_NAND_BASE_LIST which is unused */
+#define CFG_SYS_NAND_BASE		-1
 #endif
 
 /* USB Configs */
 
-#define CONFIG_MXC_USB_PORTSC		(PORT_PTS_UTMI | PORT_PTS_PTW)
-#define CONFIG_MXC_USB_FLAGS		0
-
-#define CONFIG_USBD_HS
+#define CFG_MXC_USB_PORTSC		(PORT_PTS_UTMI | PORT_PTS_PTW)
+#define CFG_MXC_USB_FLAGS		0
 
 /* USB Device Firmware Update support */
 #define DFU_DEFAULT_POLL_TIMEOUT	300
 
-#if defined(CONFIG_DM_VIDEO)
+#if defined(CONFIG_VIDEO)
 #define MXS_LCDIF_BASE MX6UL_LCDIF1_BASE_ADDR
 #endif
 

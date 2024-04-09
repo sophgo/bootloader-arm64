@@ -739,7 +739,7 @@ int fdt_delete_disabled_nodes(void *blob)
 }
 
 #ifdef CONFIG_PCI
-#define CONFIG_SYS_PCI_NR_INBOUND_WIN 4
+#define CFG_SYS_PCI_NR_INBOUND_WIN 4
 
 #define FDT_PCI_PREFETCH	(0x40000000)
 #define FDT_PCI_MEM32		(0x02000000)
@@ -751,7 +751,7 @@ int fdt_pci_dma_ranges(void *blob, int phb_off, struct pci_controller *hose) {
 	int addrcell, sizecell, len, r;
 	u32 *dma_range;
 	/* sized based on pci addr cells, size-cells, & address-cells */
-	u32 dma_ranges[(3 + 2 + 2) * CONFIG_SYS_PCI_NR_INBOUND_WIN];
+	u32 dma_ranges[(3 + 2 + 2) * CFG_SYS_PCI_NR_INBOUND_WIN];
 
 	addrcell = fdt_getprop_u32_default(blob, "/", "#address-cells", 1);
 	sizecell = fdt_getprop_u32_default(blob, "/", "#size-cells", 1);
@@ -1486,11 +1486,11 @@ out:
 }
 
 /**
- * fdt_node_offset_by_compat_reg: Find a node that matches compatiable and
+ * fdt_node_offset_by_compat_reg: Find a node that matches compatible and
  * who's reg property matches a physical cpu address
  *
  * @blob: ptr to device tree
- * @compat: compatiable string to match
+ * @compat: compatible string to match
  * @compat_off: property name
  *
  */
@@ -1739,35 +1739,6 @@ int fdt_set_status_by_pathf(void *fdt, enum fdt_status status, const char *fmt,
 
 	return fdt_set_node_status(fdt, offset, status);
 }
-
-#if defined(CONFIG_LCD)
-int fdt_add_edid(void *blob, const char *compat, unsigned char *edid_buf)
-{
-	int noff;
-	int ret;
-
-	noff = fdt_node_offset_by_compatible(blob, -1, compat);
-	if (noff != -FDT_ERR_NOTFOUND) {
-		debug("%s: %s\n", fdt_get_name(blob, noff, 0), compat);
-add_edid:
-		ret = fdt_setprop(blob, noff, "edid", edid_buf, 128);
-		if (ret == -FDT_ERR_NOSPACE) {
-			ret = fdt_increase_size(blob, 512);
-			if (!ret)
-				goto add_edid;
-			else
-				goto err_size;
-		} else if (ret < 0) {
-			printf("Can't add property: %s\n", fdt_strerror(ret));
-			return ret;
-		}
-	}
-	return 0;
-err_size:
-	printf("Can't increase blob size: %s\n", fdt_strerror(ret));
-	return ret;
-}
-#endif
 
 /*
  * Verify the physical address of device tree node for a given alias

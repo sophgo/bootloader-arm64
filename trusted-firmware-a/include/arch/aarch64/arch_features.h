@@ -35,15 +35,30 @@ static inline bool is_armv8_2_ttcnp_present(void)
 		ID_AA64MMFR2_EL1_CNP_MASK) != 0U;
 }
 
+static inline bool is_feat_pacqarma3_present(void)
+{
+	uint64_t mask_id_aa64isar2 =
+			(ID_AA64ISAR2_GPA3_MASK << ID_AA64ISAR2_GPA3_SHIFT) |
+			(ID_AA64ISAR2_APA3_MASK << ID_AA64ISAR2_APA3_SHIFT);
+
+	/* If any of the fields is not zero, QARMA3 algorithm is present */
+	return (read_id_aa64isar2_el1() & mask_id_aa64isar2) != 0U;
+}
+
 static inline bool is_armv8_3_pauth_present(void)
 {
-	uint64_t mask = (ID_AA64ISAR1_GPI_MASK << ID_AA64ISAR1_GPI_SHIFT) |
-			(ID_AA64ISAR1_GPA_MASK << ID_AA64ISAR1_GPA_SHIFT) |
-			(ID_AA64ISAR1_API_MASK << ID_AA64ISAR1_API_SHIFT) |
-			(ID_AA64ISAR1_APA_MASK << ID_AA64ISAR1_APA_SHIFT);
+	uint64_t mask_id_aa64isar1 =
+		(ID_AA64ISAR1_GPI_MASK << ID_AA64ISAR1_GPI_SHIFT) |
+		(ID_AA64ISAR1_GPA_MASK << ID_AA64ISAR1_GPA_SHIFT) |
+		(ID_AA64ISAR1_API_MASK << ID_AA64ISAR1_API_SHIFT) |
+		(ID_AA64ISAR1_APA_MASK << ID_AA64ISAR1_APA_SHIFT);
 
-	/* If any of the fields is not zero, PAuth is present */
-	return (read_id_aa64isar1_el1() & mask) != 0U;
+	/*
+	 * If any of the fields is not zero or QARMA3 is present,
+	 * PAuth is present
+	 */
+	return ((read_id_aa64isar1_el1() & mask_id_aa64isar1) != 0U ||
+		is_feat_pacqarma3_present());
 }
 
 static inline bool is_armv8_4_dit_present(void)
@@ -85,7 +100,7 @@ static inline bool is_armv8_6_twed_present(void)
 static inline bool is_armv8_6_fgt_present(void)
 {
 	return ((read_id_aa64mmfr0_el1() >> ID_AA64MMFR0_EL1_FGT_SHIFT) &
-		ID_AA64MMFR0_EL1_FGT_MASK) == ID_AA64MMFR0_EL1_FGT_SUPPORTED;
+		ID_AA64MMFR0_EL1_FGT_MASK) != 0U;
 }
 
 static inline unsigned long int get_armv8_6_ecv_support(void)
@@ -127,6 +142,13 @@ static inline bool is_feat_hcx_present(void)
 {
 	return (((read_id_aa64mmfr1_el1() >> ID_AA64MMFR1_EL1_HCX_SHIFT) &
 		ID_AA64MMFR1_EL1_HCX_MASK) == ID_AA64MMFR1_EL1_HCX_SUPPORTED);
+}
+
+static inline bool is_feat_rng_trap_present(void)
+{
+	return (((read_id_aa64pfr1_el1() >> ID_AA64PFR1_EL1_RNDR_TRAP_SHIFT) &
+			ID_AA64PFR1_EL1_RNDR_TRAP_MASK)
+			== ID_AA64PFR1_EL1_RNG_TRAP_SUPPORTED);
 }
 
 static inline unsigned int get_armv9_2_feat_rme_support(void)
@@ -222,6 +244,25 @@ static inline unsigned int get_armv8_4_feat_nv_support(void)
 {
 	return (((read_id_aa64mmfr2_el1() >> ID_AA64MMFR2_EL1_NV_SHIFT) &
 		ID_AA64MMFR2_EL1_NV_MASK));
+}
+
+/*******************************************************************************
+ * Function to identify the presence of FEAT_BRBE (Branch Record Buffer
+ * Extension)
+ ******************************************************************************/
+static inline bool is_feat_brbe_present(void)
+{
+	return (((read_id_aa64dfr0_el1() >> ID_AA64DFR0_BRBE_SHIFT) &
+		ID_AA64DFR0_BRBE_MASK) == ID_AA64DFR0_BRBE_SUPPORTED);
+}
+
+/*******************************************************************************
+ * Function to identify the presence of FEAT_TRBE (Trace Buffer Extension)
+ ******************************************************************************/
+static inline bool is_feat_trbe_present(void)
+{
+	return (((read_id_aa64dfr0_el1() >> ID_AA64DFR0_TRACEBUFFER_SHIFT) &
+		ID_AA64DFR0_TRACEBUFFER_MASK) == ID_AA64DFR0_TRACEBUFFER_SUPPORTED);
 }
 
 #endif /* ARCH_FEATURES_H */

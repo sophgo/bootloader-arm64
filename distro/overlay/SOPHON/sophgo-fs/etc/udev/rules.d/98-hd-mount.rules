@@ -1,0 +1,6 @@
+# auto mount
+KERNELS=="sd*", ACTION=="add", SUBSYSTEM=="block", RUN+="/sbin/automount.sh"
+KERNELS=="sd*", ACTION=="remove", SUBSYSTEM=="block", RUN+="/sbin/automount.sh"
+# creat symlink for device file
+KERNELS=="sd*", SUBSYSTEM=="block", ATTRS{removable}=="0", SYMLINK+="storage-local-%k"
+KERNELS=="sd*", SUBSYSTEM=="block", ATTRS{removable}=="1", SYMLINK+="storage-hot-%k"

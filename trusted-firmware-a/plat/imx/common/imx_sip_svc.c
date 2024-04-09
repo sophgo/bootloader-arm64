@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2019, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2022, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -34,6 +34,13 @@ static uintptr_t imx_sip_handler(unsigned int smc_fid,
 		SMC_RET1(handle, imx_soc_info_handler(smc_fid, x1, x2, x3));
 		break;
 #endif
+#if defined(PLAT_imx8mm) || defined(PLAT_imx8mn) || defined(PLAT_imx8mp)
+	case IMX_SIP_DDR_DVFS:
+		return dram_dvfs_handler(smc_fid, handle, x1, x2, x3);
+	case IMX_SIP_GPC:
+		SMC_RET1(handle, imx_gpc_handler(smc_fid, x1, x2, x3));
+		break;
+#endif
 #if (defined(PLAT_imx8qm) || defined(PLAT_imx8qx))
 	case  IMX_SIP_SRTC:
 		return imx_srtc_handler(smc_fid, handle, x1, x2, x3, x4);
@@ -51,6 +58,11 @@ static uintptr_t imx_sip_handler(unsigned int smc_fid,
 #if defined(PLAT_imx8mm) || defined(PLAT_imx8mq)
 	case IMX_SIP_SRC:
 		SMC_RET1(handle, imx_src_handler(smc_fid, x1, x2, x3, handle));
+		break;
+#endif
+#if defined(PLAT_imx8mm) || defined(PLAT_imx8mn) || defined(PLAT_imx8mp)
+	case IMX_SIP_HAB:
+		SMC_RET1(handle, imx_hab_handler(smc_fid, x1, x2, x3, x4));
 		break;
 #endif
 	case  IMX_SIP_BUILDINFO:

@@ -1,8 +1,11 @@
 .. SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
 .. sectionauthor:: Tom Rini <trini@konsulko.com>
 
+AM335x Generation
+=================
+
 Summary
-=======
+-------
 
 This document covers various features of the `am335x_evm` default
 configuration, some of the related defconfigs, and how to enable hardware
@@ -54,7 +57,7 @@ Step-1: Building u-boot for NAND boot
 	CONFIG_SYS_NAND_PAGE_SIZE	number of main bytes in NAND page
 	CONFIG_SYS_NAND_OOBSIZE		number of OOB bytes in NAND page
 	CONFIG_SYS_NAND_BLOCK_SIZE	number of bytes in NAND erase-block
-	CONFIG_SYS_NAND_ECCPOS		ECC map for NAND page
+	CFG_SYS_NAND_ECCPOS		ECC map for NAND page
 	CONFIG_NAND_OMAP_ECCSCHEME	(refer doc/README.nand)
 
 Step-2: Flashing NAND via MMC/SD

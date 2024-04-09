@@ -313,7 +313,13 @@ Common build options
 -  ``ENABLE_FEAT_RNG``: Numeric value to enable the ``FEAT_RNG`` extension.
    ``FEAT_RNG`` is an optional feature available on Arm v8.5 onwards. This
    flag can take the values 0 to 2, to align with the ``FEATURE_DETECTION``
-   mechanism. Default is ``0``.
+   mechanism. Default value is ``0``.
+
+-  ``ENABLE_FEAT_RNG_TRAP``: Numeric value to enable the ``FEAT_RNG_TRAP``
+   extension. This feature is only supported in AArch64 state. This flag can
+   take values 0 to 2, to align with the ``FEATURE_DETECTION`` mechanism.
+   Default value is ``0``. ``FEAT_RNG_TRAP`` is an optional feature from
+   Armv8.5 onwards.
 
 -  ``ENABLE_FEAT_SB``: Numeric value to enable the ``FEAT_SB`` (Speculation
    Barrier) extension allowing access to ``sb`` instruction. ``FEAT_SB`` is an
@@ -461,8 +467,11 @@ Common build options
 
 -  ``EL3_EXCEPTION_HANDLING``: When set to ``1``, enable handling of exceptions
    targeted at EL3. When set ``0`` (default), no exceptions are expected or
-   handled at EL3, and a panic will result. This is supported only for AArch64
-   builds.
+   handled at EL3, and a panic will result. The exception to this rule is when
+   ``SPMD_SPM_AT_SEL2`` is set to ``1``, in which case, only exceptions
+   occuring during normal world execution, are trapped to EL3. Any exception
+   trapped during secure world execution are trapped to the SPMC. This is
+   supported only for AArch64 builds.
 
 -  ``EVENT_LOG_LEVEL``: Chooses the log level to use for Measured Boot when
    ``MEASURED_BOOT`` is enabled. For a list of valid values, see ``LOG_LEVEL``.
@@ -560,10 +569,11 @@ Common build options
    EL1 for handling. The default value of this option is ``0``, which means the
    Group 0 interrupts are assumed to be handled by Secure EL1.
 
--  ``HANDLE_EA_EL3_FIRST``: When set to ``1``, External Aborts and SError
-   Interrupts will be always trapped in EL3 i.e. in BL31 at runtime. When set to
-   ``0`` (default), these exceptions will be trapped in the current exception
-   level (or in EL1 if the current exception level is EL0).
+-  ``HANDLE_EA_EL3_FIRST_NS``: When set to ``1``, External Aborts and SError
+   Interrupts, resulting from errors in NS world, will be always trapped in
+   EL3 i.e. in BL31 at runtime. When set to ``0`` (default), these exceptions
+   will be trapped in the current exception level (or in EL1 if the current
+   exception level is EL0).
 
 -  ``HW_ASSISTED_COHERENCY``: On most Arm systems to-date, platform-specific
    software operations are required for CPUs to enter and exit coherency.
@@ -600,22 +610,28 @@ Common build options
 
 -  ``KEY_ALG``: This build flag enables the user to select the algorithm to be
    used for generating the PKCS keys and subsequent signing of the certificate.
-   It accepts 3 values: ``rsa``, ``rsa_1_5`` and ``ecdsa``. The option
-   ``rsa_1_5`` is the legacy PKCS#1 RSA 1.5 algorithm which is not TBBR
-   compliant and is retained only for compatibility. The default value of this
-   flag is ``rsa`` which is the TBBR compliant PKCS#1 RSA 2.1 scheme.
+   It accepts 5 values: ``rsa``, ``rsa_1_5``, ``ecdsa``, ``ecdsa-brainpool-regular``
+   and ``ecdsa-brainpool-twisted``. The option ``rsa_1_5`` is the legacy PKCS#1
+   RSA 1.5 algorithm which is not TBBR compliant and is retained only for
+   compatibility. The default value of this flag is ``rsa`` which is the TBBR
+   compliant PKCS#1 RSA 2.1 scheme.
 
 -  ``KEY_SIZE``: This build flag enables the user to select the key size for
    the algorithm specified by ``KEY_ALG``. The valid values for ``KEY_SIZE``
    depend on the chosen algorithm and the cryptographic module.
 
-   +-----------+------------------------------------+
-   |  KEY_ALG  |        Possible key sizes          |
-   +===========+====================================+
-   |    rsa    | 1024 , 2048 (default), 3072, 4096* |
-   +-----------+------------------------------------+
-   |   ecdsa   |            unavailable             |
-   +-----------+------------------------------------+
+   +---------------------------+------------------------------------+
+   |         KEY_ALG           |        Possible key sizes          |
+   +===========================+====================================+
+   |           rsa             | 1024 , 2048 (default), 3072, 4096* |
+   +---------------------------+------------------------------------+
+   |          ecdsa            |            unavailable             |
+   +---------------------------+------------------------------------+
+   |  ecdsa-brainpool-regular  |            unavailable             |
+   +---------------------------+------------------------------------+
+   |  ecdsa-brainpool-twisted  |            unavailable             |
+   +---------------------------+------------------------------------+
+
 
    * Only 2048 bits size is available with CryptoCell 712 SBROM release 1.
      Only 3072 bits size is available with CryptoCell 712 SBROM release 2.
@@ -716,7 +732,7 @@ Common build options
    or later CPUs. This flag can take the values 0 to 2, to align with the
    ``FEATURE_DETECTION`` mechanism.
 
-   When ``RAS_EXTENSION`` is set to ``1``, ``HANDLE_EA_EL3_FIRST`` must also be
+   When ``RAS_EXTENSION`` is set to ``1``, ``HANDLE_EA_EL3_FIRST_NS`` must also be
    set to ``1``.
 
    This option is disabled by default.
@@ -833,6 +849,17 @@ Common build options
    the FIQ are handled in monitor mode and non secure world is not allowed
    to mask these events. Platforms that enable FIQ handling in SP_MIN shall
    implement the api ``sp_min_plat_fiq_handler()``. The default value is 0.
+
+-  ``SVE_VECTOR_LEN``: SVE vector length to configure in ZCR_EL3.
+   Platforms can configure this if they need to lower the hardware
+   limit, for example due to asymmetric configuration or limitations of
+   software run at lower ELs. The default is the architectural maximum
+   of 2048 which should be suitable for most configurations, the
+   hardware will limit the effective VL to the maximum physically supported
+   VL.
+
+-  ``TRNG_SUPPORT``: Setting this to ``1`` enables support for True
+   Random Number Generator Interface to BL31 image. This defaults to ``0``.
 
 -  ``TRUSTED_BOARD_BOOT``: Boolean flag to include support for the Trusted Board
    Boot feature. When set to '1', BL1 and BL2 images include support to load
@@ -970,28 +997,31 @@ Common build options
       implement this workaround due to the behaviour of the errata mentioned
       in new SDEN document which will get published soon.
 
-- ``RAS_TRAP_LOWER_EL_ERR_ACCESS``: This flag enables/disables the SCR_EL3.TERR
+- ``RAS_TRAP_NS_ERR_REC_ACCESS``: This flag enables/disables the SCR_EL3.TERR
   bit, to trap access to the RAS ERR and RAS ERX registers from lower ELs.
   This flag is disabled by default.
 
-- ``OPENSSL_DIR``: This flag is used to provide the installed openssl directory
-  path on the host machine which is used to build certificate generation and
-  firmware encryption tool.
+- ``OPENSSL_DIR``: This option is used to provide the path to a directory on the
+  host machine where a custom installation of OpenSSL is located, which is used
+  to build the certificate generation, firmware encryption and FIP tools. If
+  this option is not set, the default OS installation will be used.
 
 - ``USE_SP804_TIMER``: Use the SP804 timer instead of the Generic Timer for
   functions that wait for an arbitrary time length (udelay and mdelay). The
   default value is 0.
 
-- ``ENABLE_BRBE_FOR_NS``: This flag enables access to the branch record buffer
-  registers from NS ELs when FEAT_BRBE is implemented. BRBE is an optional
-  architectural feature for AArch64. The default is 0 and it is automatically
-  disabled when the target architecture is AArch32.
+- ``ENABLE_BRBE_FOR_NS``: Numeric value to enable access to the branch record
+  buffer registers from NS ELs when FEAT_BRBE is implemented. BRBE is an
+  optional architectural feature for AArch64. This flag can take the values
+  0 to 2, to align with the ``FEATURE_DETECTION`` mechanism. The default is 0
+  and it is automatically disabled when the target architecture is AArch32.
 
-- ``ENABLE_TRBE_FOR_NS``: This flag is used to enable access of trace buffer
+- ``ENABLE_TRBE_FOR_NS``: Numeric value to enable access of trace buffer
   control registers from NS ELs, NS-EL2 or NS-EL1(when NS-EL2 is implemented
   but unused) when FEAT_TRBE is implemented. TRBE is an optional architectural
-  feature for AArch64. The default is 0 and it is automatically disabled when
-  the target architecture is AArch32.
+  feature for AArch64. This flag can take the values  0 to 2, to align with the
+  ``FEATURE_DETECTION`` mechanism. The default is 0 and it is automatically
+  disabled when the target architecture is AArch32.
 
 - ``ENABLE_SYS_REG_TRACE_FOR_NS``: Boolean option to enable trace system
   registers access from NS ELs, NS-EL2 or NS-EL1 (when NS-EL2 is implemented
@@ -1007,6 +1037,19 @@ Common build options
   APIs on platforms that doesn't support RSS (providing Arm CCA HES
   functionalities). When enabled (``1``), a mocked version of the APIs are used.
   The default value is 0.
+
+- ``CONDITIONAL_CMO``: Boolean option to enable call to platform-defined routine
+  ``plat_can_cmo`` which will return zero if cache management operations should
+  be skipped and non-zero otherwise. By default, this option is disabled which
+  means platform hook won't be checked and CMOs will always be performed when
+  related functions are called.
+
+- ``ERRATA_ABI_SUPPORT``: Boolean option to enable support for Errata management
+  firmware interface for the BL31 image. By default its disabled (``0``).
+
+- ``ERRATA_NON_ARM_INTERCONNECT``: Boolean option to enable support for the
+  errata mitigation for platforms with a non-arm interconnect using the errata
+  ABI. By default its disabled (``0``).
 
 GICv3 driver options
 --------------------

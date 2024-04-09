@@ -15,30 +15,6 @@ struct video_priv;
 #define VID_TO_PIXEL(x)	((x) / VID_FRAC_DIV)
 #define VID_TO_POS(x)	((x) * VID_FRAC_DIV)
 
-/*
- * The 16 colors supported by the console
- */
-enum color_idx {
-	VID_BLACK = 0,
-	VID_RED,
-	VID_GREEN,
-	VID_BROWN,
-	VID_BLUE,
-	VID_MAGENTA,
-	VID_CYAN,
-	VID_LIGHT_GRAY,
-	VID_GRAY,
-	VID_LIGHT_RED,
-	VID_LIGTH_GREEN,
-	VID_YELLOW,
-	VID_LIGHT_BLUE,
-	VID_LIGHT_MAGENTA,
-	VID_LIGHT_CYAN,
-	VID_WHITE,
-
-	VID_COLOR_COUNT
-};
-
 /**
  * struct vidconsole_priv - uclass-private data about a console device
  *
@@ -84,6 +60,15 @@ struct vidconsole_priv {
 	int row_saved;
 	int col_saved;
 	char escape_buf[32];
+};
+
+/**
+ * struct vidfont_info - information about a font
+ *
+ * @name: Font name, e.g. nimbus_sans_l_regular
+ */
+struct vidfont_info {
+	const char *name;
 };
 
 /**
@@ -135,6 +120,9 @@ struct vidconsole_ops {
 	/**
 	 * entry_start() - Indicate that text entry is starting afresh
 	 *
+	 * @dev:	Device to adjust
+	 * Returns: 0 on success, -ve on error
+	 *
 	 * Consoles which use proportional fonts need to track the position of
 	 * each character output so that backspace will return to the correct
 	 * place. This method signals to the console driver that a new entry
@@ -147,6 +135,9 @@ struct vidconsole_ops {
 	/**
 	 * backspace() - Handle erasing the last character
 	 *
+	 * @dev:	Device to adjust
+	 * Returns: 0 on success, -ve on error
+	 *
 	 * With proportional fonts the vidconsole uclass cannot itself erase
 	 * the previous character. This optional method will be called when
 	 * a backspace is needed. The driver should erase the previous
@@ -157,10 +148,61 @@ struct vidconsole_ops {
 	 * characters.
 	 */
 	int (*backspace)(struct udevice *dev);
+
+	/**
+	 * get_font() - Obtain information about a font (optional)
+	 *
+	 * @dev:	Device to check
+	 * @seq:	Font number to query (0=first, 1=second, etc.)
+	 * @info:	Returns font information on success
+	 * Returns: 0 on success, -ENOENT if no such font
+	 */
+	int (*get_font)(struct udevice *dev, int seq,
+			struct vidfont_info *info);
+
+	/**
+	 * get_font_size() - get the current font name and size
+	 *
+	 * @dev: vidconsole device
+	 * @sizep: Place to put the font size (nominal height in pixels)
+	 * Returns: Current font name
+	 */
+	const char *(*get_font_size)(struct udevice *dev, uint *sizep);
+
+	/**
+	 * select_font() - Select a particular font by name / size
+	 *
+	 * @dev:	Device to adjust
+	 * @name:	Font name to use (NULL to use default)
+	 * @size:	Font size to use (0 to use default)
+	 * Returns: 0 on success, -ENOENT if no such font
+	 */
+	int (*select_font)(struct udevice *dev, const char *name, uint size);
 };
 
 /* Get a pointer to the driver operations for a video console device */
 #define vidconsole_get_ops(dev)  ((struct vidconsole_ops *)(dev)->driver->ops)
+
+/**
+ * vidconsole_get_font() - Obtain information about a font
+ *
+ * @dev:	Device to check
+ * @seq:	Font number to query (0=first, 1=second, etc.)
+ * @info:	Returns font information on success
+ * Returns: 0 on success, -ENOENT if no such font, -ENOSYS if there is no such
+ * method
+ */
+int vidconsole_get_font(struct udevice *dev, int seq,
+			struct vidfont_info *info);
+
+/**
+ * vidconsole_select_font() - Select a particular font by name / size
+ *
+ * @dev:	Device to adjust
+ * @name:	Font name to use (NULL to use default)
+ * @size:	Font size to use (0 to use default)
+ */
+int vidconsole_select_font(struct udevice *dev, const char *name, uint size);
 
 /**
  * vidconsole_putc_xy() - write a single character to a position
@@ -244,17 +286,45 @@ void vidconsole_position_cursor(struct udevice *dev, unsigned col,
 				unsigned row);
 
 /**
- * vid_console_color() - convert a color code to a pixel's internal
- * representation
+ * vidconsole_clear_and_reset() - Clear the console and reset the cursor
  *
- * The caller has to guarantee that the color index is less than
- * VID_COLOR_COUNT.
+ * The cursor is placed at the start of the console
  *
- * @priv	private data of the console device
- * @idx		color index
- * Return:	color value
+ * @dev:	vidconsole device to adjust
  */
-u32 vid_console_color(struct video_priv *priv, unsigned int idx);
+int vidconsole_clear_and_reset(struct udevice *dev);
+
+/**
+ * vidconsole_set_cursor_pos() - set cursor position
+ *
+ * The cursor is set to the new position and the start-of-line information is
+ * updated to the same position, so that a newline will return to @x
+ *
+ * @dev:	video console device to update
+ * @x:		x position from left in pixels
+ * @y:		y position from top in pixels
+ */
+void vidconsole_set_cursor_pos(struct udevice *dev, int x, int y);
+
+/**
+ * vidconsole_list_fonts() - List the available fonts
+ *
+ * @dev: vidconsole device to check
+ *
+ * This shows a list of fonts known by this vidconsole. The list is displayed on
+ * the console (not necessarily @dev but probably)
+ */
+void vidconsole_list_fonts(struct udevice *dev);
+
+/**
+ * vidconsole_get_font_size() - get the current font name and size
+ *
+ * @dev: vidconsole device
+ * @sizep: Place to put the font size (nominal height in pixels)
+ * @name: pointer to font name, a placeholder for result
+ * Return: 0 if OK, -ENOSYS if not implemented in driver
+ */
+int vidconsole_get_font_size(struct udevice *dev, const char **name, uint *sizep);
 
 #ifdef CONFIG_VIDEO_COPY
 /**
@@ -289,6 +359,9 @@ int vidconsole_sync_copy(struct udevice *dev, void *from, void *to);
 int vidconsole_memmove(struct udevice *dev, void *dst, const void *src,
 		       int size);
 #else
+
+#include <string.h>
+
 static inline int vidconsole_sync_copy(struct udevice *dev, void *from,
 				       void *to)
 {

@@ -27,6 +27,11 @@
 #endif
 #define PAYLOAD_ARG_SIZE	4U	/* size in bytes */
 
+#define TZ_VERSION_MAJOR	1
+#define TZ_VERSION_MINOR	0
+#define TZ_VERSION		((TZ_VERSION_MAJOR << 16) | \
+				 TZ_VERSION_MINOR)
+
 /**
  * pm_ipi - struct for capturing IPI-channel specific info
  * @local_ipi_id	Local IPI agent ID
@@ -48,10 +53,10 @@ struct pm_ipi {
  */
 struct pm_proc {
 	const uint32_t node_id;
-	const unsigned int pwrdn_mask;
+	const uint32_t pwrdn_mask;
 	const struct pm_ipi *ipi;
 };
 
-const struct pm_proc *pm_get_proc(unsigned int cpuid);
+const struct pm_proc *pm_get_proc(uint32_t cpuid);
 
 #endif /* PM_COMMON_H */

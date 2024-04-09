@@ -37,14 +37,8 @@ void spl_dram_init(void)
 
 void spl_board_init(void)
 {
-	if (IS_ENABLED(CONFIG_FSL_CAAM)) {
-		struct udevice *dev;
-		int ret;
+	arch_misc_init();
 
-		ret = uclass_get_device_by_driver(UCLASS_MISC, DM_DRIVER_GET(caam_jr), &dev);
-		if (ret)
-			printf("Failed to initialize caam_jr: %d\n", ret);
-	}
 	/*
 	 * Set GIC clock to 500Mhz for OD VDD_SOC. Kernel driver does
 	 * not allow to change it. Should set the clock after PMIC
@@ -107,9 +101,6 @@ int power_init_board(void)
 	/* Kernel uses OD/OD freq for SOC */
 	/* To avoid timing risk from SOC to ARM,increase VDD_ARM to OD voltage 0.95v */
 	pmic_reg_write(p, PCA9450_BUCK2OUT_DVS0, 0x1C);
-
-	/* set WDOG_B_CFG to cold reset */
-	pmic_reg_write(p, PCA9450_RESET_CTRL, 0xA1);
 
 	return 0;
 }

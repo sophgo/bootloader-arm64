@@ -11,10 +11,10 @@ based on the data flow diagram and potential threat mitigations.
 .. toctree::
    :maxdepth: 1
    :caption: Contents
-   :numbered:
 
    threat_model
    threat_model_spm
+   threat_model_el3_spm
    threat_model_fvp_r
 
 --------------

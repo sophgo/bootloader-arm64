@@ -225,8 +225,7 @@ static int ufshc_link_startup(uintptr_t base)
 			}
 			continue;
 		}
-		while ((mmio_read_32(base + HCS) & HCS_DP) == 0)
-			;
+		assert((mmio_read_32(base + HCS) & HCS_DP) == 0);
 		data = mmio_read_32(base + IS);
 		if (data & UFS_INT_ULSS)
 			mmio_write_32(base + IS, UFS_INT_ULSS);
@@ -265,7 +264,7 @@ static void get_utrd(utp_utrd_t *utrd)
 
 	/* clear utrd */
 	memset((void *)utrd, 0, sizeof(utp_utrd_t));
-	base = ufs_params.desc_base + (slot * UFS_DESC_SIZE);
+	base = ufs_params.desc_base + (slot * sizeof(utrd_header_t));
 	/* clear the descriptor */
 	memset((void *)base, 0, UFS_DESC_SIZE);
 
@@ -299,12 +298,6 @@ static int ufs_prepare_cmd(utp_utrd_t *utrd, uint8_t op, uint8_t lun,
 	unsigned int ulba;
 	unsigned int lba_cnt;
 	int prdt_size;
-
-
-	mmio_write_32(ufs_params.reg_base + UTRLBA,
-		      utrd->header & UINT32_MAX);
-	mmio_write_32(ufs_params.reg_base + UTRLBAU,
-		      (utrd->upiu >> 32) & UINT32_MAX);
 
 	hd = (utrd_header_t *)utrd->header;
 	upiu = (cmd_upiu_t *)utrd->upiu;
@@ -403,12 +396,6 @@ static int ufs_prepare_query(utp_utrd_t *utrd, uint8_t op, uint8_t idn,
 	hd = (utrd_header_t *)utrd->header;
 	query_upiu = (query_upiu_t *)utrd->upiu;
 
-	mmio_write_32(ufs_params.reg_base + UTRLBA,
-		      utrd->header & UINT32_MAX);
-	mmio_write_32(ufs_params.reg_base + UTRLBAU,
-		      (utrd->header >> 32) & UINT32_MAX);
-
-
 	hd->i = 1;
 	hd->ct = CT_UFS_STORAGE;
 	hd->ocs = OCS_MASK;
@@ -455,11 +442,6 @@ static void ufs_prepare_nop_out(utp_utrd_t *utrd)
 	utrd_header_t *hd;
 	nop_out_upiu_t *nop_out;
 
-	mmio_write_32(ufs_params.reg_base + UTRLBA,
-		      utrd->header & UINT32_MAX);
-	mmio_write_32(ufs_params.reg_base + UTRLBAU,
-		      (utrd->header >> 32) & UINT32_MAX);
-
 	hd = (utrd_header_t *)utrd->header;
 	nop_out = (nop_out_upiu_t *)utrd->upiu;
 
@@ -482,9 +464,7 @@ static void ufs_send_request(int task_tag)
 	mmio_write_32(ufs_params.reg_base + IS, ~0);
 
 	mmio_write_32(ufs_params.reg_base + UTRLRSR, 1);
-	do {
-		data = mmio_read_32(ufs_params.reg_base + UTRLRSR);
-	} while (data == 0);
+	assert(mmio_read_32(ufs_params.reg_base + UTRLRSR) == 1);
 
 	data = UTRIACR_IAEN | UTRIACR_CTR | UTRIACR_IACTH(0x1F) |
 	       UTRIACR_IATOVAL(0xFF);
@@ -497,6 +477,7 @@ static int ufs_check_resp(utp_utrd_t *utrd, int trans_type)
 {
 	utrd_header_t *hd;
 	resp_upiu_t *resp;
+	sense_data_t *sense;
 	unsigned int data;
 	int slot;
 
@@ -519,6 +500,15 @@ static int ufs_check_resp(utp_utrd_t *utrd, int trans_type)
 	inv_dcache_range((uintptr_t)hd, UFS_DESC_SIZE);
 	assert(hd->ocs == OCS_SUCCESS);
 	assert((resp->trans_type & TRANS_TYPE_CODE_MASK) == trans_type);
+
+	sense = &resp->sd.sense;
+	if (sense->resp_code == SENSE_DATA_VALID &&
+	    sense->sense_key == SENSE_KEY_UNIT_ATTENTION && sense->asc == 0x29 &&
+	    sense->ascq == 0) {
+		WARN("Unit Attention Condition\n");
+		return -EAGAIN;
+	}
+
 	(void)resp;
 	(void)slot;
 	return 0;
@@ -527,14 +517,18 @@ static int ufs_check_resp(utp_utrd_t *utrd, int trans_type)
 static void ufs_send_cmd(utp_utrd_t *utrd, uint8_t cmd_op, uint8_t lun, int lba, uintptr_t buf,
 			 size_t length)
 {
-	int result;
+	int result, i;
 
-	get_utrd(utrd);
-
-	result = ufs_prepare_cmd(utrd, cmd_op, lun, lba, buf, length);
-	assert(result == 0);
-	ufs_send_request(utrd->task_tag);
-	result = ufs_check_resp(utrd, RESPONSE_UPIU);
+	for (i = 0; i < UFS_CMD_RETRIES; ++i) {
+		get_utrd(utrd);
+		result = ufs_prepare_cmd(utrd, cmd_op, lun, lba, buf, length);
+		assert(result == 0);
+		ufs_send_request(utrd->task_tag);
+		result = ufs_check_resp(utrd, RESPONSE_UPIU);
+		if (result == 0 || result == -EIO) {
+			break;
+		}
+	}
 	assert(result == 0);
 	(void)result;
 }
@@ -685,14 +679,14 @@ void ufs_write_desc(int idn, int index, uintptr_t buf, size_t size)
 	ufs_query(QUERY_WRITE_DESC, idn, index, 0, buf, size);
 }
 
-static void ufs_read_capacity(int lun, unsigned int *num, unsigned int *size)
+static int ufs_read_capacity(int lun, unsigned int *num, unsigned int *size)
 {
 	utp_utrd_t utrd;
 	resp_upiu_t *resp;
 	sense_data_t *sense;
 	unsigned char data[CACHE_WRITEBACK_GRANULE << 1];
 	uintptr_t buf;
-	int retry;
+	int retries = UFS_READ_CAPACITY_RETRIES;
 
 	assert((ufs_params.reg_base != 0) &&
 	       (ufs_params.desc_base != 0) &&
@@ -710,22 +704,24 @@ static void ufs_read_capacity(int lun, unsigned int *num, unsigned int *size)
 		dump_upiu(&utrd);
 #endif
 		resp = (resp_upiu_t *)utrd.resp_upiu;
-		retry = 0;
 		sense = &resp->sd.sense;
-		if (sense->resp_code == SENSE_DATA_VALID) {
-			if ((sense->sense_key == SENSE_KEY_UNIT_ATTENTION) &&
-			    (sense->asc == 0x29) && (sense->ascq == 0)) {
-				retry = 1;
-			}
+		if (!((sense->resp_code == SENSE_DATA_VALID) &&
+		    (sense->sense_key == SENSE_KEY_UNIT_ATTENTION) &&
+		    (sense->asc == 0x29) && (sense->ascq == 0))) {
+			inv_dcache_range(buf, CACHE_WRITEBACK_GRANULE);
+			/* last logical block address */
+			*num = be32toh(*(unsigned int *)buf);
+			if (*num)
+				*num += 1;
+			/* logical block length in bytes */
+			*size = be32toh(*(unsigned int *)(buf + 4));
+
+			return 0;
 		}
-		inv_dcache_range(buf, CACHE_WRITEBACK_GRANULE);
-		/* last logical block address */
-		*num = be32toh(*(unsigned int *)buf);
-		if (*num)
-			*num += 1;
-		/* logical block length in bytes */
-		*size = be32toh(*(unsigned int *)(buf + 4));
-	} while (retry);
+
+	} while (retries-- > 0);
+
+	return -ETIMEDOUT;
 }
 
 size_t ufs_read_blocks(int lun, int lba, uintptr_t buf, size_t size)
@@ -796,15 +792,26 @@ static void ufs_enum(void)
 	unsigned int blk_num, blk_size;
 	int i, result;
 
+	mmio_write_32(ufs_params.reg_base + UTRLBA,
+		      ufs_params.desc_base & UINT32_MAX);
+	mmio_write_32(ufs_params.reg_base + UTRLBAU,
+		      (ufs_params.desc_base >> 32) & UINT32_MAX);
+
 	ufs_verify_init();
 	ufs_verify_ready();
 
 	result = ufs_set_fdevice_init();
 	assert(result == 0);
 
+	blk_num = 0;
+	blk_size = 0;
+
 	/* dump available LUNs */
 	for (i = 0; i < UFS_MAX_LUNS; i++) {
-		ufs_read_capacity(i, &blk_num, &blk_size);
+		result = ufs_read_capacity(i, &blk_num, &blk_size);
+		if (result != 0) {
+			WARN("UFS LUN%d dump failed\n", i);
+		}
 		if (blk_num && blk_size) {
 			INFO("UFS LUN%d contains %d blocks with %d-byte size\n",
 			     i, blk_num, blk_size);
@@ -851,6 +858,11 @@ int ufs_init(const ufs_ops_t *ops, ufs_params_t *params)
 
 
 	if (ufs_params.flags & UFS_FLAGS_SKIPINIT) {
+		mmio_write_32(ufs_params.reg_base + UTRLBA,
+			      ufs_params.desc_base & UINT32_MAX);
+		mmio_write_32(ufs_params.reg_base + UTRLBAU,
+			      (ufs_params.desc_base >> 32) & UINT32_MAX);
+
 		result = ufshc_dme_get(0x1571, 0, &data);
 		assert(result == 0);
 		result = ufshc_dme_get(0x41, 0, &data);

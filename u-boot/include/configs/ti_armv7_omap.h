@@ -16,10 +16,9 @@
  * access CS0 at is 0x8000000.
  */
 #ifdef CONFIG_MTD_RAW_NAND
-#ifndef CONFIG_SYS_NAND_BASE
-#define CONFIG_SYS_NAND_BASE		0x8000000
+#ifndef CFG_SYS_NAND_BASE
+#define CFG_SYS_NAND_BASE		0x8000000
 #endif
-#define CONFIG_SYS_MAX_NAND_DEVICE	1
 #endif
 
 /* Now for the remaining common defines */

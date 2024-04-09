@@ -10,8 +10,7 @@
 #include <linux/stringify.h>
 #include <asm/arch/imx-regs.h>
 
-#define CONFIG_SYS_MONITOR_LEN		SZ_512K
-#define CONFIG_SYS_UBOOT_BASE	\
+#define CFG_SYS_UBOOT_BASE	\
 	(QSPI0_AMBA_BASE + CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR * 512)
 
 #define BOOT_TARGET_DEVICES(func) \
@@ -38,20 +37,20 @@
 	"pxefile_addr_r=" __stringify(CONFIG_SYS_LOAD_ADDR) "\0" \
 
 /* Initial environment variables */
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#define CFG_EXTRA_ENV_SETTINGS \
 	MEM_LAYOUT_ENV_SETTINGS \
 	BOOTENV
 
 /* Link Definitions */
 
-#define CONFIG_SYS_INIT_RAM_ADDR	0x40000000
-#define CONFIG_SYS_INIT_RAM_SIZE	SZ_512K
+#define CFG_SYS_INIT_RAM_ADDR	0x40000000
+#define CFG_SYS_INIT_RAM_SIZE	SZ_512K
 
-#define CONFIG_SYS_SDRAM_BASE		0x40000000
+#define CFG_SYS_SDRAM_BASE		0x40000000
 #define PHYS_SDRAM			0x40000000
 #define PHYS_SDRAM_SIZE			SZ_1G /* 1GB DDR */
 
 /* USDHC */
-#define CONFIG_SYS_FSL_ESDHC_ADDR	0
+#define CFG_SYS_FSL_ESDHC_ADDR	0
 
 #endif /* __IMX8MN_VAR_SOM_H */

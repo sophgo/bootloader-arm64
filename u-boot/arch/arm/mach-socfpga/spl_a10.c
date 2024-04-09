@@ -41,7 +41,7 @@
 DECLARE_GLOBAL_DATA_PTR;
 
 #define BOOTROM_SHARED_MEM_SIZE		0x800	/* 2KB */
-#define BOOTROM_SHARED_MEM_ADDR		(CONFIG_SYS_INIT_RAM_ADDR + \
+#define BOOTROM_SHARED_MEM_ADDR		(CFG_SYS_INIT_RAM_ADDR + \
 					 SOCFPGA_PHYS_OCRAM_SIZE - \
 					 BOOTROM_SHARED_MEM_SIZE)
 #define RST_STATUS_SHARED_ADDR		(BOOTROM_SHARED_MEM_ADDR + 0x438)
@@ -117,7 +117,7 @@ void spl_board_init(void)
 
 	/* enable console uart printing */
 	preloader_console_init();
-	WATCHDOG_RESET();
+	schedule();
 
 	arch_early_init_r();
 
@@ -203,7 +203,7 @@ void spl_board_init(void)
 			 */
 			set_regular_boot(true);
 
-			WATCHDOG_RESET();
+			schedule();
 
 			reset_cpu();
 		}
@@ -268,11 +268,11 @@ void board_init_f(ulong dummy)
 
 	/* reconfigure and enable the watchdog */
 	hw_watchdog_init();
-	WATCHDOG_RESET();
+	schedule();
 #endif /* CONFIG_HW_WATCHDOG */
 
 	config_dedicated_pins(gd->fdt_blob);
-	WATCHDOG_RESET();
+	schedule();
 }
 
 /* board specific function prior loading SSBL / U-Boot proper */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2022, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -22,7 +22,9 @@ enum {
 enum {
 	KEY_ALG_RSA,		/* RSA PSS as defined by PKCS#1 v2.1 (default) */
 #ifndef OPENSSL_NO_EC
-	KEY_ALG_ECDSA,
+	KEY_ALG_ECDSA_NIST,
+	KEY_ALG_ECDSA_BRAINPOOL_R,
+	KEY_ALG_ECDSA_BRAINPOOL_T,
 #endif /* OPENSSL_NO_EC */
 	KEY_ALG_MAX_NUM
 };
@@ -42,7 +44,9 @@ enum{
 static const unsigned int KEY_SIZES[KEY_ALG_MAX_NUM][KEY_SIZE_MAX_NUM] = {
 	{ 2048, 1024, 3072, 4096 },	/* KEY_ALG_RSA */
 #ifndef OPENSSL_NO_EC
-	{}				/* KEY_ALG_ECDSA */
+	{},				/* KEY_ALG_ECDSA_NIST */
+	{},				/* KEY_ALG_ECDSA_BRAINPOOL_R */
+	{}				/* KEY_ALG_ECDSA_BRAINPOOL_T */
 #endif /* OPENSSL_NO_EC */
 };
 
@@ -66,10 +70,13 @@ typedef struct key_s {
 /* Exported API */
 int key_init(void);
 key_t *key_get_by_opt(const char *opt);
+#if !USING_OPENSSL3
 int key_new(key_t *key);
+#endif
 int key_create(key_t *key, int type, int key_bits);
 int key_load(key_t *key, unsigned int *err_code);
 int key_store(key_t *key);
+void key_cleanup(void);
 
 /* Macro to register the keys used in the CoT */
 #define REGISTER_KEYS(_keys) \

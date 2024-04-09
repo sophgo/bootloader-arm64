@@ -85,43 +85,6 @@ bool stm32mp_lock_available(void)
 	return (read_sctlr() & c_m_bits) == c_m_bits;
 }
 
-#if STM32MP_USE_STM32IMAGE
-int stm32mp_check_header(boot_api_image_header_t *header, uintptr_t buffer)
-{
-	uint32_t i;
-	uint32_t img_checksum = 0U;
-
-	/*
-	 * Check header/payload validity:
-	 *	- Header magic
-	 *	- Header version
-	 *	- Payload checksum
-	 */
-	if (header->magic != BOOT_API_IMAGE_HEADER_MAGIC_NB) {
-		ERROR("Header magic\n");
-		return -EINVAL;
-	}
-
-	if ((header->header_version & HEADER_VERSION_MAJOR_MASK) !=
-	    (BOOT_API_HEADER_VERSION & HEADER_VERSION_MAJOR_MASK)) {
-		ERROR("Header version\n");
-		return -EINVAL;
-	}
-
-	for (i = 0U; i < header->image_length; i++) {
-		img_checksum += *(uint8_t *)(buffer + i);
-	}
-
-	if (header->payload_checksum != img_checksum) {
-		ERROR("Checksum: 0x%x (awaited: 0x%x)\n", img_checksum,
-		      header->payload_checksum);
-		return -EINVAL;
-	}
-
-	return 0;
-}
-#endif /* STM32MP_USE_STM32IMAGE */
-
 int stm32mp_map_ddr_non_cacheable(void)
 {
 	return  mmap_add_dynamic_region(STM32MP_DDR_BASE, STM32MP_DDR_BASE,
@@ -274,8 +237,11 @@ int stm32mp_uart_console_setup(void)
 #if STM32MP_EARLY_CONSOLE
 void stm32mp_setup_early_console(void)
 {
+#if defined(IMAGE_BL2) || STM32MP_RECONFIGURE_CONSOLE
 	plat_crash_console_init();
+#endif
 	set_console(STM32MP_DEBUG_USART_BASE, STM32MP_DEBUG_USART_CLK_FRQ);
+	NOTICE("Early console setup\n");
 }
 #endif /* STM32MP_EARLY_CONSOLE */
 

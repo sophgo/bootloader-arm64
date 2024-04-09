@@ -26,7 +26,7 @@ BL33 should be ``~/project/u-boot/u-boot.bin``
 
        *u-boot.bin* should be used and not *u-boot-spl.bin*
 
-Set MSS/SCP image path (mandatory only for A7K/8K/CN913x when MSS_SUPPORT=1)
+Set MSS/SCP image path (mandatory only for A7K/A8K/CN913x when MSS_SUPPORT=1)
 
     .. code:: shell
 
@@ -109,7 +109,7 @@ There are several build options:
 - MV_DDR_PATH
 
         This parameter is required for ``mrvl_flash`` and ``mrvl_uart`` targets.
-        For A7K/8K/CN913x it is used for BLE build and for Armada37x0 it used
+        For A7K/A8K/CN913x it is used for BLE build and for Armada37x0 it used
         for ddr_tool build.
 
         Specify path to the full checkout of Marvell mv-ddr-marvell git
@@ -131,7 +131,7 @@ CN913x specific build options:
         values with CP_NUM are in a range of 1 to 3.
 
 
-A7K/8K/CN913x specific build options:
+A7K/A8K/CN913x specific build options:
 
 - BLE_PATH
 
@@ -165,14 +165,14 @@ Globalscale MOCHAbin specific build options:
 
 Armada37x0 specific build options:
 
-- HANDLE_EA_EL3_FIRST
+- HANDLE_EA_EL3_FIRST_NS
 
-        When ``HANDLE_EA_EL3_FIRST=1``, External Aborts and SError Interrupts will be always trapped
-        in TF-A. TF-A in this case enables dirty hack / workaround for a bug found in U-Boot and
-        Linux kernel PCIe controller driver pci-aardvark.c, traps and then masks SError interrupt
-        caused by AXI SLVERR on external access (syndrome 0xbf000002).
+        When ``HANDLE_EA_EL3_FIRST_NS=1``, External Aborts and SError Interrupts, resulting from errors
+        in NS world, will be always trapped in TF-A. TF-A in this case enables dirty hack / workaround for
+        a bug found in U-Boot and Linux kernel PCIe controller driver pci-aardvark.c, traps and then masks
+        SError interrupt caused by AXI SLVERR on external access (syndrome 0xbf000002).
 
-        Otherwise when ``HANDLE_EA_EL3_FIRST=0``, these exceptions will be trapped in the current
+        Otherwise when ``HANDLE_EA_EL3_FIRST_NS=0``, these exceptions will be trapped in the current
         exception level (or in EL1 if the current exception level is EL0). So exceptions caused by
         U-Boot will be trapped in U-Boot, exceptions caused by Linux kernel (or user applications)
         will be trapped in Linux kernel.
@@ -185,8 +185,8 @@ Armada37x0 specific build options:
         recommended to not enable this workaround as it disallows propagating of all External Aborts
         to running Linux kernel and makes correctable errors as fatal aborts.
 
-        This option is now disabled by default. In past this option was enabled by default in
-        TF-A versions v2.2, v2.3, v2.4 and v2.5.
+        This option is now disabled by default. In past this option has different name "HANDLE_EA_EL3_FIRST" and
+        was enabled by default in TF-A versions v2.2, v2.3, v2.4 and v2.5.
 
 - CM3_SYSTEM_RESET
 
@@ -387,7 +387,7 @@ Special Build Flags
 - PLAT_RECOVERY_IMAGE_ENABLE
     When set this option to enable secondary recovery function when build atf.
     In order to build UART recovery image this operation should be disabled for
-    A7K/8K/CN913x because of hardware limitation (boot from secondary image
+    A7K/A8K/CN913x because of hardware limitation (boot from secondary image
     can interrupt UART recovery process). This MACRO definition is set in
     ``plat/marvell/armada/a8k/common/include/platform_def.h`` file.
 

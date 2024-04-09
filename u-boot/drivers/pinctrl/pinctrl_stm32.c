@@ -61,6 +61,13 @@ static const char * const pinmux_otype[] = {
 	[STM32_GPIO_OTYPE_OD] = "open-drain",
 };
 
+static const char * const pinmux_speed[] = {
+	[STM32_GPIO_SPEED_2M] = "Low speed",
+	[STM32_GPIO_SPEED_25M] = "Medium speed",
+	[STM32_GPIO_SPEED_50M] = "High speed",
+	[STM32_GPIO_SPEED_100M] = "Very-high speed",
+};
+
 static int stm32_pinctrl_get_af(struct udevice *dev, unsigned int offset)
 {
 	struct stm32_gpio_priv *priv = dev_get_priv(dev);
@@ -201,6 +208,7 @@ static int stm32_pinctrl_get_pin_muxing(struct udevice *dev,
 	int af_num;
 	unsigned int gpio_idx;
 	u32 pupd, otype;
+	u8 speed;
 
 	/* look up for the bank which owns the requested pin */
 	gpio_dev = stm32_pinctrl_get_gpio_dev(dev, selector, &gpio_idx);
@@ -214,6 +222,7 @@ static int stm32_pinctrl_get_pin_muxing(struct udevice *dev,
 	priv = dev_get_priv(gpio_dev);
 	pupd = (readl(&priv->regs->pupdr) >> (gpio_idx * 2)) & PUPD_MASK;
 	otype = (readl(&priv->regs->otyper) >> gpio_idx) & OTYPE_MSK;
+	speed = (readl(&priv->regs->ospeedr) >> gpio_idx * 2) & OSPEED_MASK;
 
 	switch (mode) {
 	case GPIOF_UNKNOWN:
@@ -222,13 +231,15 @@ static int stm32_pinctrl_get_pin_muxing(struct udevice *dev,
 		break;
 	case GPIOF_FUNC:
 		af_num = stm32_pinctrl_get_af(gpio_dev, gpio_idx);
-		snprintf(buf, size, "%s %d %s %s", pinmux_mode[mode], af_num,
-			 pinmux_otype[otype], pinmux_bias[pupd]);
+		snprintf(buf, size, "%s %d %s %s %s", pinmux_mode[mode], af_num,
+			 pinmux_otype[otype], pinmux_bias[pupd],
+			 pinmux_speed[speed]);
 		break;
 	case GPIOF_OUTPUT:
-		snprintf(buf, size, "%s %s %s %s",
+		snprintf(buf, size, "%s %s %s %s %s",
 			 pinmux_mode[mode], pinmux_otype[otype],
-			 pinmux_bias[pupd], label ? label : "");
+			 pinmux_bias[pupd], label ? label : "",
+			 pinmux_speed[speed]);
 		break;
 	case GPIOF_INPUT:
 		snprintf(buf, size, "%s %s %s", pinmux_mode[mode],
@@ -257,10 +268,12 @@ static int stm32_pinctrl_probe(struct udevice *dev)
 	return 0;
 }
 
-static int stm32_gpio_config(struct gpio_desc *desc,
+static int stm32_gpio_config(ofnode node,
+			     struct gpio_desc *desc,
 			     const struct stm32_gpio_ctl *ctl)
 {
 	struct stm32_gpio_priv *priv = dev_get_priv(desc->dev);
+	struct gpio_dev_priv *uc_priv = dev_get_uclass_priv(desc->dev);
 	struct stm32_gpio_regs *regs = priv->regs;
 	struct stm32_pinctrl_priv *ctrl_priv;
 	int ret;
@@ -290,6 +303,8 @@ static int stm32_gpio_config(struct gpio_desc *desc,
 
 	index = desc->offset;
 	clrsetbits_le32(&regs->otyper, OTYPE_MSK << index, ctl->otype << index);
+
+	uc_priv->name[desc->offset] = strdup(ofnode_get_name(node));
 
 	hwspinlock_unlock(&ctrl_priv->hws);
 
@@ -385,7 +400,7 @@ static int stm32_pinctrl_config(ofnode node)
 			if (rv)
 				return rv;
 			desc.offset = gpio_dsc.pin;
-			rv = stm32_gpio_config(&desc, &gpio_ctl);
+			rv = stm32_gpio_config(node, &desc, &gpio_ctl);
 			log_debug("rv = %d\n\n", rv);
 			if (rv)
 				return rv;

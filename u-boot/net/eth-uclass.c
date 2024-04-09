@@ -38,13 +38,23 @@ struct eth_device_priv {
  * struct eth_uclass_priv - The structure attached to the uclass itself
  *
  * @current: The Ethernet device that the network functions are using
+ * @no_bootdevs: true to skip binding Ethernet bootdevs (this is a negative flag
+ * so that the default value enables it)
  */
 struct eth_uclass_priv {
 	struct udevice *current;
+	bool no_bootdevs;
 };
 
 /* eth_errno - This stores the most recent failure code from DM functions */
 static int eth_errno;
+
+/* board-specific Ethernet Interface initializations. */
+__weak int board_interface_eth_init(struct udevice *dev,
+				    phy_interface_t interface_type)
+{
+	return 0;
+}
 
 static struct eth_uclass_priv *eth_get_uclass_priv(void)
 {
@@ -57,6 +67,14 @@ static struct eth_uclass_priv *eth_get_uclass_priv(void)
 
 	assert(uc);
 	return uclass_get_priv(uc);
+}
+
+void eth_set_enable_bootdevs(bool enable)
+{
+	struct eth_uclass_priv *priv = eth_get_uclass_priv();
+
+	if (priv)
+		priv->no_bootdevs = !enable;
 }
 
 void eth_set_current_to_next(void)
@@ -91,8 +109,10 @@ struct udevice *eth_get_dev(void)
 		eth_errno = uclass_get_device_by_seq(UCLASS_ETH, 0,
 						     &uc_priv->current);
 		if (eth_errno)
-			eth_errno = uclass_first_device(UCLASS_ETH,
-							&uc_priv->current);
+			eth_errno = uclass_first_device_err(UCLASS_ETH,
+							    &uc_priv->current);
+		if (eth_errno)
+			uc_priv->current = NULL;
 	}
 	return uc_priv->current;
 }
@@ -475,6 +495,7 @@ int eth_initialize(void)
 
 static int eth_post_bind(struct udevice *dev)
 {
+	struct eth_uclass_priv *priv = uclass_get_priv(dev->uclass);
 	int ret;
 
 	if (strchr(dev->name, ' ')) {
@@ -486,7 +507,7 @@ static int eth_post_bind(struct udevice *dev)
 #ifdef CONFIG_DM_ETH_PHY
 	eth_phy_binds_nodes(dev);
 #endif
-	if (CONFIG_IS_ENABLED(BOOTDEV_ETH)) {
+	if (CONFIG_IS_ENABLED(BOOTDEV_ETH) && !priv->no_bootdevs) {
 		ret = bootdev_setup_for_dev(dev, "eth_bootdev");
 		if (ret)
 			return log_msg_ret("bootdev", ret);

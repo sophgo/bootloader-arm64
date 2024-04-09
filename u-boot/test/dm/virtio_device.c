@@ -22,7 +22,7 @@ static int dm_test_virtio_base(struct unit_test_state *uts)
 	u8 status;
 
 	/* check probe success */
-	ut_assertok(uclass_first_device(UCLASS_VIRTIO, &bus));
+	ut_assertok(uclass_first_device_err(UCLASS_VIRTIO, &bus));
 	ut_assertnonnull(bus);
 
 	/* check the child virtio-rng device is bound */
@@ -60,7 +60,7 @@ static int dm_test_virtio_all_ops(struct unit_test_state *uts)
 	struct virtqueue *vqs[2];
 
 	/* check probe success */
-	ut_assertok(uclass_first_device(UCLASS_VIRTIO, &bus));
+	ut_assertok(uclass_first_device_err(UCLASS_VIRTIO, &bus));
 	ut_assertnonnull(bus);
 
 	/* check the child virtio-rng device is bound */
@@ -100,9 +100,10 @@ DM_TEST(dm_test_virtio_all_ops, UT_TESTF_SCAN_PDATA | UT_TESTF_SCAN_FDT);
 static int dm_test_virtio_remove(struct unit_test_state *uts)
 {
 	struct udevice *bus, *dev;
+	u8 status;
 
 	/* check probe success */
-	ut_assertok(uclass_first_device(UCLASS_VIRTIO, &bus));
+	ut_assertok(uclass_first_device_err(UCLASS_VIRTIO, &bus));
 	ut_assertnonnull(bus);
 
 	/* check the child virtio-rng device is bound */
@@ -117,6 +118,8 @@ static int dm_test_virtio_remove(struct unit_test_state *uts)
 	ut_asserteq(-EKEYREJECTED, device_remove(bus, DM_REMOVE_ACTIVE_ALL));
 
 	ut_asserteq(false, device_active(dev));
+	virtio_get_status(dev, &status);
+	ut_assertok(status);
 
 	return 0;
 }
@@ -134,7 +137,7 @@ static int dm_test_virtio_ring(struct unit_test_state *uts)
 	u8 buffer[2][32];
 
 	/* check probe success */
-	ut_assertok(uclass_first_device(UCLASS_VIRTIO, &bus));
+	ut_assertok(uclass_first_device_err(UCLASS_VIRTIO, &bus));
 	ut_assertnonnull(bus);
 
 	/* check the child virtio-blk device is bound */

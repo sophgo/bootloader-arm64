@@ -73,14 +73,14 @@ static int nios_cpu_setup(void *ctx, struct event *event)
 	if (ret)
 		return ret;
 
-	gd->ram_size = CONFIG_SYS_SDRAM_SIZE;
+	gd->ram_size = CFG_SYS_SDRAM_SIZE;
 #ifndef CONFIG_ROM_STUBS
 	copy_exception_trampoline();
 #endif
 
 	return 0;
 }
-EVENT_SPY(EVT_DM_POST_INIT, nios_cpu_setup);
+EVENT_SPY(EVT_DM_POST_INIT_F, nios_cpu_setup);
 
 static int altera_nios2_get_desc(const struct udevice *dev, char *buf,
 				 int size)

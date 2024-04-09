@@ -52,9 +52,11 @@ struct arch_global_data {
 #if defined(CONFIG_ARM64)
 	unsigned long tlb_fillptr;
 	unsigned long tlb_emerg;
+	unsigned int first_block_level;
+	bool has_hafdbs;
 #endif
 #endif
-#ifdef CONFIG_SYS_MEM_RESERVE_SECURE
+#ifdef CFG_SYS_MEM_RESERVE_SECURE
 #define MEM_RESERVE_SECURE_SECURED	0x1
 #define MEM_RESERVE_SECURE_MAINTAINED	0x2
 #define MEM_RESERVE_SECURE_ADDR_MASK	(~0x3)
@@ -97,11 +99,14 @@ struct arch_global_data {
 	u32 uid[4];
 #endif
 
+#ifdef CONFIG_ARCH_IMX8ULP
+	bool m33_handshake_done;
+#endif
 };
 
 #include <asm-generic/global_data.h>
 
-#if defined(__clang__) || defined(CONFIG_LTO)
+#if defined(__clang__) || defined(LTO_ENABLE)
 
 #define DECLARE_GLOBAL_DATA_PTR
 #define gd	get_gd()

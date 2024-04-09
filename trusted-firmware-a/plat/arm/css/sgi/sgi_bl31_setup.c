@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2018-2022, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -13,7 +13,10 @@
 #include <drivers/arm/css/css_mhu_doorbell.h>
 #include <drivers/arm/css/scmi.h>
 #include <plat/arm/common/plat_arm.h>
+
 #include <plat/common/platform.h>
+
+#include <plat/arm/css/common/css_pm.h>
 
 #include <sgi_ras.h>
 #include <sgi_variant.h>
@@ -76,7 +79,7 @@ scmi_channel_plat_info_t *plat_css_get_scmi_info(int channel_id)
 	if (sgi_plat_info.platform_id == RD_N1E1_EDGE_SID_VER_PART_NUM ||
 		sgi_plat_info.platform_id == RD_V1_SID_VER_PART_NUM ||
 		sgi_plat_info.platform_id == RD_N2_SID_VER_PART_NUM ||
-		sgi_plat_info.platform_id == RD_EDMUNDS_SID_VER_PART_NUM ||
+		sgi_plat_info.platform_id == RD_V2_SID_VER_PART_NUM ||
 		sgi_plat_info.platform_id == RD_N2_CFG1_SID_VER_PART_NUM) {
 		if (channel_id >= ARRAY_SIZE(plat_rd_scmi_info))
 			panic();
@@ -104,6 +107,15 @@ void sgi_bl31_common_platform_setup(void)
 
 #if RAS_EXTENSION
 	sgi_ras_intr_handler_setup();
+#endif
+
+	/* Configure the warm reboot SGI for primary core */
+	css_setup_cpu_pwr_down_intr();
+
+#if CSS_SYSTEM_GRACEFUL_RESET
+	/* Register priority level handlers for reboot */
+	ehf_register_priority_handler(PLAT_REBOOT_PRI,
+			css_reboot_interrupt_handler);
 #endif
 }
 

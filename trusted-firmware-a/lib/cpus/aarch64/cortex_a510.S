@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, ARM Limited. All rights reserved.
+ * Copyright (c) 2023, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -265,6 +265,142 @@ func check_errata_2172148
 endfunc check_errata_2172148
 
 	/* ----------------------------------------------------
+	 * Errata Workaround for Cortex-A510 Errata #2347730.
+	 * This applies to revisions r0p0 - r0p3, r1p0, r1p1.
+	 * It is fixed in r1p2.
+	 * Inputs:
+	 * x0: variant[4:7] and revision[0:3] of current cpu.
+	 * Shall clobber: x0-x1, x17
+	 * ----------------------------------------------------
+	 */
+func errata_cortex_a510_2347730_wa
+	mov	x17, x30
+	bl	check_errata_2347730
+	cbz	x0, 1f
+
+	/*
+	 * Set CPUACTLR_EL1[17] to 1'b1, which disables
+	 * specific microarchitectural clock gating
+	 * behaviour.
+	 */
+	mrs	x1, CORTEX_A510_CPUACTLR_EL1
+	orr	x1, x1, CORTEX_A510_CPUACTLR_EL1_BIT_17
+	msr	CORTEX_A510_CPUACTLR_EL1, x1
+1:
+	ret x17
+endfunc errata_cortex_a510_2347730_wa
+
+func check_errata_2347730
+	/* Applies to revisions r1p1 and lower. */
+	mov	x1, #0x11
+	b	cpu_rev_var_ls
+endfunc check_errata_2347730
+
+	/*---------------------------------------------------
+	 * Errata Workaround for Cortex-A510 Errata #2371937.
+	 * This applies to revisions r1p1 and lower, and is
+	 * fixed in r1p2.
+	 * Inputs:
+	 * x0: variant[4:7] and revision[0:3] of current cpu.
+	 * Shall clobber: x0, x1, x17
+	 *---------------------------------------------------
+	 */
+func errata_cortex_a510_2371937_wa
+	mov	x17, x30
+	bl	check_errata_2371937
+	cbz	x0, 1f
+
+	/*
+	 * Cacheable atomic operations can be forced
+	 * to be executed near by setting
+	 * IMP_CPUECTLR_EL1.ATOM=0b010. ATOM is found
+	 * in [40:38] of CPUECTLR_EL1.
+	 */
+	mrs 	x0, CORTEX_A510_CPUECTLR_EL1
+	mov 	x1, CORTEX_A510_CPUECTLR_EL1_ATOM_EXECALLINSTRNEAR
+	bfi 	x0, x1, CORTEX_A510_CPUECTLR_EL1_ATOM, #3
+	msr 	CORTEX_A510_CPUECTLR_EL1, x0
+1:
+	ret 	x17
+endfunc errata_cortex_a510_2371937_wa
+
+func check_errata_2371937
+	/* Applies to r1p1 and lower */
+	mov 	x1, #0x11
+	b	cpu_rev_var_ls
+endfunc check_errata_2371937
+
+	/* ------------------------------------------------------
+	 * Errata Workaround for Cortex-A510 Errata #2666669
+	 * This applies to revisions r1p1 and lower, and is fixed
+	 * in r1p2.
+	 * Inputs:
+	 * x0: variant[4:7] and revision[0:3] of current cpu.
+	 * Shall clobber: x0, x1, x17
+	 * ------------------------------------------------------
+	 */
+func errata_cortex_a510_2666669_wa
+	mov	x17, x30
+	bl	check_errata_2666669
+	cbz	x0, 1f
+
+	/*
+	 * Workaround will set IMP_CPUACTLR_EL1[38]
+	 * to 0b1.
+	 */
+	mrs	x1, CORTEX_A510_CPUACTLR_EL1
+	orr	x1, x1, CORTEX_A510_CPUACTLR_EL1_BIT_38
+	msr	CORTEX_A510_CPUACTLR_EL1, x1
+1:
+	ret	x17
+endfunc errata_cortex_a510_2666669_wa
+
+func check_errata_2666669
+	/* Applies to r1p1 and lower */
+	mov	x1, #0x11
+	b	cpu_rev_var_ls
+endfunc check_errata_2666669
+
+/* ------------------------------------------------------
+ * Errata Workaround for Cortex-A510 Erratum 2684597.
+ * This erratum applies to revision r0p0, r0p1, r0p2,
+ * r0p3, r1p0, r1p1 and r1p2 of the Cortex-A510 cpu and
+ * is fixed in r1p3.
+ * Shall clobber: x0-x17
+ * ------------------------------------------------------
+ */
+	.globl	errata_cortex_a510_2684597_wa
+func errata_cortex_a510_2684597_wa
+	mov	x17, x30
+	/* Ensure this errata is only applied to Cortex-A510 cores */
+	jump_if_cpu_midr	CORTEX_A510_MIDR,	1f
+	b	2f
+
+1:
+	/* Check workaround compatibility. */
+	mov	x0, x18
+	bl	check_errata_2684597
+	cbz	x0, 2f
+
+	tsb	csync
+2:
+	ret	x17
+endfunc errata_cortex_a510_2684597_wa
+/* ------------------------------------------------------
+ * Errata Workaround for Cortex-A510 Erratum 2684597.
+ * This erratum applies to revision r0p0, r0p1, r0p2,
+ * r0p3, r1p0, r1p1 and r1p2 of the Cortex-A510 cpu and
+ * is fixed in r1p3.
+ * Shall clobber: x0-x17
+ * ------------------------------------------------------
+ */
+func check_errata_2684597
+	/* Applies to revision < r1p3 */
+	mov	x1, #0x12
+	b	cpu_rev_var_ls
+endfunc check_errata_2684597
+
+	/* ----------------------------------------------------
 	 * HW will do the cache maintenance while powering down
 	 * ----------------------------------------------------
 	 */
@@ -295,12 +431,16 @@ func cortex_a510_errata_report
 	 * checking functions of each errata.
 	 */
 	report_errata ERRATA_A510_1922240, cortex_a510, 1922240
-	report_errata ERRATA_A510_2288014, cortex_a510, 2288014
-	report_errata ERRATA_A510_2042739, cortex_a510, 2042739
 	report_errata ERRATA_A510_2041909, cortex_a510, 2041909
-	report_errata ERRATA_A510_2250311, cortex_a510, 2250311
-	report_errata ERRATA_A510_2218950, cortex_a510, 2218950
+	report_errata ERRATA_A510_2042739, cortex_a510, 2042739
 	report_errata ERRATA_A510_2172148, cortex_a510, 2172148
+	report_errata ERRATA_A510_2218950, cortex_a510, 2218950
+	report_errata ERRATA_A510_2250311, cortex_a510, 2250311
+	report_errata ERRATA_A510_2288014, cortex_a510, 2288014
+	report_errata ERRATA_A510_2347730, cortex_a510, 2347730
+	report_errata ERRATA_A510_2371937, cortex_a510, 2371937
+	report_errata ERRATA_A510_2666669, cortex_a510, 2666669
+	report_errata ERRATA_A510_2684597, cortex_a510, 2684597
 	report_errata ERRATA_DSU_2313941, cortex_a510, dsu_2313941
 
 	ldp	x8, x30, [sp], #16
@@ -352,9 +492,24 @@ func cortex_a510_reset_func
 	bl	errata_cortex_a510_2218950_wa
 #endif
 
+#if ERRATA_A510_2371937
+	mov 	x0, x18
+	bl	errata_cortex_a510_2371937_wa
+#endif
+
 #if ERRATA_A510_2172148
 	mov	x0, x18
 	bl	errata_cortex_a510_2172148_wa
+#endif
+
+#if ERRATA_A510_2347730
+	mov	x0, x18
+	bl	errata_cortex_a510_2347730_wa
+#endif
+
+#if ERRATA_A510_2666669
+	mov	x0, x18
+	bl	errata_cortex_a510_2666669_wa
 #endif
 
 	isb

@@ -73,7 +73,7 @@ DECLARE_GLOBAL_DATA_PTR;
 int dram_init(void)
 {
 	/* use the DDR controllers configured size */
-	gd->ram_size = get_ram_size((void *)CONFIG_SYS_SDRAM_BASE,
+	gd->ram_size = get_ram_size((void *)CFG_SYS_SDRAM_BASE,
 				    (ulong)imx_ddr_size());
 
 	return 0;
@@ -290,7 +290,7 @@ int board_ehci_hcd_init(int port)
 
 #if defined(CONFIG_FSL_ESDHC_IMX) && defined(CONFIG_SPL_BUILD)
 /* use the following sequence: eMMC, MMC */
-struct fsl_esdhc_cfg usdhc_cfg[CONFIG_SYS_FSL_USDHC_NUM] = {
+struct fsl_esdhc_cfg usdhc_cfg[CFG_SYS_FSL_USDHC_NUM] = {
 	{USDHC3_BASE_ADDR},
 	{USDHC1_BASE_ADDR},
 };

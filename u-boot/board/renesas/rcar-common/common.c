@@ -16,7 +16,7 @@
 #include <asm/arch/rmobile.h>
 #include <linux/libfdt.h>
 
-#ifdef CONFIG_RCAR_GEN3
+#ifdef CONFIG_RCAR_64
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -25,12 +25,17 @@ extern u64 rcar_atf_boot_args[];
 
 #define FDT_RPC_PATH	"/soc/spi@ee200000"
 
-int fdtdec_board_setup(const void *fdt_blob)
+static void apply_atf_overlay(void *fdt_blob)
 {
 	void *atf_fdt_blob = (void *)(rcar_atf_boot_args[1]);
 
 	if (fdt_magic(atf_fdt_blob) == FDT_MAGIC)
-		fdt_overlay_apply_node((void *)fdt_blob, 0, atf_fdt_blob, 0);
+		fdt_overlay_apply_node(fdt_blob, 0, atf_fdt_blob, 0);
+}
+
+int fdtdec_board_setup(const void *fdt_blob)
+{
+	apply_atf_overlay((void *)fdt_blob);
 
 	return 0;
 }
@@ -73,9 +78,9 @@ static int is_mem_overlap(void *blob, int first_mem_node, int curr_mem_node)
 			if (curr_mem_res.start >= first_mem_res.end)
 				continue;
 
-			printf("Overlap found: 0x%llx..0x%llx / 0x%llx..0x%llx\n",
-				first_mem_res.start, first_mem_res.end,
-				curr_mem_res.start, curr_mem_res.end);
+			log_debug("Overlap found: 0x%llx..0x%llx / 0x%llx..0x%llx\n",
+				  first_mem_res.start, first_mem_res.end,
+				  curr_mem_res.start, curr_mem_res.end);
 
 			return 1;
 		}
@@ -159,6 +164,7 @@ static void update_rpc_status(void *blob)
 
 int ft_board_setup(void *blob, struct bd_info *bd)
 {
+	apply_atf_overlay(blob);
 	scrub_duplicate_memory(blob);
 	update_rpc_status(blob);
 

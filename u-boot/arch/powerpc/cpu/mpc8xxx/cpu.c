@@ -104,7 +104,7 @@ static struct cpu_type cpu_type_list[] = {
 #ifdef CONFIG_SYS_FSL_QORIQ_CHASSIS2
 static inline u32 init_type(u32 cluster, int init_id)
 {
-	ccsr_gur_t *gur = (void __iomem *)(CONFIG_SYS_MPC85xx_GUTS_ADDR);
+	ccsr_gur_t *gur = (void __iomem *)(CFG_SYS_MPC85xx_GUTS_ADDR);
 	u32 idx = (cluster >> (init_id * 8)) & TP_CLUSTER_INIT_MASK;
 	u32 type = in_be32(&gur->tp_ityp[idx]);
 
@@ -116,7 +116,7 @@ static inline u32 init_type(u32 cluster, int init_id)
 
 u32 compute_ppc_cpumask(void)
 {
-	ccsr_gur_t *gur = (void __iomem *)(CONFIG_SYS_MPC85xx_GUTS_ADDR);
+	ccsr_gur_t *gur = (void __iomem *)(CFG_SYS_MPC85xx_GUTS_ADDR);
 	int i = 0, count = 0;
 	u32 cluster, type, mask = 0;
 
@@ -140,7 +140,7 @@ u32 compute_ppc_cpumask(void)
 #ifdef CONFIG_HETROGENOUS_CLUSTERS
 u32 compute_dsp_cpumask(void)
 {
-	ccsr_gur_t *gur = (void __iomem *)(CONFIG_SYS_MPC85xx_GUTS_ADDR);
+	ccsr_gur_t *gur = (void __iomem *)(CFG_SYS_MPC85xx_GUTS_ADDR);
 	int i = CONFIG_DSP_CLUSTER_START, count = 0;
 	u32 cluster, type, dsp_mask = 0;
 
@@ -163,7 +163,7 @@ u32 compute_dsp_cpumask(void)
 
 int fsl_qoriq_dsp_core_to_cluster(unsigned int core)
 {
-	ccsr_gur_t *gur = (void __iomem *)(CONFIG_SYS_MPC85xx_GUTS_ADDR);
+	ccsr_gur_t *gur = (void __iomem *)(CFG_SYS_MPC85xx_GUTS_ADDR);
 	int count = 0, i = CONFIG_DSP_CLUSTER_START;
 	u32 cluster;
 
@@ -186,7 +186,7 @@ int fsl_qoriq_dsp_core_to_cluster(unsigned int core)
 
 int fsl_qoriq_core_to_cluster(unsigned int core)
 {
-	ccsr_gur_t *gur = (void __iomem *)(CONFIG_SYS_MPC85xx_GUTS_ADDR);
+	ccsr_gur_t *gur = (void __iomem *)(CFG_SYS_MPC85xx_GUTS_ADDR);
 	int i = 0, count = 0;
 	u32 cluster;
 
@@ -235,7 +235,7 @@ struct cpu_type *identify_cpu(u32 ver)
  */
 __weak u32 cpu_mask(void)
 {
-	ccsr_pic_t __iomem *pic = (void *)CONFIG_SYS_MPC8xxx_PIC_ADDR;
+	ccsr_pic_t __iomem *pic = (void *)CFG_SYS_MPC8xxx_PIC_ADDR;
 	struct cpu_type *cpu = gd->arch.cpu;
 
 	/* better to query feature reporting register than just assume 1 */
@@ -252,7 +252,7 @@ __weak u32 cpu_mask(void)
 #ifdef CONFIG_HETROGENOUS_CLUSTERS
 __weak u32 cpu_dsp_mask(void)
 {
-	ccsr_pic_t __iomem *pic = (void *)CONFIG_SYS_MPC8xxx_PIC_ADDR;
+	ccsr_pic_t __iomem *pic = (void *)CFG_SYS_MPC8xxx_PIC_ADDR;
 	struct cpu_type *cpu = gd->arch.cpu;
 
 	/* better to query feature reporting register than just assume 1 */
@@ -343,29 +343,3 @@ int fixup_cpu(void)
 #endif
 	return 0;
 }
-
-#ifndef CONFIG_DM_ETH
-/*
- * Initializes on-chip ethernet controllers.
- * to override, implement board_eth_init()
- */
-int cpu_eth_init(struct bd_info *bis)
-{
-#if defined(CONFIG_UEC_ETH)
-	uec_standard_init(bis);
-#endif
-
-#if defined(CONFIG_TSEC_ENET) || defined(CONFIG_MPC85XX_FEC)
-	tsec_standard_init(bis);
-#endif
-
-#ifdef CONFIG_FMAN_ENET
-	fm_standard_init(bis);
-#endif
-
-#ifdef CONFIG_VSC9953
-	vsc9953_init(bis);
-#endif
-	return 0;
-}
-#endif

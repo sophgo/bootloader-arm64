@@ -3,38 +3,44 @@
  * Copyright 2021 NXP
  */
 
-&{/soc@0} {
-	u-boot,dm-spl;
+/ {
+	mu@27020000 {
+		compatible = "fsl,imx8ulp-mu";
+		reg = <0 0x27020000 0 0x10000>;
+		status = "okay";
+		bootph-pre-ram;
+	};
+};
+
+&soc {
+	bootph-pre-ram;
 };
 
 &per_bridge3 {
-	u-boot,dm-spl;
+	bootph-pre-ram;
 };
 
 &per_bridge4 {
-	u-boot,dm-spl;
+	bootph-pre-ram;
 };
 
 &iomuxc1 {
-	u-boot,dm-spl;
+	bootph-pre-ram;
+	fsl,mux_mask = <0xf00>;
 };
 
 &pinctrl_lpuart5 {
-	u-boot,dm-spl;
-};
-
-&s400_mu {
-	u-boot,dm-spl;
+	bootph-pre-ram;
 };
 
 &lpuart5 {
-	u-boot,dm-spl;
+	bootph-pre-ram;
 };
 
 &usdhc0 {
-	u-boot,dm-spl;
+	bootph-pre-ram;
 };
 
 &pinctrl_usdhc0 {
-	u-boot,dm-spl;
+	bootph-pre-ram;
 };

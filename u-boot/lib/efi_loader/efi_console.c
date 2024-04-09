@@ -7,6 +7,7 @@
 
 #define LOG_CATEGORY LOGC_EFI
 
+#include <ansi.h>
 #include <common.h>
 #include <charset.h>
 #include <malloc.h>
@@ -76,6 +77,14 @@ static struct simple_text_output_mode efi_con_mode = {
 	.cursor_visible = 1,
 };
 
+/**
+ * term_get_char() - read a character from the console
+ *
+ * Wait for up to 100 ms to read a character from the console.
+ *
+ * @c:		pointer to the buffer to receive the character
+ * Return:	0 on success, 1 otherwise
+ */
 static int term_get_char(s32 *c)
 {
 	u64 timeout;
@@ -352,7 +361,7 @@ void efi_setup_console_size(void)
 	int rows = 25, cols = 80;
 	int ret = -ENODEV;
 
-	if (IS_ENABLED(CONFIG_DM_VIDEO))
+	if (IS_ENABLED(CONFIG_VIDEO))
 		ret = query_vidconsole(&rows, &cols);
 	if (ret)
 		ret = query_console_serial(&rows, &cols);
@@ -460,6 +469,31 @@ static efi_status_t EFIAPI efi_cout_set_attribute(
 }
 
 /**
+ * efi_clear_screen() - clear screen
+ */
+static void efi_clear_screen(void)
+{
+	if (CONFIG_IS_ENABLED(EFI_SCROLL_ON_CLEAR_SCREEN)) {
+		unsigned int row, screen_rows, screen_columns;
+
+		/* Avoid overwriting previous outputs on streaming consoles */
+		screen_rows = efi_cout_modes[efi_con_mode.mode].rows;
+		screen_columns = efi_cout_modes[efi_con_mode.mode].columns;
+		printf(ESC "[%u;%uH", screen_rows, screen_columns);
+		for (row = 1; row < screen_rows; row++)
+			printf("\n");
+	}
+
+	/*
+	 * The Linux console wants both a clear and a home command. The video
+	 * uclass does not support <ESC>[H without coordinates, yet.
+	 */
+	printf(ESC "[2J" ESC "[1;1H");
+	efi_con_mode.cursor_column = 0;
+	efi_con_mode.cursor_row = 0;
+}
+
+/**
  * efi_cout_clear_screen() - clear screen
  *
  * This function implements the ClearScreen service of the simple text output
@@ -474,13 +508,13 @@ static efi_status_t EFIAPI efi_cout_clear_screen(
 {
 	EFI_ENTRY("%p", this);
 
-	/*
-	 * The Linux console wants both a clear and a home command. The video
-	 * uclass does not support <ESC>[H without coordinates, yet.
-	 */
-	printf(ESC "[2J" ESC "[1;1H");
-	efi_con_mode.cursor_column = 0;
-	efi_con_mode.cursor_row = 0;
+	/* Set default colors if not done yet */
+	if (efi_con_mode.attribute == 0) {
+		efi_con_mode.attribute = 0x07;
+		printf(ESC "[0;37;40m");
+	}
+
+	efi_clear_screen();
 
 	return EFI_EXIT(EFI_SUCCESS);
 }
@@ -509,7 +543,7 @@ static efi_status_t EFIAPI efi_cout_set_mode(
 		return EFI_EXIT(EFI_UNSUPPORTED);
 
 	efi_con_mode.mode = mode_number;
-	EFI_CALL(efi_cout_clear_screen(this));
+	efi_clear_screen();
 
 	return EFI_EXIT(EFI_SUCCESS);
 }
@@ -535,7 +569,7 @@ static efi_status_t EFIAPI efi_cout_reset(
 	efi_con_mode.attribute = 0x07;
 	printf(ESC "[0;37;40m");
 	/* Clear screen */
-	EFI_CALL(efi_cout_clear_screen(this));
+	efi_clear_screen();
 
 	return EFI_EXIT(EFI_SUCCESS);
 }
@@ -643,7 +677,7 @@ static LIST_HEAD(cin_notify_functions);
  * @mod:	Xterm shift mask
  * @key_state:  receives the state of the shift, alt, control, and logo keys
  */
-void set_shift_mask(int mod, struct efi_key_state *key_state)
+static void set_shift_mask(int mod, struct efi_key_state *key_state)
 {
 	key_state->key_shift_state = EFI_SHIFT_STATE_VALID;
 	if (mod) {
@@ -1277,12 +1311,14 @@ efi_status_t efi_console_register(void)
 	struct efi_device_path *dp;
 
 	/* Install protocols on root node */
-	r = EFI_CALL(efi_install_multiple_protocol_interfaces
-		     (&efi_root,
-		      &efi_guid_text_output_protocol, &efi_con_out,
-		      &efi_guid_text_input_protocol, &efi_con_in,
-		      &efi_guid_text_input_ex_protocol, &efi_con_in_ex,
-		      NULL));
+	r = efi_install_multiple_protocol_interfaces(&efi_root,
+						     &efi_guid_text_output_protocol,
+						     &efi_con_out,
+						     &efi_guid_text_input_protocol,
+						     &efi_con_in,
+						     &efi_guid_text_input_ex_protocol,
+						     &efi_con_in_ex,
+						     NULL);
 
 	/* Create console node and install device path protocols */
 	if (CONFIG_IS_ENABLED(DM_SERIAL)) {
@@ -1322,4 +1358,71 @@ efi_status_t efi_console_register(void)
 out_of_memory:
 	printf("ERROR: Out of memory\n");
 	return r;
+}
+
+/**
+ * efi_console_get_u16_string() - get user input string
+ *
+ * @cin:		protocol interface to EFI_SIMPLE_TEXT_INPUT_PROTOCOL
+ * @buf:		buffer to store user input string in UTF16
+ * @count:		number of u16 string including NULL terminator that buf has
+ * @filter_func:	callback to filter user input
+ * @row:		row number to locate user input form
+ * @col:		column number to locate user input form
+ * Return:		status code
+ */
+efi_status_t efi_console_get_u16_string(struct efi_simple_text_input_protocol *cin,
+					u16 *buf, efi_uintn_t count,
+					efi_console_filter_func filter_func,
+					int row, int col)
+{
+	efi_status_t ret;
+	efi_uintn_t len = 0;
+	struct efi_input_key key;
+
+	printf(ANSI_CURSOR_POSITION
+	       ANSI_CLEAR_LINE_TO_END
+	       ANSI_CURSOR_SHOW, row, col);
+
+	efi_cin_empty_buffer();
+
+	for (;;) {
+		do {
+			ret = EFI_CALL(cin->read_key_stroke(cin, &key));
+			mdelay(10);
+		} while (ret == EFI_NOT_READY);
+
+		if (key.unicode_char == u'\b') {
+			if (len > 0)
+				buf[--len] = u'\0';
+
+			printf(ANSI_CURSOR_POSITION
+			       "%ls"
+			       ANSI_CLEAR_LINE_TO_END, row, col, buf);
+			continue;
+		} else if (key.unicode_char == u'\r') {
+			buf[len] = u'\0';
+			return EFI_SUCCESS;
+		} else if (key.unicode_char == 0x3 || key.scan_code == 23) {
+			return EFI_ABORTED;
+		} else if (key.unicode_char < 0x20) {
+			/* ignore control codes other than Ctrl+C, '\r' and '\b' */
+			continue;
+		} else if (key.scan_code != 0) {
+			/* only accept single ESC press for cancel */
+			continue;
+		}
+
+		if (filter_func) {
+			if (filter_func(&key) != EFI_SUCCESS)
+				continue;
+		}
+
+		if (len >= (count - 1))
+			continue;
+
+		buf[len] = key.unicode_char;
+		len++;
+		printf(ANSI_CURSOR_POSITION "%ls", row, col, buf);
+	}
 }

@@ -13,8 +13,10 @@
 #endif
 
 #define CTRL_MMR0_BASE					0x00100000
-#define CTRLMMR_MAIN_DEVSTAT				(CTRL_MMR0_BASE + 0x30)
+#define WKUP_CTRL_MMR0_BASE				0x43000000
+#define MCU_CTRL_MMR0_BASE				0x40f00000
 
+#define CTRLMMR_MAIN_DEVSTAT				(CTRL_MMR0_BASE + 0x30)
 #define CTRLMMR_MAIN_DEVSTAT_BOOTMODE_MASK		GENMASK(3, 0)
 #define CTRLMMR_MAIN_DEVSTAT_BOOTMODE_SHIFT		0
 #define CTRLMMR_MAIN_DEVSTAT_BKUP_BOOTMODE_MASK		GENMASK(6, 4)
@@ -28,27 +30,6 @@
 #define CTRLMMR_MAIN_DEVSTAT_USB_MODE_SHIFT		9
 #define CTRLMMR_MAIN_DEVSTAT_USB_MODE_MASK		GENMASK(10, 9)
 
-#define WKUP_CTRL_MMR0_BASE				0x43000000
-#define MCU_CTRL_MMR0_BASE				0x40f00000
-
-/*
- * The CTRL_MMR0 memory space is divided into several equally-spaced
- * partitions, so defining the partition size allows us to determine
- * register addresses common to those partitions.
- */
-#define CTRL_MMR0_PARTITION_SIZE			0x4000
-
-/*
- * CTRL_MMR0, WKUP_CTRL_MMR0, and MCU_CTR_MMR0 lock/kick-mechanism
- * shared register definitions.
- */
-#define CTRLMMR_LOCK_KICK0				0x01008
-#define CTRLMMR_LOCK_KICK0_UNLOCK_VAL			0x68ef3490
-#define CTRLMMR_LOCK_KICK0_UNLOCKED_MASK		BIT(0)
-#define CTRLMMR_LOCK_KICK0_UNLOCKED_SHIFT		0
-#define CTRLMMR_LOCK_KICK1				0x0100c
-#define CTRLMMR_LOCK_KICK1_UNLOCK_VAL			0xd172bc5a
-
 /* MCU SCRATCHPAD usage */
 #define TI_SRAM_SCRATCH_BOARD_EEPROM_START CONFIG_SYS_K3_MCU_SCRATCHPAD_BASE
 
@@ -57,5 +38,24 @@
 #define	NAVSS0_NBSS_NB1_CFG_BASE			0x03803000
 
 #define	NAVSS_NBSS_THREADMAP				0x10
+
+#if defined(CONFIG_SYS_K3_SPL_ATF) && !defined(__ASSEMBLY__)
+
+#define AM6_DEV_MCU_RTI0			134
+#define AM6_DEV_MCU_RTI1			135
+#define AM6_DEV_MCU_ARMSS0_CPU0			159
+#define AM6_DEV_MCU_ARMSS0_CPU1			245
+
+static const u32 put_device_ids[] = {
+	AM6_DEV_MCU_RTI0,
+	AM6_DEV_MCU_RTI1,
+};
+
+static const u32 put_core_ids[] = {
+	AM6_DEV_MCU_ARMSS0_CPU1,
+	AM6_DEV_MCU_ARMSS0_CPU0,	/* Handle CPU0 after CPU1 */
+};
+
+#endif
 
 #endif /* __ASM_ARCH_AM6_HARDWARE_H */

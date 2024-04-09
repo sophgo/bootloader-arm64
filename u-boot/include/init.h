@@ -90,8 +90,8 @@ int dram_init(void);
  *
  * If this is not provided, a default implementation will try to set up a
  * single bank. It will do this if CONFIG_NR_DRAM_BANKS and
- * CONFIG_SYS_SDRAM_BASE are set. The bank will have a start address of
- * CONFIG_SYS_SDRAM_BASE and the size will be determined by a call to
+ * CFG_SYS_SDRAM_BASE are set. The bank will have a start address of
+ * CFG_SYS_SDRAM_BASE and the size will be determined by a call to
  * get_effective_memsize().
  *
  * Return: 0 if OK, -ve on error
@@ -102,6 +102,19 @@ long get_ram_size(long *base, long size);
 phys_size_t get_effective_memsize(void);
 
 int testdram(void);
+
+/**
+ * arch_setup_dest_addr() - Fix up initial reloc address
+ *
+ * This is called in generic board init sequence in common/board_f.c at the end
+ * of the setup_dest_addr() initcall. Each architecture could provide this
+ * function to make adjustments to the initial reloc address.
+ *
+ * If an implementation is not provided, it will just be a nop stub.
+ *
+ * Return: 0 if OK
+ */
+int arch_setup_dest_addr(void);
 
 /**
  * arch_reserve_stacks() - Reserve all necessary stacks
@@ -291,7 +304,7 @@ int show_board_info(void);
  *
  * @param total_size	Size of U-Boot (unused?)
  */
-ulong board_get_usable_ram_top(ulong total_size);
+phys_size_t board_get_usable_ram_top(phys_size_t total_size);
 
 int board_early_init_f(void);
 
@@ -340,8 +353,24 @@ void relocate_code(ulong start_addr_sp, struct global_data *new_gd,
 void bdinfo_print_num_l(const char *name, ulong value);
 void bdinfo_print_num_ll(const char *name, unsigned long long value);
 
+/* Print a string value (for use in arch_print_bdinfo()) */
+void bdinfo_print_str(const char *name, const char *str);
+
 /* Print a clock speed in MHz */
 void bdinfo_print_mhz(const char *name, unsigned long hz);
+
+/**
+ * bdinfo_print_size - print size variables in bdinfo format
+ * @name:	string to print before the size
+ * @size:	size to print
+ *
+ * Helper function for displaying size variables as properly formatted bdinfo
+ * entries. The size is printed as "xxx Bytes", "xxx KiB", "xxx MiB",
+ * "xxx GiB", etc. as needed;
+ *
+ * For use in arch_print_bdinfo().
+ */
+void bdinfo_print_size(const char *name, uint64_t size);
 
 /* Show arch-specific information for the 'bd' command */
 void arch_print_bdinfo(void);

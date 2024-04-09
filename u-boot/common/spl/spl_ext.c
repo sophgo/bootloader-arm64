@@ -15,7 +15,7 @@ int spl_load_image_ext(struct spl_image_info *spl_image,
 		       const char *filename)
 {
 	s32 err;
-	struct image_header *header;
+	struct legacy_img_hdr *header;
 	loff_t filelen, actlen;
 	struct disk_partition part_info = {};
 
@@ -28,7 +28,7 @@ int spl_load_image_ext(struct spl_image_info *spl_image,
 
 	ext4fs_set_blk_dev(block_dev, &part_info);
 
-	err = ext4fs_mount(0);
+	err = ext4fs_mount(part_info.size);
 	if (!err) {
 #ifdef CONFIG_SPL_LIBCOMMON_SUPPORT
 		printf("%s: ext4fs mount err - %d\n", __func__, err);
@@ -41,7 +41,7 @@ int spl_load_image_ext(struct spl_image_info *spl_image,
 		puts("spl: ext4fs_open failed\n");
 		goto end;
 	}
-	err = ext4fs_read((char *)header, 0, sizeof(struct image_header), &actlen);
+	err = ext4fs_read((char *)header, 0, sizeof(struct legacy_img_hdr), &actlen);
 	if (err < 0) {
 		puts("spl: ext4fs_read failed\n");
 		goto end;
@@ -82,7 +82,7 @@ int spl_load_image_ext_os(struct spl_image_info *spl_image,
 
 	ext4fs_set_blk_dev(block_dev, &part_info);
 
-	err = ext4fs_mount(0);
+	err = ext4fs_mount(part_info.size);
 	if (!err) {
 #ifdef CONFIG_SPL_LIBCOMMON_SUPPORT
 		printf("%s: ext4fs mount err - %d\n", __func__, err);

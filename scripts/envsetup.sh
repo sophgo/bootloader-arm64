@@ -9,7 +9,7 @@ CHIP=${CHIP:-bm1684}
 DEBUG=${DEBUG:-0} # now only for TFA
 DISTRO=${DISTRO:-focal} # focal = Ubuntu 20.04; kylinos
 KERNEL_VARIANT=${KERNEL_VARIANT:-normal} # normal; mininum
-PRODUCT=${PRODUCT:-} # se6; cust01
+PRODUCT=${PRODUCT:-} # se6; cust01; cust02
 
 if [ "$CHIP" == "qemu" ]; then
 	DEBUG=1
@@ -62,24 +62,22 @@ function build_tfa()
 	pushd $TFA_SRC_DIR
 
 	# clean fip tool as some options may changed
-	make PLAT=${PROJECT_NAME} DEBUG=${DEBUG} --no-print-directory clean
 	make PLAT=${PROJECT_NAME} DEBUG=${DEBUG} --no-print-directory -C $FIP_TOOL_DIR clean
 	# create a dummy u-boot binary for packing fip
 	touch $OUTPUT_DIR/u-boot.bin
 
 	if [ $DEBUG -eq 1 ] ; then
 		make -j$(nproc) PLAT=${PROJECT_NAME} \
-			DEBUG=1 CFLAGS='-O0 -g' \
+			DEBUG=1 CFLAGS="-O0 -g -DCONFIG_PRODUCT_${PRODUCT}" \
 			BL33=$OUTPUT_DIR/u-boot.bin all fip
 	else
 		make -j$(nproc) PLAT=${PROJECT_NAME} \
-			DEBUG=0 CFLAGS='-g' LOG_LEVEL=40 ENABLE_ASSERTIONS=1 \
+			DEBUG=0 CFLAGS="-g -DCONFIG_PRODUCT_${PRODUCT}" LOG_LEVEL=40 ENABLE_ASSERTIONS=1 \
 			BL33=$OUTPUT_DIR/u-boot.bin all fip
 	fi
 	ret=$?
 
 	popd
-
 	if [ $ret -ne 0 ]; then
 		echo "making TFA failed"
 		return $ret
@@ -100,32 +98,6 @@ function build_tfa()
     		dd if=fip.bin of=flash.bin seek=64 bs=4096 conv=notrunc
     		popd
 	fi
-
-	#This option is only available for bm1684x
-	if [ $DDR_INTLV_MODE ]; then
-		rm -f $OUTPUT_DIR/fip_intlv_mode*.bin
-		pushd $TFA_SRC_DIR
-		echo "genarate interleave mode 0 fip"
-		make PLAT=${PROJECT_NAME} DEBUG=${DEBUG} --no-print-directory clean
-		make PLAT=${PROJECT_NAME} DEBUG=${DEBUG} --no-print-directory -C $FIP_TOOL_DIR clean
-		make -j$(nproc) PLAT=${PROJECT_NAME} \
-			DEBUG=0 CFLAGS='-g -DCONFIG_INTLV_MODE0' LOG_LEVEL=40 ENABLE_ASSERTIONS=1 \
-			BL33=$OUTPUT_DIR/u-boot.bin all fip
-
-		ret=$?
-		popd
-		if [ $ret -ne 0 ]; then
-		    echo "making TFA failed"
-		    return $ret
-		fi
-		if [ $DDR_INTLV_MODE -eq 1 ]; then
-			cp $TFA_BUILD_DIR/fip.bin $OUTPUT_DIR/fip_intlv_mode0.bin
-		elif [ $DDR_INTLV_MODE -eq 0 ]; then
-			mv $OUTPUT_DIR/fip.bin $OUTPUT_DIR/fip_intlv_mode1.bin
-			cp $TFA_BUILD_DIR/fip.bin $OUTPUT_DIR/
-		fi
-	fi
-
 }
 
 function clean_tfa()
@@ -136,7 +108,7 @@ function clean_tfa()
 	popd
 
 	rm -f $OUTPUT_DIR/bl*.bin
-	rm -f $OUTPUT_DIR/fip*.bin
+	rm -f $OUTPUT_DIR/fip.bin
 	rm -f $OUTPUT_DIR/bl*.elf
 	rm -f $OUTPUT_DIR/bl*.dump
 	rm -f $OUTPUT_DIR/flash.bin
@@ -216,28 +188,39 @@ function clean_fip()
 
 function build_mango_flash()
 {
-	rm -f $OUTPUT_DIR/ramdisk_mini.cpio*
-	cp $RAMDISK_BUILD_DIR/workspace/ramdisk_mini.cpio $OUTPUT_DIR
-
 	gcc -g -Werror $SCRIPTS_DIR/gen_spi_flash.c -o $OUTPUT_DIR/gen_spi_flash
 
 	pushd $OUTPUT_DIR
-	gzip ./ramdisk_mini.cpio
-	mkimage -A arm64 -O linux -T ramdisk -d ramdisk_mini.cpio.gz initramfs_arm64.img
-
 	rm -f ./spi_flash.bin
-	./gen_spi_flash -c $CHIP opensbi riscv64/fw_jump.bin 0x00000000 \
-				 riscv64_Image riscv64/Image 0x00200000 \
-				 mango_rv_pld.dtb riscv64/sg2042.dtb 0x20000000 \
-				 initramfs.linux_riscv64.cpio riscv64/initramfs.linux_riscv64.cpio 0x30000000 \
-				 zsbl riscv64/zsbl.bin 0x40000000 \
-				 arm64_Image Image 0x00180000 \
-				 mango_pld.dtb mango_pld.dtb 0x02000000 \
-				 mango_fpga.dtb mango_fpga.dtb 0x02000000 \
-				 mango_evb_v0.0.dtb mango_evb_v0.0.dtb 0x02000000 \
-				 initramfs_arm64.img initramfs_arm64.img 0x03000000
+	if [ "$1" == "xmr" ]; then
+		./gen_spi_flash -c $CHIP arm64_Image Image 0x00180000 \
+					 mango_pld.dtb mango_pld.dtb 0x02000000 \
+					 mango_fpga.dtb mango_fpga.dtb 0x02000000 \
+					 mango_evb_v0.0.dtb mango_evb_v0.0.dtb 0x02000000 \
+					 initramfs_arm64.img initramfs_arm64.img 0x03000000 \
+					 mango_xmrig mango_xmrig 0x00000000
+	else
+		./gen_spi_flash -c $CHIP fw_jump.bin riscv64/fw_jump.bin 0x00000000 \
+					 riscv64_Image riscv64/riscv64_Image 0x00200000 \
+					 mango.dtb riscv64/mango.dtb 0x20000000 \
+					 initrd.img riscv64/initrd.img 0x30000000 \
+					 zsbl.bin riscv64/zsbl.bin 0x40000000 \
+					 arm64_Image Image 0x00180000 \
+					 mango_pld.dtb mango_pld.dtb 0x02000000 \
+					 mango_fpga.dtb mango_fpga.dtb 0x02000000 \
+					 mango_evb_v0.0.dtb mango_evb_v0.0.dtb 0x02000000 \
+					 initramfs_arm64.img initramfs_arm64.img 0x03000000
+	fi
 	popd
+}
 
+function clean_mango_flash()
+{
+	rm -f $OUTPUT_DIR/spi_flash*.bin
+}
+
+function build_mango_sdcard()
+{
 	pushd $SCRIPTS_DIR/
 	echo packing update image...
 	./mango_make_package.sh sdcard $OUTPUT_DIR
@@ -511,6 +494,8 @@ function create_ramdisk_folders()
 		cp -r --remove-destination $RAMDISK_DIR/target/overlay/${PROJECT_NAME}_pcie/* $RAMDISK_BUILD_DIR/target/
 	elif [ "$2" == "mix" ]; then
 		cp -r --remove-destination $RAMDISK_DIR/target/overlay/${PROJECT_NAME}_mix/* $RAMDISK_BUILD_DIR/target/
+	elif [ "$2" == "xmr" ]; then
+		cp -r --remove-destination $RAMDISK_DIR/target/overlay/${PROJECT_NAME}_xmr/* $RAMDISK_BUILD_DIR/target/
 	fi
 
 	# create config folder
@@ -531,6 +516,7 @@ emmc_ro
 pcie
 mix
 recovery
+xmr
 )
 
 function build_ramdisk()
@@ -593,6 +579,9 @@ function build_ramdisk()
 		$UBOOT_BUILD_DIR/tools/mkimage -A arm64 -O linux -T script -C none -a 0 -e 0 -n "eMMC Boot Script" -d ../configs/boot.cmd.emmc $OUTPUT_DIR/boot.scr.emmc
 	elif [ "$RAMDISK_FAVOR" == "recovery" ] ; then
 		cp ./ramdisk_${RAMDISK_TYPE}_${RAMDISK_FAVOR}.itb $OUTPUT_DIR/recovery.itb
+	elif [ "$RAMDISK_FAVOR" == "xmr" ]; then
+		gzip ./ramdisk_${RAMDISK_TYPE}_${RAMDISK_FAVOR}.cpio
+		mkimage -A arm64 -O linux -T ramdisk -d ramdisk_${RAMDISK_TYPE}_${RAMDISK_FAVOR}.cpio.gz $OUTPUT_DIR/initramfs_arm64.img
 	elif [ "$RAMDISK_FAVOR" == "" ]; then
 		cp ./ramdisk_${RAMDISK_TYPE}_${RAMDISK_FAVOR}.itb $OUTPUT_DIR/ramdisk_${RAMDISK_TYPE}.itb
 	else
@@ -1007,6 +996,12 @@ function build_athena2_rootp()
 	sudo mkdir -p $OUTPUT_DIR/rootfs/home/linaro
 	sudo cp -r $DEB_INSTALL_DIR $OUTPUT_DIR/rootfs/home/linaro/
 
+	local version=$(echo $(cat /$DISTRO_OVERLAY_DIR/$PROJECT_NAME/sophgo-fs/DEBIAN/control | grep Version) | cut -d ' ' -f 2)
+	echo "$DISTRO_OVERLAY_DIR/$PROJECT_NAME/rootfs/home/linaro/debs/"
+	rm -rf $DISTRO_OVERLAY_DIR/$PROJECT_NAME/rootfs/home/linaro/debs/sophgo-bsp-rootfs*.arm64.deb
+	dpkg-deb -b $DISTRO_OVERLAY_DIR/$PROJECT_NAME/sophgo-fs \
+		$DISTRO_OVERLAY_DIR/$PROJECT_NAME/rootfs/home/linaro/debs/sophgo-bsp-rootfs_${version}_arm64.deb
+
 	echo copy overlay file to rootfs...
 	if [ -d $DISTRO_OVERLAY_DIR/common/rootfs ]; then
 		echo copy common rootfs overlay files...
@@ -1055,6 +1050,9 @@ if [  -d /home/linaro/debs ] && [ $(ls /home/linaro//debs/*.deb | wc -l) -gt 0 ]
 		dpkg -i -R /home/linaro/debs
 	done
 fi
+
+echo -e "LC_ALL=C.UTF-8\n" > /etc/default/locale
+
 
 exit
 EOT

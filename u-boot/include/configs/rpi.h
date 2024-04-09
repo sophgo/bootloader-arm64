@@ -17,21 +17,21 @@
 
 /* Use SoC timer for AArch32, but architected timer for AArch64 */
 #ifndef CONFIG_ARM64
-#define CONFIG_SYS_TIMER_RATE		1000000
-#define CONFIG_SYS_TIMER_COUNTER	\
+#define CFG_SYS_TIMER_RATE		1000000
+#define CFG_SYS_TIMER_COUNTER	\
 	(&((struct bcm2835_timer_regs *)BCM2835_TIMER_PHYSADDR)->clo)
 #endif
 
 /* Memory layout */
-#define CONFIG_SYS_SDRAM_BASE		0x00000000
-#define CONFIG_SYS_UBOOT_BASE		CONFIG_SYS_TEXT_BASE
+#define CFG_SYS_SDRAM_BASE		0x00000000
+#define CFG_SYS_UBOOT_BASE		CONFIG_TEXT_BASE
 /*
  * The board really has 256M. However, the VC (VideoCore co-processor) shares
  * the RAM, and uses a configurable portion at the top. We tell U-Boot that a
  * smaller amount of RAM is present in order to avoid stomping on the area
  * the VC uses.
  */
-#define CONFIG_SYS_SDRAM_SIZE		SZ_128M
+#define CFG_SYS_SDRAM_SIZE		SZ_128M
 
 /* Devices */
 /* LCD */
@@ -122,7 +122,7 @@
 	"fdt_addr_r=0x02600000\0" \
 	"ramdisk_addr_r=0x02700000\0"
 
-#if CONFIG_IS_ENABLED(CMD_MMC)
+#if IS_ENABLED(CONFIG_CMD_MMC)
 	#define BOOT_TARGET_MMC(func) \
 		func(MMC, mmc, 0) \
 		func(MMC, mmc, 1) \
@@ -131,7 +131,7 @@
 	#define BOOT_TARGET_MMC(func)
 #endif
 
-#if CONFIG_IS_ENABLED(CMD_USB)
+#if IS_ENABLED(CONFIG_CMD_USB)
 	#define BOOT_TARGET_USB(func) func(USB, usb, 0)
 #else
 	#define BOOT_TARGET_USB(func)
@@ -157,7 +157,7 @@
 
 #include <config_distro_bootcmd.h>
 
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#define CFG_EXTRA_ENV_SETTINGS \
 	"dhcpuboot=usb start; dhcp u-boot.uimg; bootm\0" \
 	ENV_DEVICE_SETTINGS \
 	ENV_DFU_SETTINGS \

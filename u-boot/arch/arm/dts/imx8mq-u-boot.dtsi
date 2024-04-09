@@ -10,28 +10,28 @@
 
 };
 
-&{/soc@0} {
-	u-boot,dm-spl;
+&soc {
+	bootph-pre-ram;
 };
 
-&{/soc@0/bus@30000000} {
-	u-boot,dm-spl;
+&aips1 {
+	bootph-pre-ram;
 };
 
-&{/soc@0/bus@30400000} {
-	u-boot,dm-spl;
+&aips2 {
+	bootph-pre-ram;
 };
 
-&{/soc@0/bus@30800000} {
-	u-boot,dm-spl;
+&aips3 {
+	bootph-pre-ram;
 };
 
-&{/soc@0/bus@32c00000} {
-	u-boot,dm-spl;
+&aips4 {
+	bootph-pre-ram;
 };
 
 &iomuxc {
-	u-boot,dm-spl;
+	bootph-pre-ram;
 };
 
 &binman {
@@ -97,7 +97,9 @@
 
 		fit {
 			description = "Configuration to load ATF before U-Boot";
+#ifndef CONFIG_IMX_HAB
 			fit,external-offset = <CONFIG_FIT_EXTERNAL_OFFSET>;
+#endif
 			#address-cells = <1>;
 
 			images {
@@ -105,7 +107,7 @@
 					arch = "arm64";
 					compression = "none";
 					description = "U-Boot (64-bit)";
-					load = <CONFIG_SYS_TEXT_BASE>;
+					load = <CONFIG_TEXT_BASE>;
 					type = "standalone";
 
 					uboot-blob {
@@ -114,6 +116,7 @@
 					};
 				};
 
+#ifndef CONFIG_ARMV8_PSCI
 				atf {
 					arch = "arm64";
 					compression = "none";
@@ -127,6 +130,7 @@
 						type = "blob-ext";
 					};
 				};
+#endif
 
 				fdt {
 					compression = "none";
@@ -147,7 +151,9 @@
 					description = "NAME";
 					fdt = "fdt";
 					firmware = "uboot";
+#ifndef CONFIG_ARMV8_PSCI
 					loadables = "atf";
+#endif
 				};
 			};
 		};

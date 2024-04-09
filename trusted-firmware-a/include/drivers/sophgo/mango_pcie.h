@@ -375,6 +375,8 @@ int mango_pcie_set_max_payload(PCIE_ID pcie_id, PCIE_LINK_ID link_id,
 int mango_pcie_set_max_read_req_size(PCIE_ID pcie_id, PCIE_LINK_ID link_id,
 				     uint32_t func, PCIE_OP_MODE op_mode, PCIE_MAX_READ_REQ_SIZE mrrs);
 void mango_pcie_init(PCIE_ID pcie_id, PCIE_OP_MODE op_mode, PCIE_LANES_MODE lanes, PCIE_LINK_SPEED speed);
+void mango_pcie_slt_init(PCIE_ID pcie_id, PCIE_OP_MODE lk0_op_mode, PCIE_OP_MODE lk1_op_mode,
+			 PCIE_LANES_MODE lanes, PCIE_LINK_SPEED speed);
 int pcie_write_msi(PCIE_ID pcie_id, PCIE_LINK_ID link_id);
 void mango_ccix_init(PCIE_ID pcie_id, PCIE_OP_MODE op_mode, PCIE_LINK_SPEED speed);
 int pcie_udma_test(PCIE_ID pcie_id, PCIE_OP_MODE op_mode, PCIE_TD_DIRECTION dir);

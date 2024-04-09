@@ -73,7 +73,7 @@ struct zynqmp_pinctrl_config {
 
 /**
  * enum zynqmp_pin_config_param - possible pin configuration parameters
- * @PIN_CONFIG_IOSTANDARD:	if the pin can select an IO standard,
+ * @PIN_CFG_IOSTANDARD:	if the pin can select an IO standard,
  *				the argument to this parameter (on a
  *				custom format) tells the driver which
  *				alternative IO standard to use
@@ -81,7 +81,7 @@ struct zynqmp_pinctrl_config {
  *				to select schmitt or cmos input for MIO pins
  */
 enum zynqmp_pin_config_param {
-	PIN_CONFIG_IOSTANDARD = PIN_CONFIG_END + 1,
+	PIN_CFG_IOSTANDARD = PIN_CONFIG_END + 1,
 	PIN_CONFIG_SCHMITTCMOS,
 };
 
@@ -452,7 +452,7 @@ static int zynqmp_pinconf_set(struct udevice *dev, unsigned int pin,
 		param = PM_PINCTRL_CONFIG_DRIVE_STRENGTH;
 		ret = zynqmp_pm_pinctrl_set_config(pin, param, value);
 		break;
-	case PIN_CONFIG_IOSTANDARD:
+	case PIN_CFG_IOSTANDARD:
 		param = PM_PINCTRL_CONFIG_VOLTAGE_STATUS;
 		ret = zynqmp_pm_pinctrl_get_config(pin, param, &value);
 		if (arg != value)
@@ -467,10 +467,6 @@ static int zynqmp_pinconf_set(struct udevice *dev, unsigned int pin,
 				 pin);
 		break;
 	case PIN_CONFIG_BIAS_HIGH_IMPEDANCE:
-		param = PM_PINCTRL_CONFIG_TRI_STATE;
-		arg = PM_PINCTRL_TRI_STATE_ENABLE;
-		ret = zynqmp_pm_pinctrl_set_config(pin, param, arg);
-		break;
 	case PIN_CONFIG_LOW_POWER_MODE:
 		/*
 		 * This cases are mentioned in dts but configurable
@@ -478,11 +474,6 @@ static int zynqmp_pinconf_set(struct udevice *dev, unsigned int pin,
 		 * boot time warnings as of now.
 		 */
 		ret = 0;
-		break;
-	case PIN_CONFIG_OUTPUT_ENABLE:
-		param = PM_PINCTRL_CONFIG_TRI_STATE;
-		arg = PM_PINCTRL_TRI_STATE_DISABLE;
-		ret = zynqmp_pm_pinctrl_set_config(pin, param, arg);
 		break;
 	default:
 		dev_warn(dev, "unsupported configuration parameter '%u'\n",
@@ -617,7 +608,7 @@ static const struct pinconf_param zynqmp_conf_params[] = {
 	{ "slew-rate", PIN_CONFIG_SLEW_RATE, 0 },
 	{ "skew-delay", PIN_CONFIG_SKEW_DELAY, 0 },
 	/* zynqmp specific */
-	{"io-standard", PIN_CONFIG_IOSTANDARD, IO_STANDARD_LVCMOS18},
+	{"io-standard", PIN_CFG_IOSTANDARD, IO_STANDARD_LVCMOS18},
 	{"schmitt-cmos", PIN_CONFIG_SCHMITTCMOS, PM_PINCTRL_INPUT_TYPE_SCHMITT},
 };
 

@@ -76,22 +76,26 @@ do
 
 	for ((i=1; i<=6; i++))
 	do
-		if [ "$ptype" = "0x01" ];then
-			chip_t=30
-			board_t=30
-		else
-			res=$(/root/se6_ctrl/script/ssh_anycmd.exp "${lan1ip}1${i}" linaro linaro "bm_get_temperature" )
+		if [ "$ptype" = "0xff" ];then
+			res=$(/root/se_ctrl/script/ssh_anycmd.exp "${lan1ip}1${i}" linaro linaro "bm_get_temperature" )
 			chip_t=$(echo "$res" | grep 'chip temperature' | awk -F : '{printf("%s\n"),$3}' | awk -F \' '{printf("%d\n"), $1}')
 			board_t=$(echo "$res" | grep 'chip temperature' | awk -F : '{printf("%s\n"),$2}'| awk -F \' '{printf("%d\n"), $1}')
+		else
+			chip_t=30
+			board_t=30
 		fi
 		res1=$(/root/se_ctrl/script/ssh_anycmd.exp "${lan2ip}1${i}" linaro linaro "bm_get_temperature")
 		chip2_t=$(echo "$res1" | grep 'chip temperature' | awk -F : '{printf("%s\n"),$3}' | awk -F \' '{printf("%d\n"), $1}')
 		board2_t=$(echo "$res1" | grep 'chip temperature' | awk -F : '{printf("%s\n"),$2}'| awk -F \' '{printf("%d\n"), $1}')
 
 
-		if [ "$chip_t" = "" ] || [ "$chip2_t" = "" ];then
+		if [ "$chip_t" = "" ] ;then
 			net_warning=1
-			max_t=100
+			chip_t=40
+		fi
+		if  [ "$chip2_t" = "" ];then
+			net_warning=1
+			chip2_t=40
 		fi
 		if [ "$chip_t" != "" ] && [ $chip_t -gt $max_t ];then
 			max_t=$chip_t
@@ -113,7 +117,8 @@ do
 
 	seex=$(cat /factory/OEMconfig.ini  | grep 'se6 DUO' | wc -l)
 	product=$(cat /sys/bus/i2c/devices/1-0017/information | grep model | awk -F \" '{print $4}')
-    if ([ "$product" = "SM7 CTRL" ]) || ([ "$seex" -eq 1 ]) ; then
+	echo "max_t: $max_t"
+    if [ "$product" = "SM7 CTRL" ]; then
 		ratio=39999
 		if [ $max_t -ge 75 ];then
 			rate=39999
@@ -196,65 +201,65 @@ do
 			fi
 			;;
 		esac
-	elif [ "$seex" -ge 0 ];then
+	elif [ "$seex" -ge 1 ];then
 		case $stage in
 		0)
-			if [ $max_t -ge 55 ];then
+			if [ $max_t -ge 58 ];then
 				stage=1
-				rate=18000
-				se6_ctrl_fan_slowly 12000 18000
+				rate=14000
+				se6_ctrl_fan_slowly 10000 14000
 			else
 				stage=0
-				rate=12000
+				rate=10000
 			fi
 			;;
 		1)
-			if [ $max_t -ge 65 ];then
+			if [ $max_t -ge 68 ];then
 				stage=2
-				rate=24000
-				se6_ctrl_fan_slowly 18000 24000
-			elif [ $max_t -le 50 ];then
+				rate=18000
+				se6_ctrl_fan_slowly 14000 18000
+			elif [ $max_t -le 54 ];then
 				stage=0
-				rate=12000
-				se6_ctrl_fan_slowly 18000 12000
+				rate=10000
+				se6_ctrl_fan_slowly 14000 10000
 			else
 				stage=1
-				rate=18000
+				rate=14000
 			fi
 			;;
 		2)
-			if [ $max_t -ge 73 ];then
+			if [ $max_t -ge 75 ];then
 				stage=3
-				rate=32000
-				se6_ctrl_fan_slowly 24000 32000
-			elif [ $max_t -le 60 ];then
+				rate=30000
+				se6_ctrl_fan_slowly 18000 30000
+			elif [ $max_t -le 64 ];then
 				stage=1
-				rate=18000
-				se6_ctrl_fan_slowly 18000 24000
+				rate=14000
+				se6_ctrl_fan_slowly 18000 14000
 			else
 				stage=2
-				rate=24000
+				rate=18000
 			fi
 			;;
 		3)
 			if [ $max_t -ge 80 ];then
 				stage=4
 				rate=39999
-				se6_ctrl_fan_slowly 32000 39600
-			elif [ $max_t -le 69 ];then
+				se6_ctrl_fan_slowly 30000 39600
+			elif [ $max_t -le 72 ];then
 				stage=2
-				rate=24000
-				se6_ctrl_fan_slowly 32000 24000
+				rate=18000
+				se6_ctrl_fan_slowly 30000 18000
 			else
 				stage=3
-				rate=32000
+				rate=30000
 			fi
 			;;
 		4)
-			if [ $max_t -le 76 ];then
+			if [ $max_t -le 77 ];then
 				stage=3
-				rate=32000
-				se6_ctrl_fan_slowly 39600 32000
+				rate=30000
+				se6_ctrl_fan_slowly 39600 30000
 
 			else
 				stage=4

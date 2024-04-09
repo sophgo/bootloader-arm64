@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0+
 #
 # Copyright (c) 2013 Google, Inc
+# Copyright 2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
 
 obj-$(CONFIG_UT_DM) += test-dm.o
 
@@ -17,6 +18,10 @@ obj-$(CONFIG_UT_DM) += test-uclass.o
 obj-$(CONFIG_UT_DM) += core.o
 obj-$(CONFIG_UT_DM) += read.o
 obj-$(CONFIG_UT_DM) += phys2bus.o
+ifeq ($(CONFIG_NVMXIP_QSPI)$(CONFIG_SANDBOX64),yy)
+obj-y += nvmxip.o
+endif
+
 ifneq ($(CONFIG_SANDBOX),)
 ifeq ($(CONFIG_ACPIGEN),y)
 obj-y += acpi.o
@@ -29,6 +34,7 @@ obj-$(CONFIG_ADC) += adc.o
 obj-$(CONFIG_SOUND) += audio.o
 obj-$(CONFIG_AXI) += axi.o
 obj-$(CONFIG_BLK) += blk.o
+obj-$(CONFIG_BLKMAP) += blkmap.o
 obj-$(CONFIG_BUTTON) += button.o
 obj-$(CONFIG_DM_BOOTCOUNT) += bootcount.o
 obj-$(CONFIG_DM_REBOOT_MODE) += reboot-mode.o
@@ -43,10 +49,14 @@ obj-$(CONFIG_DM_DSA) += dsa.o
 obj-$(CONFIG_ECDSA_VERIFY) += ecdsa.o
 obj-$(CONFIG_EFI_MEDIA_SANDBOX) += efi_media.o
 obj-$(CONFIG_DM_ETH) += eth.o
+obj-$(CONFIG_EXTCON) += extcon.o
 ifneq ($(CONFIG_EFI_PARTITION),)
 obj-$(CONFIG_FASTBOOT_FLASH_MMC) += fastboot.o
 endif
 obj-$(CONFIG_FIRMWARE) += firmware.o
+obj-$(CONFIG_DM_FPGA) += fpga.o
+obj-$(CONFIG_FWU_MDATA_GPT_BLK) += fwu_mdata.o
+obj-$(CONFIG_SANDBOX) += host.o
 obj-$(CONFIG_DM_HWSPINLOCK) += hwspinlock.o
 obj-$(CONFIG_DM_I2C) += i2c.o
 obj-$(CONFIG_SOUND) += i2s.o
@@ -56,6 +66,7 @@ obj-$(CONFIG_LED) += led.o
 obj-$(CONFIG_DM_MAILBOX) += mailbox.o
 obj-$(CONFIG_DM_MDIO) += mdio.o
 obj-$(CONFIG_DM_MDIO_MUX) += mdio_mux.o
+obj-$(CONFIG_MEMORY) += memory.o
 obj-$(CONFIG_MISC) += misc.o
 obj-$(CONFIG_DM_MMC) += mmc.o
 obj-$(CONFIG_CMD_MUX) += mux-cmd.o
@@ -67,7 +78,7 @@ obj-y += ofnode.o
 obj-y += ofread.o
 obj-y += of_extra.o
 obj-$(CONFIG_OSD) += osd.o
-obj-$(CONFIG_DM_VIDEO) += panel.o
+obj-$(CONFIG_VIDEO) += panel.o
 obj-$(CONFIG_EFI_PARTITION) += part.o
 obj-$(CONFIG_PCI) += pci.o
 obj-$(CONFIG_P2SB) += p2sb.o
@@ -91,6 +102,7 @@ obj-$(CONFIG_DM_REGULATOR) += regulator.o
 obj-$(CONFIG_DM_RNG) += rng.o
 obj-$(CONFIG_DM_RTC) += rtc.o
 obj-$(CONFIG_SCMI_FIRMWARE) += scmi.o
+obj-$(CONFIG_SCSI) += scsi.o
 obj-$(CONFIG_DM_SERIAL) += serial.o
 obj-$(CONFIG_DM_SPI_FLASH) += sf.o
 obj-$(CONFIG_SIMPLE_BUS) += simple-bus.o
@@ -109,7 +121,7 @@ obj-$(CONFIG_TEE) += tee.o
 obj-$(CONFIG_TIMER) += timer.o
 obj-$(CONFIG_TPM_V2) += tpm.o
 obj-$(CONFIG_DM_USB) += usb.o
-obj-$(CONFIG_DM_VIDEO) += video.o
+obj-$(CONFIG_VIDEO) += video.o
 ifeq ($(CONFIG_VIRTIO_SANDBOX),y)
 obj-y += virtio.o
 obj-$(CONFIG_VIRTIO_RNG) += virtio_device.o

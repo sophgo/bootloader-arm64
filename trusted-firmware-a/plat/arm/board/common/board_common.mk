@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2015-2020, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2015-2022, ARM Limited and Contributors. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -38,6 +38,10 @@ endif
 
 $(eval $(call add_define,ARM_ROTPK_LOCATION_ID))
 
+ifeq (${ENABLE_RME}, 1)
+COT	:=	cca
+endif
+
 # Force generation of the new hash if ROT_KEY is specified
 ifdef ROT_KEY
 	HASH_PREREQUISITES = $(ROT_KEY) FORCE
@@ -49,8 +53,8 @@ $(ARM_ROTPK_HASH) : $(HASH_PREREQUISITES)
 ifndef ROT_KEY
 	$(error Cannot generate hash: no ROT_KEY defined)
 endif
-	openssl ${CRYPTO_ALG} -in $< -pubout -outform DER | openssl dgst \
-		-sha256 -binary > $@
+	${OPENSSL_BIN_PATH}/openssl ${CRYPTO_ALG} -in $< -pubout -outform DER | \
+	${OPENSSL_BIN_PATH}/openssl dgst -sha256 -binary > $@
 
 # Certificate NV-Counters. Use values corresponding to tied off values in
 # ARM development platforms
@@ -86,6 +90,31 @@ BL2_SOURCES		+=	plat/arm/board/common/protpk/arm_dev_protpk.S
 
 $(BUILD_PLAT)/bl1/arm_dev_protpk.o: $(ARM_PROTPK_HASH)
 $(BUILD_PLAT)/bl2/arm_dev_protpk.o: $(ARM_PROTPK_HASH)
+endif
+
+ifeq (${COT},cca)
+# Platform and Secure World Root of Trust key files.
+ARM_PROT_KEY		:=	plat/arm/board/common/protpk/arm_protprivk_rsa.pem
+ARM_PROTPK_HASH		:=	plat/arm/board/common/protpk/arm_protpk_rsa_sha256.bin
+ARM_SWD_ROT_KEY		:=	plat/arm/board/common/swd_rotpk/arm_swd_rotprivk_rsa.pem
+ARM_SWD_ROTPK_HASH	:=	plat/arm/board/common/swd_rotpk/arm_swd_rotpk_rsa_sha256.bin
+
+# Provide the private keys to cert_create tool. It needs them to sign the images.
+PROT_KEY		:=	${ARM_PROT_KEY}
+SWD_ROT_KEY		:=	${ARM_SWD_ROT_KEY}
+
+$(eval $(call add_define_val,ARM_PROTPK_HASH,'"$(ARM_PROTPK_HASH)"'))
+$(eval $(call add_define_val,ARM_SWD_ROTPK_HASH,'"$(ARM_SWD_ROTPK_HASH)"'))
+
+BL1_SOURCES		+=	plat/arm/board/common/protpk/arm_dev_protpk.S \
+				plat/arm/board/common/swd_rotpk/arm_dev_swd_rotpk.S
+BL2_SOURCES		+=	plat/arm/board/common/protpk/arm_dev_protpk.S \
+				plat/arm/board/common/swd_rotpk/arm_dev_swd_rotpk.S
+
+$(BUILD_PLAT)/bl1/arm_dev_protpk.o: $(ARM_PROTPK_HASH)
+$(BUILD_PLAT)/bl1/arm_dev_swd_rotpk.o: $(ARM_SWD_ROTPK_HASH)
+$(BUILD_PLAT)/bl2/arm_dev_protpk.o: $(ARM_PROTPK_HASH)
+$(BUILD_PLAT)/bl2/arm_dev_swd_rotpk.o: $(ARM_SWD_ROTPK_HASH)
 endif
 
 endif

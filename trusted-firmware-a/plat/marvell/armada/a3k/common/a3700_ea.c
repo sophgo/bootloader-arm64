@@ -16,21 +16,9 @@
 
 #define A53_SERR_INT_AXI_SLVERR_ON_EXTERNAL_ACCESS 0xbf000002
 
-#if !ENABLE_BACKTRACE
-static const char *get_el_str(unsigned int el)
-{
-	if (el == MODE_EL3) {
-		return "EL3";
-	} else if (el == MODE_EL2) {
-		return "EL2";
-	}
-	return "S-EL1";
-}
-#endif /* !ENABLE_BACKTRACE */
-
 /*
  * This source file with custom plat_ea_handler function is compiled only when
- * building TF-A with compile option HANDLE_EA_EL3_FIRST=1
+ * building TF-A with compile option HANDLE_EA_EL3_FIRST_NS=1
  */
 void plat_ea_handler(unsigned int ea_reason, uint64_t syndrome, void *cookie,
 		void *handle, uint64_t flags)

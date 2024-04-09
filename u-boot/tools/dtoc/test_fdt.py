@@ -30,8 +30,8 @@ from dtoc import fdt_util
 from dtoc.fdt_util import fdt32_to_cpu, fdt64_to_cpu
 from dtoc.fdt import Type, BytesToValue
 import libfdt
-from patman import test_util
-from patman import tools
+from u_boot_pylib import test_util
+from u_boot_pylib import tools
 
 #pylint: disable=protected-access
 
@@ -132,10 +132,10 @@ class TestFdt(unittest.TestCase):
         """Tests obtaining a list of properties"""
         node = self.dtb.GetNode('/spl-test')
         props = self.dtb.GetProps(node)
-        self.assertEqual(['boolval', 'bytearray', 'byteval', 'compatible',
-                          'int64val', 'intarray', 'intval', 'longbytearray',
-                          'maybe-empty-int', 'notstring', 'stringarray',
-                          'stringval', 'u-boot,dm-pre-reloc'],
+        self.assertEqual(['boolval', 'bootph-all', 'bytearray', 'byteval',
+                          'compatible', 'int64val', 'intarray', 'intval',
+                          'longbytearray', 'maybe-empty-int', 'notstring',
+                          'stringarray', 'stringval', ],
                          sorted(props.keys()))
 
     def test_check_error(self):
@@ -784,8 +784,8 @@ class TestFdtUtil(unittest.TestCase):
 
     def test_ensure_compiled_tmpdir(self):
         """Test providing a temporary directory"""
+        old_outdir = tools.outdir
         try:
-            old_outdir = tools.outdir
             tools.outdir= None
             tmpdir = tempfile.mkdtemp(prefix='test_fdt.')
             dtb = fdt_util.EnsureCompiled(find_dtb_file('dtoc_test_simple.dts'),
@@ -793,8 +793,19 @@ class TestFdtUtil(unittest.TestCase):
             self.assertEqual(tmpdir, os.path.dirname(dtb))
             shutil.rmtree(tmpdir)
         finally:
-            tools.outdir= old_outdir
+            tools.outdir = old_outdir
 
+    def test_get_phandle_name_offset(self):
+        val = fdt_util.GetPhandleNameOffset(self.node, 'missing')
+        self.assertIsNone(val)
+
+        dtb = fdt.FdtScan(find_dtb_file('dtoc_test_phandle.dts'))
+        node = dtb.GetNode('/phandle-source')
+        node, name, offset = fdt_util.GetPhandleNameOffset(node,
+                                                           'phandle-name-offset')
+        self.assertEqual('phandle3-target', node.name)
+        self.assertEqual('fred', name)
+        self.assertEqual(123, offset)
 
 def run_test_coverage(build_dir):
     """Run the tests and check that we get 100% coverage
@@ -803,7 +814,8 @@ def run_test_coverage(build_dir):
         build_dir (str): Directory containing the build output
     """
     test_util.run_test_coverage('tools/dtoc/test_fdt.py', None,
-            ['tools/patman/*.py', '*test_fdt.py'], build_dir)
+            ['tools/patman/*.py', 'tools/u_boot_pylib/*', '*test_fdt.py'],
+            build_dir)
 
 
 def run_tests(names, processes):
@@ -851,4 +863,3 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
-sys.exit(1)

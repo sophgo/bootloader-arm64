@@ -19,7 +19,7 @@
 #include <errno.h>
 #include <spl.h>
 #include <thermal.h>
-#include <asm/arch/sci/sci.h>
+#include <firmware/imx/sci/sci.h>
 #include <asm/arch/sys_proto.h>
 #include <asm/arch-imx/cpu.h>
 #include <asm/armv8/cpu.h>
@@ -89,7 +89,7 @@ static int imx8_init_mu(void *ctx, struct event *event)
 
 	return 0;
 }
-EVENT_SPY(EVT_DM_POST_INIT, imx8_init_mu);
+EVENT_SPY(EVT_DM_POST_INIT_F, imx8_init_mu);
 
 #if defined(CONFIG_ARCH_MISC_INIT)
 int arch_misc_init(void)
@@ -313,8 +313,8 @@ phys_size_t get_effective_memsize(void)
 
 			/* Find the memory region runs the U-Boot */
 			if (start >= phys_sdram_1_start && start <= end1 &&
-			    (start <= CONFIG_SYS_TEXT_BASE &&
-			    end >= CONFIG_SYS_TEXT_BASE)) {
+			    (start <= CONFIG_TEXT_BASE &&
+			    end >= CONFIG_TEXT_BASE)) {
 				if ((end + 1) <=
 				    ((sc_faddr_t)phys_sdram_1_start +
 				    phys_sdram_1_size))

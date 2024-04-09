@@ -50,9 +50,9 @@ int dram_init(void)
 
 int board_early_init_f(void)
 {
-	struct ccsr_scfg *scfg = (struct ccsr_scfg *)CONFIG_SYS_FSL_SCFG_ADDR;
-	struct ccsr_gur __iomem *gur = (void *)CONFIG_SYS_FSL_GUTS_ADDR;
-	struct fsl_ifc ifc = {(void *)CONFIG_SYS_IFC_ADDR, (void *)NULL};
+	struct ccsr_scfg *scfg = (struct ccsr_scfg *)CFG_SYS_FSL_SCFG_ADDR;
+	struct ccsr_gur __iomem *gur = (void *)CFG_SYS_FSL_GUTS_ADDR;
+	struct fsl_ifc ifc = {(void *)CFG_SYS_IFC_ADDR, (void *)NULL};
 
 	/* Disable unused MCK1 */
 	setbits_be32(&gur->ddrclkdr, 2);
@@ -71,7 +71,7 @@ int board_early_init_f(void)
 	/* QRIO Configuration */
 	qrio_uprstreq(UPREQ_CORE_RST);
 
-#if CONFIG_IS_ENABLED(TARGET_PG_WCOM_SELI8)
+#if IS_ENABLED(CONFIG_TARGET_PG_WCOM_SELI8)
 	qrio_prstcfg(KM_LIU_RST, PRSTCFG_POWUP_UNIT_RST);
 	qrio_wdmask(KM_LIU_RST, true);
 
@@ -79,7 +79,7 @@ int board_early_init_f(void)
 	qrio_wdmask(KM_PAXK_RST, true);
 #endif
 
-#if CONFIG_IS_ENABLED(TARGET_PG_WCOM_EXPU1)
+#if IS_ENABLED(CONFIG_TARGET_PG_WCOM_EXPU1)
 	qrio_prstcfg(WCOM_TMG_RST, PRSTCFG_POWUP_UNIT_RST);
 	qrio_wdmask(WCOM_TMG_RST, true);
 
@@ -184,7 +184,7 @@ int arch_memory_test_prepare(u32 *vstart, u32 *size, phys_addr_t *phys_offset)
 {
 	/* Define only 1MiB range for mem_regions at the middle of the RAM */
 	/* For 1GiB range mem_regions takes approx. 4min */
-	*vstart = CONFIG_SYS_SDRAM_BASE + (gd->ram_size >> 1);
+	*vstart = CFG_SYS_SDRAM_BASE + (gd->ram_size >> 1);
 	*size = 1 << 20;
 	return 0;
 }

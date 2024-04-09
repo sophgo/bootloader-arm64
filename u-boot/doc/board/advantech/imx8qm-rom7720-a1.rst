@@ -19,7 +19,7 @@ Get and Build the ARM Trusted firmware
 
 .. code-block:: bash
 
-     $ git clone https://source.codeaurora.org/external/imx/imx-atf
+     $ git clone https://github.com/nxp-imx/imx-atf
      $ cd imx-atf/
      $ git checkout origin/imx_4.14.78_1.0.0_ga -b imx_4.14.78_1.0.0_ga
      $ make PLAT=imx8qm bl31
@@ -57,8 +57,7 @@ Build U-Boot
      $ export ATF_LOAD_ADDR=0x80000000
      $ export BL33_LOAD_ADDR=0x80020000
      $ make imx8qm_rom7720_a1_4G_defconfig
-     $ make u-boot.bin
-     $ make flash.bin
+     $ make
 
 Flash the binary into the SD card
 ---------------------------------

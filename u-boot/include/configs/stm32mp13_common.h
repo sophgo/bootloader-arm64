@@ -13,21 +13,15 @@
 /*
  * Configuration of the external SRAM memory used by U-Boot
  */
-#define CONFIG_SYS_SDRAM_BASE		STM32_DDR_BASE
+#define CFG_SYS_SDRAM_BASE		STM32_DDR_BASE
 
 /*
  * For booting Linux, use the first 256 MB of memory, since this is
  * the maximum mapped by the Linux kernel during initialization.
  */
-#define CONFIG_SYS_BOOTMAPSZ		SZ_256M
-
-/* Extend size of kernel image for uncompression */
-
-/*MMC SD*/
-#define CONFIG_SYS_MMC_MAX_DEVICE	2
+#define CFG_SYS_BOOTMAPSZ		SZ_256M
 
 /* NAND support */
-#define CONFIG_SYS_MAX_NAND_DEVICE	1
 
 /*****************************************************************************/
 #ifdef CONFIG_DISTRO_DEFAULTS
@@ -87,7 +81,7 @@
 	"fdtoverlay_addr_r=" __FDTOVERLAY_ADDR_R "\0" \
 	"ramdisk_addr_r=" __RAMDISK_ADDR_R "\0"
 
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#define CFG_EXTRA_ENV_SETTINGS \
 	STM32MP_MEM_LAYOUT \
 	STM32MP_BOOTCMD \
 	BOOTENV \

@@ -240,7 +240,7 @@ int board_phy_config(struct phy_device *phydev)
 }
 #endif
 
-#ifdef CONFIG_DM_VIDEO
+#ifdef CONFIG_VIDEO
 static iomux_v3_cfg_t const lcd_pads[] = {
 	/* Use GPIO for Brightness adjustment, duty cycle = period. */
 	MX6_PAD_GPIO1_IO08__GPIO1_IO08 | MUX_PAD_CTRL(NO_PAD_CTRL),
@@ -281,7 +281,7 @@ int board_init(void)
 	gd->bd->bi_boot_params = PHYS_SDRAM + 0x100;
 
 #ifdef	CONFIG_FEC_MXC
-	setup_fec(CONFIG_FEC_ENET_DEV);
+	setup_fec(CFG_FEC_ENET_DEV);
 #endif
 
 #ifdef CONFIG_USB_EHCI_MX6

@@ -62,7 +62,7 @@ BL31_SOURCES		+=	lib/cpus/aarch64/cortex_a53.S		\
 				$(PLAT_COMMON_BASE)/a3700_sip_svc.c	\
 				$(MARVELL_DRV)
 
-ifeq ($(HANDLE_EA_EL3_FIRST),1)
+ifeq ($(HANDLE_EA_EL3_FIRST_NS),1)
 BL31_SOURCES		+=	$(PLAT_COMMON_BASE)/a3700_ea.c
 endif
 
@@ -205,12 +205,12 @@ ifeq ($(MARVELL_SECURE_BOOT),1)
 	@$(ECHO_BLANK_LINE)
 	$(Q)cp $(BUILD_PLAT)/wtmi.bin $(BUILD_PLAT)/wtmi-align.bin
 	$(Q)truncate -s %16 $(BUILD_PLAT)/wtmi-align.bin
-	$(Q)openssl enc -aes-256-cbc -e -in $(BUILD_PLAT)/wtmi-align.bin \
+	$(Q)${OPENSSL_BIN_PATH}/openssl enc -aes-256-cbc -e -in $(BUILD_PLAT)/wtmi-align.bin \
 	-out $(BUILD_PLAT)/$(WTMI_ENC_IMG) \
 	-K `cat $(IMAGESPATH)/aes-256.txt` -nosalt \
 	-iv `cat $(IMAGESPATH)/iv.txt` -p
 	$(Q)truncate -s %16 $(BUILD_PLAT)/$(BOOT_IMAGE);
-	$(Q)openssl enc -aes-256-cbc -e -in $(BUILD_PLAT)/$(BOOT_IMAGE) \
+	$(Q)${OPENSSL_BIN_PATH}/openssl enc -aes-256-cbc -e -in $(BUILD_PLAT)/$(BOOT_IMAGE) \
 	-out $(BUILD_PLAT)/$(BOOT_ENC_IMAGE) \
 	-K `cat $(IMAGESPATH)/aes-256.txt` -nosalt \
 	-iv `cat $(IMAGESPATH)/iv.txt` -p

@@ -348,7 +348,7 @@ static int dm_test_gpio_phandles(struct unit_test_state *uts)
 	ut_asserteq(-ENOENT, gpio_request_by_name(dev, "test-gpios", 5, &desc,
 						  0));
 
-	/* Last GPIO is ignord as it comes after <0> */
+	/* Last GPIO is ignored as it comes after <0> */
 	ut_asserteq(3, gpio_request_list_by_name(dev, "test-gpios", desc_list,
 						 ARRAY_SIZE(desc_list), 0));
 	ut_asserteq(-EBUSY, gpio_request_list_by_name(dev, "test-gpios",
@@ -377,7 +377,7 @@ static int dm_test_gpio_phandles(struct unit_test_state *uts)
 	ut_asserteq(6, gpio_request_list_by_name(dev, "test2-gpios", desc_list,
 						 ARRAY_SIZE(desc_list), 0));
 
-	/* This was set to output previously but flags resetted to 0 = INPUT */
+	/* This was set to output previously but flags reset to 0 = INPUT */
 	ut_asserteq(0, sandbox_gpio_get_flags(gpio_a, 1));
 	ut_asserteq(GPIOF_INPUT, gpio_get_function(gpio_a, 1, NULL));
 
@@ -777,4 +777,34 @@ static int dm_test_gpio_get_values_as_int_base3(struct unit_test_state *uts)
 	return 0;
 }
 DM_TEST(dm_test_gpio_get_values_as_int_base3,
+	UT_TESTF_SCAN_PDATA | UT_TESTF_SCAN_FDT);
+
+/* Check that gpio_get_status return the label of a GPIO configured as GPIOD_AF */
+static int dm_test_gpio_function(struct unit_test_state *uts)
+{
+	struct gpio_desc desc;
+	struct udevice *dev;
+	ulong flags;
+	unsigned int offset, gpio;
+	char buf[80];
+
+	ut_assertok(uclass_get_device(UCLASS_TEST_FDT, 0, &dev));
+	ut_asserteq_str("a-test", dev->name);
+
+	/* request gpio_b 5 */
+	ut_assertok(gpio_request_by_name(dev, "test-gpios", 2, &desc, 0));
+	/* update gpio_b 5 function to GPIO_AF */
+	ut_assertok(dm_gpio_clrset_flags(&desc, GPIOD_IS_AF, GPIOD_IS_AF));
+	ut_assertok(dm_gpio_get_flags(&desc, &flags));
+	ut_asserteq(GPIOD_IS_AF, flags);
+	/* check using gpio_get_status that label is displayed for a pin with GPIO_AF function */
+	ut_assertok(gpio_lookup_name("b5", &dev, &offset, &gpio));
+	ut_assertok(gpio_get_status(dev, offset, buf, sizeof(buf)));
+	ut_asserteq_str("b5: func a-test.test-gpios2", buf);
+
+	ut_assertok(dm_gpio_free(dev, &desc));
+
+	return 0;
+}
+DM_TEST(dm_test_gpio_function,
 	UT_TESTF_SCAN_PDATA | UT_TESTF_SCAN_FDT);

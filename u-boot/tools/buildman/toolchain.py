@@ -11,9 +11,9 @@ import tempfile
 import urllib.request, urllib.error, urllib.parse
 
 from buildman import bsettings
-from patman import command
-from patman import terminal
-from patman import tools
+from u_boot_pylib import command
+from u_boot_pylib import terminal
+from u_boot_pylib import tools
 
 (PRIORITY_FULL_PREFIX, PRIORITY_PREFIX_GCC, PRIORITY_PREFIX_GCC_PATH,
     PRIORITY_CALC) = list(range(4))
@@ -156,9 +156,10 @@ class Toolchain:
         Returns:
             Value of that environment variable or arguments
         """
-        wrapper = self.GetWrapper()
         if which == VAR_CROSS_COMPILE:
-            return wrapper + os.path.join(self.path, self.cross)
+            wrapper = self.GetWrapper()
+            base = '' if self.arch == 'sandbox' else self.path
+            return wrapper + os.path.join(base, self.cross)
         elif which == VAR_PATH:
             return self.path
         elif which == VAR_ARCH:
@@ -265,7 +266,7 @@ class Toolchains:
             print(("Warning: No tool chains. Please run 'buildman "
                    "--fetch-arch all' to download all available toolchains, or "
                    "add a [toolchain] section to your buildman config file "
-                   "%s. See README for details" %
+                   "%s. See buildman.rst for details" %
                    bsettings.config_fname))
 
         paths = []
@@ -420,7 +421,7 @@ class Toolchains:
         Returns:
             Resolved string
 
-        >>> bsettings.Setup()
+        >>> bsettings.Setup(None)
         >>> tcs = Toolchains()
         >>> tcs.Add('fred', False)
         >>> var_dict = {'oblique' : 'OBLIQUE', 'first' : 'fi${second}rst', \
@@ -498,7 +499,7 @@ class Toolchains:
         if arch == 'aarch64':
             arch = 'arm64'
         base = 'https://www.kernel.org/pub/tools/crosstool/files/bin'
-        versions = ['11.1.0', '9.2.0', '7.3.0', '6.4.0', '4.9.4']
+        versions = ['12.2.0', '11.1.0']
         links = []
         for version in versions:
             url = '%s/%s/%s/' % (base, arch, version)

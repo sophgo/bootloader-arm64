@@ -40,6 +40,18 @@ You can find additional definitions in the `Arm Glossary`_.
       Common Vulnerabilities and Exposures. A CVE document is commonly used to
       describe a publicly-known security vulnerability.
 
+   DCE
+      DRTM Configuration Environment
+
+   D-CRTM
+      Dynamic Code Root of Trust for Measurement
+
+   DLME
+      Dynamically Launched Measured Environment
+
+   DRTM
+      Dynamic Root of Trust for Measurement
+
    DS-5
       Arm Development Studio 5
 
@@ -57,6 +69,9 @@ You can find additional definitions in the `Arm Glossary`_.
 
    EHF
       Exception Handling Framework
+
+   ERRATA_ABI
+      Errata management firmware interface
 
    FCONF
       Firmware Configuration Framework
@@ -85,6 +100,9 @@ You can find additional definitions in the `Arm Glossary`_.
    Linaro
       A collaborative engineering organization consolidating
       and optimizing open source software and tools for the Arm architecture.
+
+   LSP
+      A logical secure partition managed by SPM
 
    MMU
       Memory Management Unit
@@ -185,6 +203,9 @@ You can find additional definitions in the `Arm Glossary`_.
 
    TBBR
       Trusted Board Boot Requirements
+
+   TCB
+      Trusted Compute Base
 
    TEE
       Trusted Execution Environment

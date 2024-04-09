@@ -55,7 +55,7 @@ static void report_bootflow_err(struct bootflow *bflow, int err)
 		break;
 	}
 
-	printf(", err=%d\n", err);
+	printf(", err=%dE\n", err);
 }
 
 /**
@@ -93,11 +93,12 @@ static int do_bootflow_scan(struct cmd_tbl *cmdtp, int flag, int argc,
 {
 	struct bootstd_priv *std;
 	struct bootflow_iter iter;
-	struct udevice *dev;
+	struct udevice *dev = NULL;
 	struct bootflow bflow;
 	bool all = false, boot = false, errors = false, no_global = false;
-	bool list = false;
+	bool list = false, no_hunter = false;
 	int num_valid = 0;
+	const char *label = NULL;
 	bool has_args;
 	int ret, i;
 	int flags;
@@ -105,7 +106,6 @@ static int do_bootflow_scan(struct cmd_tbl *cmdtp, int flag, int argc,
 	ret = bootstd_get_priv(&std);
 	if (ret)
 		return CMD_RET_FAILURE;
-	dev = std->cur_bootdev;
 
 	has_args = argc > 1 && *argv[1] == '-';
 	if (IS_ENABLED(CONFIG_CMD_BOOTFLOW_FULL)) {
@@ -115,18 +115,17 @@ static int do_bootflow_scan(struct cmd_tbl *cmdtp, int flag, int argc,
 			errors = strchr(argv[1], 'e');
 			no_global = strchr(argv[1], 'G');
 			list = strchr(argv[1], 'l');
+			no_hunter = strchr(argv[1], 'H');
 			argc--;
 			argv++;
 		}
-		if (argc > 1) {
-			const char *label = argv[1];
-
-			if (bootdev_find_by_any(label, &dev))
-				return CMD_RET_FAILURE;
-		}
+		if (argc > 1)
+			label = argv[1];
+		if (!label)
+			dev = std->cur_bootdev;
 	} else {
 		if (has_args) {
-			printf("Flags not supported: enable CONFIG_BOOTFLOW_FULL\n");
+			printf("Flags not supported: enable CONFIG_BOOTSTD_FULL\n");
 			return CMD_RET_USAGE;
 		}
 		boot = true;
@@ -136,67 +135,54 @@ static int do_bootflow_scan(struct cmd_tbl *cmdtp, int flag, int argc,
 
 	flags = 0;
 	if (list)
-		flags |= BOOTFLOWF_SHOW;
+		flags |= BOOTFLOWIF_SHOW;
 	if (all)
-		flags |= BOOTFLOWF_ALL;
+		flags |= BOOTFLOWIF_ALL;
 	if (no_global)
-		flags |= BOOTFLOWF_SKIP_GLOBAL;
+		flags |= BOOTFLOWIF_SKIP_GLOBAL;
+	if (!no_hunter)
+		flags |= BOOTFLOWIF_HUNT;
 
 	/*
 	 * If we have a device, just scan for bootflows attached to that device
 	 */
-	if (IS_ENABLED(CONFIG_CMD_BOOTFLOW_FULL) && dev) {
-		if (list) {
-			printf("Scanning for bootflows in bootdev '%s'\n",
-			       dev->name);
-			show_header();
-		}
+	if (list) {
+		printf("Scanning for bootflows ");
+		if (dev)
+			printf("in bootdev '%s'\n", dev->name);
+		else if (label)
+			printf("with label '%s'\n", label);
+		else
+			printf("in all bootdevs\n");
+		show_header();
+	}
+	if (dev)
 		bootdev_clear_bootflows(dev);
-		for (i = 0,
-		     ret = bootflow_scan_bootdev(dev, &iter, flags, &bflow);
-		     i < 1000 && ret != -ENODEV;
-		     i++, ret = bootflow_scan_next(&iter, &bflow)) {
-			bflow.err = ret;
-			if (!ret)
-				num_valid++;
-			ret = bootdev_add_bootflow(&bflow);
-			if (ret) {
-				printf("Out of memory\n");
-				return CMD_RET_FAILURE;
-			}
-			if (list)
-				show_bootflow(i, &bflow, errors);
-			if (boot && !bflow.err)
-				bootflow_run_boot(&iter, &bflow);
-		}
-	} else {
-		if (list) {
-			printf("Scanning for bootflows in all bootdevs\n");
-			show_header();
-		}
+	else
 		bootstd_clear_glob();
-
-		for (i = 0,
-		     ret = bootflow_scan_first(&iter, flags, &bflow);
-		     i < 1000 && ret != -ENODEV;
-		     i++, ret = bootflow_scan_next(&iter, &bflow)) {
-			bflow.err = ret;
-			if (!ret)
-				num_valid++;
-			ret = bootdev_add_bootflow(&bflow);
-			if (ret) {
-				printf("Out of memory\n");
-				return CMD_RET_FAILURE;
-			}
-			if (list)
-				show_bootflow(i, &bflow, errors);
-			if (boot && !bflow.err)
-				bootflow_run_boot(&iter, &bflow);
+	for (i = 0,
+	     ret = bootflow_scan_first(dev, label, &iter, flags, &bflow);
+	     i < 1000 && ret != -ENODEV;
+	     i++, ret = bootflow_scan_next(&iter, &bflow)) {
+		bflow.err = ret;
+		if (!ret)
+			num_valid++;
+		ret = bootdev_add_bootflow(&bflow);
+		if (ret) {
+			printf("Out of memory\n");
+			return CMD_RET_FAILURE;
 		}
+		if (list)
+			show_bootflow(i, &bflow, errors);
+		if (boot && !bflow.err)
+			bootflow_run_boot(&iter, &bflow);
 	}
 	bootflow_iter_uninit(&iter);
 	if (list)
 		show_footer(i, num_valid);
+
+	if (IS_ENABLED(CONFIG_CMD_BOOTFLOW_FULL) && !num_valid && !list)
+		printf("No bootflows found; try again with -l\n");
 
 	return 0;
 }
@@ -337,6 +323,19 @@ static int do_bootflow_info(struct cmd_tbl *cmdtp, int flag, int argc,
 	printf("Filename:  %s\n", bflow->fname);
 	printf("Buffer:    %lx\n", (ulong)map_to_sysmem(bflow->buf));
 	printf("Size:      %x (%d bytes)\n", bflow->size, bflow->size);
+	printf("OS:        %s\n", bflow->os_name ? bflow->os_name : "(none)");
+	printf("Logo:      %s\n", bflow->logo ?
+	       simple_xtoa((ulong)map_to_sysmem(bflow->logo)) : "(none)");
+	if (bflow->logo) {
+		printf("Logo size: %x (%d bytes)\n", bflow->logo_size,
+		       bflow->logo_size);
+	}
+	printf("FDT:       %s\n", bflow->fdt_fname);
+	if (bflow->fdt_fname) {
+		printf("FDT size:  %x (%d bytes)\n", bflow->fdt_size,
+		       bflow->fdt_size);
+		printf("FDT addr:  %lx\n", bflow->fdt_addr);
+	}
 	printf("Error:     %d\n", bflow->err);
 	if (dump && bflow->buf) {
 		/* Set some sort of maximum on the size */
@@ -382,6 +381,42 @@ static int do_bootflow_boot(struct cmd_tbl *cmdtp, int flag, int argc,
 
 	return 0;
 }
+
+static int do_bootflow_menu(struct cmd_tbl *cmdtp, int flag, int argc,
+			    char *const argv[])
+{
+	struct bootstd_priv *std;
+	struct bootflow *bflow;
+	bool text_mode = false;
+	int ret;
+
+	if (!IS_ENABLED(CONFIG_EXPO)) {
+		printf("Menu not supported\n");
+		return CMD_RET_FAILURE;
+	}
+
+	if (argc > 1 && *argv[1] == '-')
+		text_mode = strchr(argv[1], 't');
+
+	ret = bootstd_get_priv(&std);
+	if (ret)
+		return CMD_RET_FAILURE;
+
+	ret = bootflow_menu_run(std, text_mode, &bflow);
+	if (ret) {
+		if (ret == -EAGAIN)
+			printf("Nothing chosen\n");
+		else {
+			printf("Menu failed (err=%d)\n", ret);
+			return CMD_RET_FAILURE;
+		}
+	}
+
+	printf("Selected: %s\n", bflow->os_name ? bflow->os_name : bflow->name);
+	std->cur_bootflow = bflow;
+
+	return 0;
+}
 #endif /* CONFIG_CMD_BOOTFLOW_FULL */
 
 #ifdef CONFIG_SYS_LONGHELP
@@ -391,7 +426,8 @@ static char bootflow_help_text[] =
 	"bootflow list [-e]             - list scanned bootflows (-e errors)\n"
 	"bootflow select [<num>|<name>] - select a bootflow\n"
 	"bootflow info [-d]             - show info on current bootflow (-d dump bootflow)\n"
-	"bootflow boot                  - boot current bootflow (or first available if none selected)";
+	"bootflow boot                  - boot current bootflow (or first available if none selected)\n"
+	"bootflow menu [-t]             - show a menu of available bootflows";
 #else
 	"scan - boot first available bootflow\n";
 #endif
@@ -403,6 +439,7 @@ U_BOOT_CMD_WITH_SUBCMDS(bootflow, "Boot flows", bootflow_help_text,
 	U_BOOT_SUBCMD_MKENT(list, 2, 1, do_bootflow_list),
 	U_BOOT_SUBCMD_MKENT(select, 2, 1, do_bootflow_select),
 	U_BOOT_SUBCMD_MKENT(info, 2, 1, do_bootflow_info),
-	U_BOOT_SUBCMD_MKENT(boot, 1, 1, do_bootflow_boot)
+	U_BOOT_SUBCMD_MKENT(boot, 1, 1, do_bootflow_boot),
+	U_BOOT_SUBCMD_MKENT(menu, 2, 1, do_bootflow_menu),
 #endif
 );

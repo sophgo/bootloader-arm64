@@ -150,10 +150,8 @@ int board_init(void)
 #if defined(CONFIG_HW_WATCHDOG)
 	hw_watchdog_init();
 #endif
-	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;
-#ifdef CONFIG_MTD_RAW_NAND
-	gpmc_init();
-#endif
+	gd->bd->bi_boot_params = CFG_SYS_SDRAM_BASE + 0x100;
+
 	return 0;
 }
 

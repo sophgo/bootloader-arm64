@@ -17,20 +17,11 @@
 #include <fat.h>
 #include <image.h>
 
-#ifndef CONFIG_SYS_SATA_FAT_BOOT_PARTITION
-#define CONFIG_SYS_SATA_FAT_BOOT_PARTITION	1
-#endif
-
-#ifndef CONFIG_SPL_SATA_RAW_U_BOOT_SECTOR
-/* Dummy value to make the compiler happy */
-#define CONFIG_SPL_SATA_RAW_U_BOOT_SECTOR 0x100
-#endif
-
 static int spl_sata_load_image_raw(struct spl_image_info *spl_image,
 		struct spl_boot_device *bootdev,
 		struct blk_desc *stor_dev, unsigned long sector)
 {
-	struct image_header *header;
+	struct legacy_img_hdr *header;
 	unsigned long count;
 	u32 image_size_sectors;
 	u32 image_offset_sectors;
@@ -66,12 +57,12 @@ static int spl_sata_load_image_raw(struct spl_image_info *spl_image,
 static int spl_sata_load_image(struct spl_image_info *spl_image,
 			       struct spl_boot_device *bootdev)
 {
-	int err = 0;
+	int err = -ENOSYS;
 	struct blk_desc *stor_dev;
 
 	/* try to recognize storage devices immediately */
 	scsi_scan(false);
-	stor_dev = blk_get_devnum_by_type(IF_TYPE_SCSI, 0);
+	stor_dev = blk_get_devnum_by_uclass_id(UCLASS_SCSI, 0);
 	if (!stor_dev)
 		return -ENODEV;
 
@@ -81,16 +72,14 @@ static int spl_sata_load_image(struct spl_image_info *spl_image,
 				  CONFIG_SYS_SATA_FAT_BOOT_PARTITION))
 #endif
 	{
-		err = -ENOSYS;
-
-		if (IS_ENABLED(CONFIG_SPL_FS_FAT)) {
-			err = spl_load_image_fat(spl_image, bootdev, stor_dev,
-					CONFIG_SYS_SATA_FAT_BOOT_PARTITION,
-					CONFIG_SPL_FS_LOAD_PAYLOAD_NAME);
-		} else if (IS_ENABLED(CONFIG_SPL_SATA_RAW_U_BOOT_USE_SECTOR)) {
-			err = spl_sata_load_image_raw(spl_image, bootdev, stor_dev,
-				CONFIG_SPL_SATA_RAW_U_BOOT_SECTOR);
-		}
+#ifdef CONFIG_SPL_FS_FAT
+		err = spl_load_image_fat(spl_image, bootdev, stor_dev,
+				CONFIG_SYS_SATA_FAT_BOOT_PARTITION,
+				CONFIG_SPL_FS_LOAD_PAYLOAD_NAME);
+#elif defined(CONFIG_SPL_SATA_RAW_U_BOOT_USE_SECTOR)
+		err = spl_sata_load_image_raw(spl_image, bootdev, stor_dev,
+			CONFIG_SPL_SATA_RAW_U_BOOT_SECTOR);
+#endif
 	}
 	if (err) {
 		puts("Error loading sata device\n");

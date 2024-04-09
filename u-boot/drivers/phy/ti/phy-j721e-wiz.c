@@ -39,6 +39,7 @@
 #define WIZ_DIV_NUM_CLOCKS_10G	1
 
 #define WIZ_SERDES_TYPEC_LN10_SWAP	BIT(30)
+#define WIZ_SERDES_TYPEC_LN23_SWAP	BIT(31)
 
 enum wiz_lane_standard_mode {
 	LANE_MODE_GEN1,
@@ -65,18 +66,32 @@ enum wiz_clock_input {
 	WIZ_EXT_REFCLK1,
 };
 
+/*
+ * List of master lanes used for lane swapping
+ */
+enum wiz_typec_master_lane {
+	LANE0 = 0,
+	LANE2 = 2,
+};
+
 static const struct reg_field por_en = REG_FIELD(WIZ_SERDES_CTRL, 31, 31);
 static const struct reg_field phy_reset_n = REG_FIELD(WIZ_SERDES_RST, 31, 31);
 static const struct reg_field pll1_refclk_mux_sel =
 					REG_FIELD(WIZ_SERDES_RST, 29, 29);
+static const struct reg_field pll1_refclk_mux_sel_2 =
+					REG_FIELD(WIZ_SERDES_RST, 22, 23);
 static const struct reg_field pll0_refclk_mux_sel =
 					REG_FIELD(WIZ_SERDES_RST, 28, 28);
+static const struct reg_field pll0_refclk_mux_sel_2 =
+					REG_FIELD(WIZ_SERDES_RST, 28, 29);
 static const struct reg_field refclk_dig_sel_16g =
 					REG_FIELD(WIZ_SERDES_RST, 24, 25);
 static const struct reg_field refclk_dig_sel_10g =
 					REG_FIELD(WIZ_SERDES_RST, 24, 24);
 static const struct reg_field pma_cmn_refclk_int_mode =
 					REG_FIELD(WIZ_SERDES_TOP_CTRL, 28, 29);
+static const struct reg_field pma_cmn_refclk1_int_mode =
+					REG_FIELD(WIZ_SERDES_TOP_CTRL, 20, 21);
 static const struct reg_field pma_cmn_refclk_mode =
 					REG_FIELD(WIZ_SERDES_TOP_CTRL, 30, 31);
 static const struct reg_field pma_cmn_refclk_dig_div =
@@ -204,6 +219,27 @@ static struct wiz_clk_mux_sel clk_mux_sel_10g[] = {
 	},
 };
 
+static const struct wiz_clk_mux_sel clk_mux_sel_10g_2_refclk[] = {
+	{
+		.num_parents = 3,
+		.parents = { WIZ_CORE_REFCLK, WIZ_CORE_REFCLK1, WIZ_EXT_REFCLK },
+		.table = { 2, 3, 0 },
+		.node_name = "pll0-refclk",
+	},
+	{
+		.num_parents = 3,
+		.parents = { WIZ_CORE_REFCLK, WIZ_CORE_REFCLK1, WIZ_EXT_REFCLK },
+		.table = { 2, 3, 0 },
+		.node_name = "pll1-refclk",
+	},
+	{
+		.num_parents = 3,
+		.parents = { WIZ_CORE_REFCLK, WIZ_CORE_REFCLK1, WIZ_EXT_REFCLK },
+		.table = { 2, 3, 0 },
+		.node_name = "refclk-dig",
+	},
+};
+
 static struct wiz_clk_div_sel clk_div_sel[] = {
 	{
 		.div_sel = CMN_REFCLK,
@@ -219,6 +255,7 @@ enum wiz_type {
 	J721E_WIZ_16G,
 	J721E_WIZ_10G,
 	AM64_WIZ_10G,
+	J784S4_WIZ_10G,
 };
 
 struct wiz_data {
@@ -227,6 +264,7 @@ struct wiz_data {
 	const struct reg_field *pll1_refclk_mux_sel;
 	const struct reg_field *refclk_dig_sel;
 	const struct reg_field *pma_cmn_refclk1_dig_div;
+	const struct reg_field *pma_cmn_refclk1_int_mode;
 	const struct wiz_clk_mux_sel *clk_mux_sel;
 	unsigned int clk_div_sel_num;
 };
@@ -259,6 +297,16 @@ static struct wiz_data am64_10g_data = {
 	.clk_div_sel_num = WIZ_DIV_NUM_CLOCKS_10G,
 };
 
+static struct wiz_data j784s4_wiz_10g = {
+	.type = J784S4_WIZ_10G,
+	.pll0_refclk_mux_sel = &pll0_refclk_mux_sel_2,
+	.pll1_refclk_mux_sel = &pll1_refclk_mux_sel_2,
+	.refclk_dig_sel = &refclk_dig_sel_16g,
+	.pma_cmn_refclk1_int_mode = &pma_cmn_refclk1_int_mode,
+	.clk_mux_sel = clk_mux_sel_10g_2_refclk,
+	.clk_div_sel_num = WIZ_DIV_NUM_CLOCKS_10G,
+};
+
 #define WIZ_TYPEC_DIR_DEBOUNCE_MIN	100	/* ms */
 #define WIZ_TYPEC_DIR_DEBOUNCE_MAX	1000
 
@@ -279,6 +327,7 @@ struct wiz {
 	struct regmap_field	*p_mac_div_sel1[WIZ_MAX_LANES];
 	struct regmap_field	*p0_fullrt_div[WIZ_MAX_LANES];
 	struct regmap_field	*pma_cmn_refclk_int_mode;
+	struct regmap_field	*pma_cmn_refclk1_int_mode;
 	struct regmap_field	*pma_cmn_refclk_mode;
 	struct regmap_field	*pma_cmn_refclk_dig_div;
 	struct regmap_field	*pma_cmn_refclk1_dig_div;
@@ -289,6 +338,7 @@ struct wiz {
 	u32			num_lanes;
 	struct gpio_desc	*gpio_typec_dir;
 	u32			lane_phy_type[WIZ_MAX_LANES];
+	u32			master_lane_num[WIZ_MAX_LANES];
 	struct clk		*input_clks[WIZ_MAX_INPUT_CLOCKS];
 	unsigned int		id;
 	const struct wiz_data	*data;
@@ -546,14 +596,42 @@ static int wiz_reset_deassert(struct reset_ctl *reset_ctl)
 		return ret;
 
 	/* if typec-dir gpio was specified, set LN10 SWAP bit based on that */
-	if (id == 0 && wiz->gpio_typec_dir) {
-		if (dm_gpio_get_value(wiz->gpio_typec_dir)) {
-			regmap_update_bits(wiz->regmap, WIZ_SERDES_TYPEC,
-					   WIZ_SERDES_TYPEC_LN10_SWAP,
-					   WIZ_SERDES_TYPEC_LN10_SWAP);
-		} else {
-			regmap_update_bits(wiz->regmap, WIZ_SERDES_TYPEC,
-					   WIZ_SERDES_TYPEC_LN10_SWAP, 0);
+	if (id == 0) {
+		if (wiz->gpio_typec_dir) {
+			if (dm_gpio_get_value(wiz->gpio_typec_dir)) {
+				regmap_update_bits(wiz->regmap, WIZ_SERDES_TYPEC,
+						WIZ_SERDES_TYPEC_LN10_SWAP,
+						WIZ_SERDES_TYPEC_LN10_SWAP);
+			} else {
+				regmap_update_bits(wiz->regmap, WIZ_SERDES_TYPEC,
+						WIZ_SERDES_TYPEC_LN10_SWAP, 0);
+			}
+		}
+	} else {
+		/* if no typec-dir gpio was specified and PHY type is
+		 * USB3 with master lane number is '0', set LN10 SWAP
+		 * bit to '1'
+		 */
+		u32 num_lanes = wiz->num_lanes;
+		int i;
+
+		for (i = 0; i < num_lanes; i++) {
+			if (wiz->lane_phy_type[i] == PHY_TYPE_USB3) {
+				switch (wiz->master_lane_num[i]) {
+				case LANE0:
+					regmap_update_bits(wiz->regmap, WIZ_SERDES_TYPEC,
+							WIZ_SERDES_TYPEC_LN10_SWAP,
+							WIZ_SERDES_TYPEC_LN10_SWAP);
+					break;
+				case LANE2:
+					 regmap_update_bits(wiz->regmap, WIZ_SERDES_TYPEC,
+							WIZ_SERDES_TYPEC_LN23_SWAP,
+							WIZ_SERDES_TYPEC_LN23_SWAP);
+					break;
+				default:
+					break;
+				}
+			}
 		}
 	}
 
@@ -729,6 +807,15 @@ static int wiz_regfield_init(struct wiz *wiz)
 		return PTR_ERR(wiz->pma_cmn_refclk_int_mode);
 	}
 
+	if (data->pma_cmn_refclk1_int_mode) {
+		wiz->pma_cmn_refclk1_int_mode =
+			devm_regmap_field_alloc(dev, regmap, *data->pma_cmn_refclk1_int_mode);
+		if (IS_ERR(wiz->pma_cmn_refclk1_int_mode)) {
+			dev_err(dev, "PMA_CMN_REFCLK1_INT_MODE reg field init failed\n");
+			return PTR_ERR(wiz->pma_cmn_refclk1_int_mode);
+		}
+	}
+
 	wiz->pma_cmn_refclk_mode =
 		devm_regmap_field_alloc(dev, regmap, pma_cmn_refclk_mode);
 	if (IS_ERR(wiz->pma_cmn_refclk_mode)) {
@@ -844,14 +931,31 @@ static int wiz_clock_init(struct wiz *wiz)
 		return ret;
 	}
 	wiz->input_clks[WIZ_CORE_REFCLK] = clk;
-	/* Initialize CORE_REFCLK1 to the same clock reference to maintain old DT compatibility */
-	wiz->input_clks[WIZ_CORE_REFCLK1] = clk;
 
 	rate = clk_get_rate(clk);
 	if (rate >= 100000000)
 		regmap_field_write(wiz->pma_cmn_refclk_int_mode, 0x1);
 	else
 		regmap_field_write(wiz->pma_cmn_refclk_int_mode, 0x3);
+
+	if (wiz->data->pma_cmn_refclk1_int_mode) {
+		clk = devm_clk_get(dev, "core_ref1_clk");
+		if (IS_ERR(clk)) {
+			dev_err(dev, "core_ref1_clk clock not found\n");
+			ret = PTR_ERR(clk);
+			return ret;
+		}
+		wiz->input_clks[WIZ_CORE_REFCLK1] = clk;
+
+		rate = clk_get_rate(clk);
+		if (rate >= 100000000)
+			regmap_field_write(wiz->pma_cmn_refclk1_int_mode, 0x1);
+		else
+			regmap_field_write(wiz->pma_cmn_refclk1_int_mode, 0x3);
+	} else {
+		/* Initialize CORE_REFCLK1 to the same clock reference to maintain old DT compatibility */
+		wiz->input_clks[WIZ_CORE_REFCLK1] = clk;
+	}
 
 	clk = devm_clk_get(dev, "ext_ref_clk");
 	if (IS_ERR(clk)) {
@@ -933,7 +1037,7 @@ static int j721e_wiz_bind_of_clocks(struct wiz *wiz)
 	ofnode node;
 	int i, rc;
 
-	if (type == AM64_WIZ_10G)
+	if (type == AM64_WIZ_10G || type == J784S4_WIZ_10G)
 		return j721e_wiz_bind_clocks(wiz);
 
 	div_clk_drv = lists_driver_lookup_name("wiz_div_clk");
@@ -1034,8 +1138,10 @@ static int wiz_get_lane_phy_types(struct udevice *dev, struct wiz *wiz)
 		dev_dbg(dev, "%s: Lanes %u-%u have phy-type %u\n", __func__,
 			reg, reg + num_lanes - 1, phy_type);
 
-		for (i = reg; i < reg + num_lanes; i++)
+		for (i = reg; i < reg + num_lanes; i++) {
 			wiz->lane_phy_type[i] = phy_type;
+			wiz->master_lane_num[i] = reg;
+		}
 	}
 
 	return 0;
@@ -1172,6 +1278,9 @@ static const struct udevice_id j721e_wiz_ids[] = {
 	},
 	{
 		.compatible = "ti,am64-wiz-10g", .data = (ulong)&am64_10g_data,
+	},
+	{
+		.compatible = "ti,j784s4-wiz-10g", .data = (ulong)&j784s4_wiz_10g,
 	},
 	{}
 };

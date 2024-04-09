@@ -12,7 +12,7 @@
 #include <lib/utils_def.h>
 #include <plat/common/common_def.h>
 
-#define CONFIG_ARCH_MANGO_PLD
+//#define CONFIG_ARCH_MANGO_PLD
 //#define CONFIG_ARCH_MANGO_FPGA
 //#define BL1_IN_SPI_FLASH
 
@@ -183,6 +183,9 @@
 #define NS_IMAGE_OFFSET			(NS_DRAM_BASE + 0x8000000) // 128M
 #define NS_IMAGE_MAX_SIZE		(NS_DRAM_SIZE - 0x8000000)
 
+#define ZSBL_IMAGE_NAME			"zsbl.bin"
+#define ZSBL_BASE			0x40000000
+
 /*
  * Platform specific page table and MMU setup constants
  */
@@ -309,9 +312,13 @@
 #define REG_TOP_ARM_BOOT_ADDR_L		0x88
 #define REG_TOP_ARM_BOOT_ADDR_H		0x8c
 
+#define REG_TOP_DDR_SIZE_REG	0x54
+#define REG_TOP_PLL_START		0xC0
 #define REG_TOP_PLL_EN_CTRL		0xC4
 #define REG_TOP_MPLL_CTRL		0xE8
 #define REG_TOP_FPLL_CTRL		0xF4
+#define REG_TOP_DPLL0_CTRL		0xF8
+#define REG_TOP_DPLL1_CTRL		0xFC
 
 #define REG_TOP_GP_REG0			0x1C0
 
@@ -324,6 +331,13 @@
 #define REG_TOP_SOFT_RST0		0x3000
 #define REG_TOP_SOFT_RST1		0x3004
 #define REG_TOP_SOFT_RST2		0x3008
+
+#define BIT_UPDATING_DPLL0_VAL	BIT(4)
+#define BIT_UPDATING_DPLL1_VAL	BIT(5)
+#define BIT_DPLL1_LOCK			BIT(13)
+#define BIT_DPLL0_LOCK			BIT(12)
+#define BIT_DPLL0_CLK_EN		BIT(4)
+#define BIT_DPLL1_CLK_EN		BIT(5)
 
 #define BIT_MASK_TOP_CTRL_SW_ROOT_RESET_EN	BIT(2) // 1 to enable warm reboot
 #define BIT_MASK_TOP_SOFT_RST0_WDT		BIT(10)

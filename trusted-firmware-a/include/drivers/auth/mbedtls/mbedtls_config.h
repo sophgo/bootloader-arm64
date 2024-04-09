@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021, Arm Limited. All rights reserved.
+ * Copyright (c) 2015-2022, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -80,8 +80,7 @@
 #define	MBEDTLS_SHA512_C
 #else
    /* TBB uses SHA-256, what about measured boot? */
-#if defined(TF_MBEDTLS_TPM_HASH_ALG_ID) && \
-	(TF_MBEDTLS_TPM_HASH_ALG_ID != TF_MBEDTLS_SHA256)
+#if defined(TF_MBEDTLS_MBOOT_USE_SHA512)
 #define MBEDTLS_SHA512_C
 #endif
 #endif
@@ -140,5 +139,14 @@
 #define TF_MBEDTLS_HEAP_SIZE		U(11264)
 #endif
 #endif
+
+/*
+ * Warn if errors from certain functions are ignored.
+ *
+ * The warnings are always enabled (where supported) for critical functions
+ * where ignoring the return value is almost always a bug. This macro extends
+ * the warnings to more functions.
+ */
+#define MBEDTLS_CHECK_RETURN_WARNING
 
 #endif /* MBEDTLS_CONFIG_H */

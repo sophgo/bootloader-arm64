@@ -37,6 +37,7 @@ enum uclass_id {
 	UCLASS_AUDIO_CODEC,	/* Audio codec with control and data path */
 	UCLASS_AXI,		/* AXI bus */
 	UCLASS_BLK,		/* Block device */
+	UCLASS_BLKMAP,		/* Composable virtual block device */
 	UCLASS_BOOTCOUNT,       /* Bootcount backing store */
 	UCLASS_BOOTDEV,		/* Boot device for locating an OS to boot */
 	UCLASS_BOOTMETH,	/* Bootmethod for booting an OS */
@@ -47,20 +48,24 @@ enum uclass_id {
 	UCLASS_CPU,		/* CPU, typically part of an SoC */
 	UCLASS_CROS_EC,		/* Chrome OS EC */
 	UCLASS_DISPLAY,		/* Display (e.g. DisplayPort, HDMI) */
-	UCLASS_DSI_HOST,	/* Display Serial Interface host */
 	UCLASS_DMA,		/* Direct Memory Access */
 	UCLASS_DSA,		/* Distributed (Ethernet) Switch Architecture */
+	UCLASS_DSI_HOST,	/* Display Serial Interface host */
 	UCLASS_ECDSA,		/* Elliptic curve cryptographic device */
 	UCLASS_EFI_LOADER,	/* Devices created by UEFI applications */
 	UCLASS_EFI_MEDIA,	/* Devices provided by UEFI firmware */
 	UCLASS_ETH,		/* Ethernet device */
 	UCLASS_ETH_PHY,		/* Ethernet PHY device */
+	UCLASS_EXTCON,		/* External Connector Class */
 	UCLASS_FIRMWARE,	/* Firmware */
+	UCLASS_FPGA,		/* FPGA device */
 	UCLASS_FUZZING_ENGINE,	/* Fuzzing engine */
 	UCLASS_FS_FIRMWARE_LOADER,		/* Generic loader */
+	UCLASS_FWU_MDATA,	/* FWU Metadata Access */
 	UCLASS_GPIO,		/* Bank of general-purpose I/O pins */
 	UCLASS_HASH,		/* Hash device */
 	UCLASS_HWSPINLOCK,	/* Hardware semaphores */
+	UCLASS_HOST,		/* Sandbox host device */
 	UCLASS_I2C,		/* I2C bus */
 	UCLASS_I2C_EEPROM,	/* I2C EEPROM device */
 	UCLASS_I2C_GENERIC,	/* Generic I2C device */
@@ -76,6 +81,7 @@ enum uclass_id {
 	UCLASS_MASS_STORAGE,	/* Mass storage device */
 	UCLASS_MDIO,		/* MDIO bus */
 	UCLASS_MDIO_MUX,	/* MDIO MUX/switch */
+	UCLASS_MEMORY,		/* Memory Controller device */
 	UCLASS_MISC,		/* Miscellaneous device */
 	UCLASS_MMC,		/* SD / MMC card or chip */
 	UCLASS_MOD_EXP,		/* RSA Mod Exp device */
@@ -84,6 +90,7 @@ enum uclass_id {
 	UCLASS_NOP,		/* No-op devices */
 	UCLASS_NORTHBRIDGE,	/* Intel Northbridge / SDRAM controller */
 	UCLASS_NVME,		/* NVM Express device */
+	UCLASS_NVMXIP,		/* NVM XIP devices */
 	UCLASS_P2SB,		/* (x86) Primary-to-Sideband Bus */
 	UCLASS_PANEL,		/* Display panel, such as an LCD */
 	UCLASS_PANEL_BACKLIGHT,	/* Backlight controller for panel */
@@ -97,6 +104,7 @@ enum uclass_id {
 	UCLASS_PINCTRL,		/* Pinctrl (pin muxing/configuration) device */
 	UCLASS_PMIC,		/* PMIC I/O device */
 	UCLASS_POWER_DOMAIN,	/* (SoC) Power domains */
+	UCLASS_PVBLOCK,		/* Xen virtual block device */
 	UCLASS_PWM,		/* Pulse-width modulator */
 	UCLASS_PWRSEQ,		/* Power sequence device */
 	UCLASS_QFW,		/* QEMU firmware config device */
@@ -138,7 +146,6 @@ enum uclass_id {
 	UCLASS_W1,		/* Dallas 1-Wire bus */
 	UCLASS_W1_EEPROM,	/* one-wire EEPROMs */
 	UCLASS_WDT,		/* Watchdog Timer driver */
-	UCLASS_PVBLOCK,		/* Xen virtual block device */
 
 	UCLASS_COUNT,
 	UCLASS_INVALID = -1,

@@ -53,7 +53,7 @@
 	gpio-keys {
 		compatible = "gpio-keys";
 		autorepeat;
-		fwuen {
+		key-fwuen {
 			label = "fwuen";
 			gpios = <&gpio 12 GPIO_ACTIVE_LOW>;
 			linux,code = <BTN_MISC>;
@@ -214,13 +214,17 @@
 			};
 			partition@2240000 {
 				label = "SHA256";
-				reg = <0x2240000 0x10000>; /* 256B but 64KB sector */
+				reg = <0x2240000 0x40000>; /* 256B but 256KB sector */
 				read-only;
 				lock;
 			};
-			partition@2250000 {
+			partition@2280000 {
+				label = "Secure OS Storage";
+				reg = <0x2280000 0x20000>; /* 128KB */
+			};
+			partition@22A0000 {
 				label = "User";
-				reg = <0x2250000 0x1db0000>; /* 29.5 MB */
+				reg = <0x22A0000 0x1d60000>; /* 29.375 MB */
 			};
 		};
 	};
@@ -250,20 +254,20 @@
 
 &i2c1 {
 	status = "okay";
-	u-boot,dm-pre-reloc;
+	bootph-all;
 	clock-frequency = <400000>;
 	scl-gpios = <&gpio 24 GPIO_ACTIVE_HIGH>;
 	sda-gpios = <&gpio 25 GPIO_ACTIVE_HIGH>;
 
 	eeprom: eeprom@50 { /* u46 - also at address 0x58 */
-		u-boot,dm-pre-reloc;
+		bootph-all;
 		compatible = "st,24c64", "atmel,24c64"; /* st m24c64 */
 		reg = <0x50>;
 		/* WP pin EE_WP_EN connected to slg7x644092@68 */
 	};
 
 	eeprom_cc: eeprom@51 { /* required by spec - also at address 0x59 */
-		u-boot,dm-pre-reloc;
+		bootph-all;
 		compatible = "st,24c64", "atmel,24c64"; /* st m24c64 */
 		reg = <0x51>;
 	};

@@ -178,8 +178,20 @@ static int test_fat_to_str(void)
 
 	boottime->set_mem(str, sizeof(str), 0);
 	unicode_collation_protocol->fat_to_str(unicode_collation_protocol, 6,
-					       "U-BOOT", str);
+					       "U-BOOT!", str);
 	if (efi_st_strcmp_16_8(str, "U-BOOT")) {
+		efi_st_error("fat_to_str returned \"%ps\"\n", str);
+		return EFI_ST_FAILURE;
+	}
+
+	boottime->set_mem(str, sizeof(str), 0);
+	unicode_collation_protocol->fat_to_str(unicode_collation_protocol, 13,
+					       "Kafb\240tur\000xyz", str);
+	if (str[10]) {
+		efi_st_error("fat_to_str returned to many characters\n");
+		return EFI_ST_FAILURE;
+	}
+	if (efi_st_strcmp_16_8(str, "Kafb\341tur")) {
 		efi_st_error("fat_to_str returned \"%ps\"\n", str);
 		return EFI_ST_FAILURE;
 	}

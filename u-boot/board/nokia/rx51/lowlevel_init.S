@@ -5,9 +5,10 @@
  */
 
 #include <config.h>
+#include <linux/linkage.h>
 
 kernoffs:		/* offset of kernel image from this address */
-	.word KERNEL_OFFSET - (. - CONFIG_SYS_TEXT_BASE)
+	.word . - CONFIG_TEXT_BASE - KERNEL_OFFSET
 
 kernaddr:		/* address of kernel after copying */
 	.word KERNEL_ADDRESS
@@ -29,28 +30,26 @@ z_magic:		/* LINUX_ARM_ZIMAGE_MAGIC */
  * Description: Copy attached kernel to address KERNEL_ADDRESS
  */
 
-.global save_boot_params
-save_boot_params:
+ENTRY(save_boot_params)
 
 /*
  * Copy valid attached kernel to absolute address KERNEL_ADDRESS
  *
  * Nokia X-Loader is loading secondary image to address 0x80400000.
  * NOLO is loading boot image to random place, so it doesn't really
- * matter what is set in CONFIG_SYS_TEXT_BASE. We have to detect
+ * matter what is set in CONFIG_TEXT_BASE. We have to detect
  * KERNEL_OFFSET from the current execution address and copy it to
  * absolute address KERNEL_ADDRESS.
  *
  * Note that U-Boot has to be compiled with CONFIG_POSITION_INDEPENDENT
  * because it is loaded at random address and not to the fixed address
- * (CONFIG_SYS_TEXT_BASE).
+ * (CONFIG_TEXT_BASE).
  */
 
-copy_kernel_start:
 	/* r0 - start of kernel before */
 	adr	r0, kernoffs	/* r0 - current address of kernoffs section */
 	ldr	r1, kernoffs	/* r1 - offset of kernel image from kernoffs section */
-	add	r0, r0, r1
+	sub	r0, r0, r1
 
 	/* r3 - start of kernel after */
 	ldr	r3, kernaddr
@@ -77,7 +76,7 @@ copy_kernel_start:
 	ldr	r4, [r0, #36]	/* r4 - 4 bytes header of kernel at offset 36 */
 	ldr	r5, z_magic	/* r5 - LINUX_ARM_ZIMAGE_MAGIC */
 	cmp	r4, r5
-	bne	copy_kernel_end	/* skip if invalid image */
+	bne	skip_copy	/* skip if invalid image */
 
 copy_kernel_loop:
 	ldmdb	r1!, {r3 - r10}
@@ -85,12 +84,14 @@ copy_kernel_loop:
 	cmp	r1, r0
 	bhi	copy_kernel_loop
 
-copy_kernel_end:
-
 	/* remove header in source kernel image */
 	mov	r5, #0
 	str	r5, [r0]	/* remove 4 bytes header of kernel uImage */
 	str	r5, [r0, #36]	/* remove 4 bytes header of kernel zImage */
 
+skip_copy:
+
 	/* Returns */
 	b	save_boot_params_ret
+
+ENDPROC(save_boot_params)

@@ -127,11 +127,7 @@
 #if defined(IMAGE_BL31)
 # if SPM_MM
 #  define PLAT_ARM_MMAP_ENTRIES		10
-#  if ENABLE_RME
-#   define MAX_XLAT_TABLES		11
-#  else
-#   define MAX_XLAT_TABLES		9
-#  endif
+#  define MAX_XLAT_TABLES		9
 #  define PLAT_SP_IMAGE_MMAP_REGIONS	30
 #  define PLAT_SP_IMAGE_MAX_XLAT_TABLES	10
 # elif SPMC_AT_EL3
@@ -141,13 +137,15 @@
 #  define PLAT_ARM_MMAP_ENTRIES		9
 #  if USE_DEBUGFS
 #   if ENABLE_RME
-#    define MAX_XLAT_TABLES		10
+#    define MAX_XLAT_TABLES		9
 #   else
 #    define MAX_XLAT_TABLES		8
 #   endif
 #  else
 #   if ENABLE_RME
-#    define MAX_XLAT_TABLES		9
+#    define MAX_XLAT_TABLES		8
+#   elif DRTM_SUPPORT
+#    define MAX_XLAT_TABLES		8
 #   else
 #    define MAX_XLAT_TABLES		7
 #   endif
@@ -197,6 +195,9 @@
 # define PLAT_ARM_MAX_BL2_SIZE	(UL(0x1E000) - FVP_BL2_ROMLIB_OPTIMIZATION)
 #elif CRYPTO_SUPPORT
 # define PLAT_ARM_MAX_BL2_SIZE	(UL(0x1D000) - FVP_BL2_ROMLIB_OPTIMIZATION)
+#elif ARM_BL31_IN_DRAM
+/* When ARM_BL31_IN_DRAM is set, BL2 can use almost all of Trusted SRAM. */
+# define PLAT_ARM_MAX_BL2_SIZE	(UL(0x1F000) - FVP_BL2_ROMLIB_OPTIMIZATION)
 #else
 # define PLAT_ARM_MAX_BL2_SIZE	(UL(0x13000) - FVP_BL2_ROMLIB_OPTIMIZATION)
 #endif
@@ -248,9 +249,17 @@
 #elif defined(IMAGE_BL2U)
 # define PLATFORM_STACK_SIZE		UL(0x400)
 #elif defined(IMAGE_BL31)
+# if DRTM_SUPPORT
+#  define PLATFORM_STACK_SIZE		UL(0x1000)
+# else
 #  define PLATFORM_STACK_SIZE		UL(0x800)
+# endif /* DRTM_SUPPORT */
 #elif defined(IMAGE_BL32)
-# define PLATFORM_STACK_SIZE		UL(0x440)
+# if SPMC_AT_EL3
+#  define PLATFORM_STACK_SIZE		UL(0x1000)
+# else
+#  define PLATFORM_STACK_SIZE		UL(0x440)
+# endif /* SPMC_AT_EL3 */
 #elif defined(IMAGE_RMM)
 # define PLATFORM_STACK_SIZE		UL(0x440)
 #endif
@@ -393,5 +402,15 @@
  * Maximum size of Event Log buffer used in Measured Boot Event Log driver
  */
 #define	PLAT_ARM_EVENT_LOG_MAX_SIZE		UL(0x400)
+
+/*
+ * Maximum size of Event Log buffer used for DRTM
+ */
+#define PLAT_DRTM_EVENT_LOG_MAX_SIZE		UL(0x300)
+
+/*
+ * Number of MMAP entries used by DRTM implementation
+ */
+#define PLAT_DRTM_MMAP_ENTRIES			PLAT_ARM_MMAP_ENTRIES
 
 #endif /* PLATFORM_DEF_H */

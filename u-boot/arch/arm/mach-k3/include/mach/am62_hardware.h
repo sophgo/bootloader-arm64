@@ -44,23 +44,6 @@
 /* Backup Bootmode USB Config macros */
 #define MAIN_DEVSTAT_BACKUP_USB_MODE_MASK	0x01
 
-/*
- * The CTRL_MMR0 memory space is divided into several equally-spaced
- * partitions, so defining the partition size allows us to determine
- * register addresses common to those partitions.
- */
-#define CTRL_MMR0_PARTITION_SIZE		0x4000
-
-/*
- * CTRL_MMR0, WKUP_CTRL_MMR0, and MCU_CTRL_MMR0 lock/kick-mechanism
- * shared register definitions. The same registers are also used for
- * PADCFG_MMR lock/kick-mechanism.
- */
-#define CTRLMMR_LOCK_KICK0			0x1008
-#define CTRLMMR_LOCK_KICK0_UNLOCK_VAL		0x68ef3490
-#define CTRLMMR_LOCK_KICK1			0x100c
-#define CTRLMMR_LOCK_KICK1_UNLOCK_VAL		0xd172bc5a
-
 #define MCU_CTRL_LFXOSC_CTRL			(MCU_CTRL_MMR0_BASE + 0x8038)
 #define MCU_CTRL_LFXOSC_TRIM			(MCU_CTRL_MMR0_BASE + 0x803c)
 #define MCU_CTRL_LFXOSC_32K_DISABLE_VAL		BIT(7)
@@ -70,9 +53,16 @@
 
 #define CTRLMMR_MCU_RST_CTRL			(MCU_CTRL_MMR0_BASE + 0x18170)
 
-#define ROM_ENTENDED_BOOT_DATA_INFO		0x43c3f1e0
+#define ROM_EXTENDED_BOOT_DATA_INFO		0x43c3f1e0
 
-/* Use Last 2K as Scratch pad */
-#define TI_SRAM_SCRATCH_BOARD_EEPROM_START		0x70000000
+#define TI_SRAM_SCRATCH_BOARD_EEPROM_START	0x43c30000
+
+#if defined(CONFIG_SYS_K3_SPL_ATF) && !defined(__ASSEMBLY__)
+
+static const u32 put_device_ids[] = {};
+
+static const u32 put_core_ids[] = {};
+
+#endif
 
 #endif /* __ASM_ARCH_AM62_HARDWARE_H */

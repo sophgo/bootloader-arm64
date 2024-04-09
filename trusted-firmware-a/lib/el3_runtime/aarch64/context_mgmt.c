@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2013-2022, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2022, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2022, NVIDIA Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -15,6 +16,7 @@
 #include <arch_features.h>
 #include <bl31/interrupt_mgmt.h>
 #include <common/bl_common.h>
+#include <common/debug.h>
 #include <context.h>
 #include <drivers/arm/gicv3.h>
 #include <lib/el3_runtime/context_mgmt.h>
@@ -204,6 +206,22 @@ static void setup_ns_context(cpu_context_t *ctx, const struct entry_point_info *
 	/* Allow access to Allocation Tags when MTE is implemented. */
 	scr_el3 |= SCR_ATA_BIT;
 
+#if HANDLE_EA_EL3_FIRST_NS
+	/* SCR_EL3.EA: Route External Abort and SError Interrupt to EL3. */
+	scr_el3 |= SCR_EA_BIT;
+#endif
+
+#if RAS_TRAP_NS_ERR_REC_ACCESS
+	/*
+	 * SCR_EL3.TERR: Trap Error record accesses. Accesses to the RAS ERR
+	 * and RAS ERX registers from EL1 and EL2(from any security state)
+	 * are trapped to EL3.
+	 * Set here to trap only for NS EL1/EL2
+	 *
+	 */
+	scr_el3 |= SCR_TERR_BIT;
+#endif
+
 #ifdef IMAGE_BL31
 	/*
 	 * SCR_EL3.IRQ, SCR_EL3.FIQ: Enable the physical FIQ and IRQ routing as
@@ -229,16 +247,23 @@ static void setup_ns_context(cpu_context_t *ctx, const struct entry_point_info *
 			sctlr_el2);
 
 	/*
-	 * The GICv3 driver initializes the ICC_SRE_EL2 register during
-	 * platform setup. Use the same setting for the corresponding
-	 * context register to make sure the correct bits are set when
-	 * restoring NS context.
+	 * Program the ICC_SRE_EL2 to make sure the correct bits are set
+	 * when restoring NS context.
 	 */
-	u_register_t icc_sre_el2 = read_icc_sre_el2();
-	icc_sre_el2 |= (ICC_SRE_DIB_BIT | ICC_SRE_DFB_BIT);
-	icc_sre_el2 |= (ICC_SRE_EN_BIT | ICC_SRE_SRE_BIT);
+	u_register_t icc_sre_el2 = ICC_SRE_DIB_BIT | ICC_SRE_DFB_BIT |
+				   ICC_SRE_EN_BIT | ICC_SRE_SRE_BIT;
 	write_ctx_reg(get_el2_sysregs_ctx(ctx), CTX_ICC_SRE_EL2,
 			icc_sre_el2);
+
+	/*
+	 * Initialize MDCR_EL2.HPMN to its hardware reset value so we don't
+	 * throw anyone off who expects this to be sensible.
+	 * TODO: A similar thing happens in cm_prepare_el3_exit. They should be
+	 * unified with the proper PMU implementation
+	 */
+	u_register_t mdcr_el2 = ((read_pmcr_el0() >> PMCR_EL0_N_SHIFT) &
+			PMCR_EL0_N_MASK);
+	write_ctx_reg(get_el2_sysregs_ctx(ctx), CTX_MDCR_EL2, mdcr_el2);
 #endif /* CTX_INCLUDE_EL2_REGS */
 }
 
@@ -269,7 +294,7 @@ static void setup_context_common(cpu_context_t *ctx, const entry_point_info_t *e
 	 * Security state and entrypoint attributes of the next EL.
 	 */
 	scr_el3 = read_scr();
-	scr_el3 &= ~(SCR_NS_BIT | SCR_RW_BIT | SCR_FIQ_BIT | SCR_IRQ_BIT |
+	scr_el3 &= ~(SCR_NS_BIT | SCR_RW_BIT | SCR_EA_BIT | SCR_FIQ_BIT | SCR_IRQ_BIT |
 			SCR_ST_BIT | SCR_HCE_BIT | SCR_NSE_BIT);
 
 	/*
@@ -299,21 +324,12 @@ static void setup_context_common(cpu_context_t *ctx, const entry_point_info_t *e
 	scr_el3 |= SCR_HXEn_BIT;
 #endif
 
-#if RAS_TRAP_LOWER_EL_ERR_ACCESS
 	/*
-	 * SCR_EL3.TERR: Trap Error record accesses. Accesses to the RAS ERR
-	 * and RAS ERX registers from EL1 and EL2 are trapped to EL3.
+	 * If FEAT_RNG_TRAP is enabled, all reads of the RNDR and RNDRRS
+	 * registers are trapped to EL3.
 	 */
-	scr_el3 |= SCR_TERR_BIT;
-#endif
-
-#if !HANDLE_EA_EL3_FIRST
-	/*
-	 * SCR_EL3.EA: Do not route External Abort and SError Interrupt External
-	 * to EL3 when executing at a lower EL. When executing at EL3, External
-	 * Aborts are taken to EL3.
-	 */
-	scr_el3 &= ~SCR_EA_BIT;
+#if ENABLE_FEAT_RNG_TRAP
+	scr_el3 |= SCR_TRNDR_BIT;
 #endif
 
 #if FAULT_INJECTION_SUPPORT
@@ -790,11 +806,47 @@ void cm_el2_sysregs_context_save(uint32_t security_state)
 	if ((security_state != SECURE) ||
 	    ((security_state == SECURE) && ((scr_el3 & SCR_EEL2_BIT) != 0U))) {
 		cpu_context_t *ctx;
+		el2_sysregs_t *el2_sysregs_ctx;
 
 		ctx = cm_get_context(security_state);
 		assert(ctx != NULL);
 
-		el2_sysregs_context_save(get_el2_sysregs_ctx(ctx));
+		el2_sysregs_ctx = get_el2_sysregs_ctx(ctx);
+
+		el2_sysregs_context_save_common(el2_sysregs_ctx);
+#if ENABLE_SPE_FOR_LOWER_ELS
+		el2_sysregs_context_save_spe(el2_sysregs_ctx);
+#endif
+#if CTX_INCLUDE_MTE_REGS
+		el2_sysregs_context_save_mte(el2_sysregs_ctx);
+#endif
+#if ENABLE_MPAM_FOR_LOWER_ELS
+		el2_sysregs_context_save_mpam(el2_sysregs_ctx);
+#endif
+#if ENABLE_FEAT_FGT
+		el2_sysregs_context_save_fgt(el2_sysregs_ctx);
+#endif
+#if ENABLE_FEAT_ECV
+		el2_sysregs_context_save_ecv(el2_sysregs_ctx);
+#endif
+#if ENABLE_FEAT_VHE
+		el2_sysregs_context_save_vhe(el2_sysregs_ctx);
+#endif
+#if RAS_EXTENSION
+		el2_sysregs_context_save_ras(el2_sysregs_ctx);
+#endif
+#if CTX_INCLUDE_NEVE_REGS
+		el2_sysregs_context_save_nv2(el2_sysregs_ctx);
+#endif
+#if ENABLE_TRF_FOR_NS
+		el2_sysregs_context_save_trf(el2_sysregs_ctx);
+#endif
+#if ENABLE_FEAT_CSV2_2
+		el2_sysregs_context_save_csv2(el2_sysregs_ctx);
+#endif
+#if ENABLE_FEAT_HCX
+		el2_sysregs_context_save_hcx(el2_sysregs_ctx);
+#endif
 	}
 }
 
@@ -812,11 +864,47 @@ void cm_el2_sysregs_context_restore(uint32_t security_state)
 	if ((security_state != SECURE) ||
 	    ((security_state == SECURE) && ((scr_el3 & SCR_EEL2_BIT) != 0U))) {
 		cpu_context_t *ctx;
+		el2_sysregs_t *el2_sysregs_ctx;
 
 		ctx = cm_get_context(security_state);
 		assert(ctx != NULL);
 
-		el2_sysregs_context_restore(get_el2_sysregs_ctx(ctx));
+		el2_sysregs_ctx = get_el2_sysregs_ctx(ctx);
+
+		el2_sysregs_context_restore_common(el2_sysregs_ctx);
+#if ENABLE_SPE_FOR_LOWER_ELS
+		el2_sysregs_context_restore_spe(el2_sysregs_ctx);
+#endif
+#if CTX_INCLUDE_MTE_REGS
+		el2_sysregs_context_restore_mte(el2_sysregs_ctx);
+#endif
+#if ENABLE_MPAM_FOR_LOWER_ELS
+		el2_sysregs_context_restore_mpam(el2_sysregs_ctx);
+#endif
+#if ENABLE_FEAT_FGT
+		el2_sysregs_context_restore_fgt(el2_sysregs_ctx);
+#endif
+#if ENABLE_FEAT_ECV
+		el2_sysregs_context_restore_ecv(el2_sysregs_ctx);
+#endif
+#if ENABLE_FEAT_VHE
+		el2_sysregs_context_restore_vhe(el2_sysregs_ctx);
+#endif
+#if RAS_EXTENSION
+		el2_sysregs_context_restore_ras(el2_sysregs_ctx);
+#endif
+#if CTX_INCLUDE_NEVE_REGS
+		el2_sysregs_context_restore_nv2(el2_sysregs_ctx);
+#endif
+#if ENABLE_TRF_FOR_NS
+		el2_sysregs_context_restore_trf(el2_sysregs_ctx);
+#endif
+#if ENABLE_FEAT_CSV2_2
+		el2_sysregs_context_restore_csv2(el2_sysregs_ctx);
+#endif
+#if ENABLE_FEAT_HCX
+		el2_sysregs_context_restore_hcx(el2_sysregs_ctx);
+#endif
 	}
 }
 #endif /* CTX_INCLUDE_EL2_REGS */

@@ -31,6 +31,7 @@ config OMAP34XX
 
 config OMAP44XX
 	bool "OMAP44XX SoC"
+	select DM_EVENT
 	select SPL_USE_TINY_PRINTF
 	select SPL_SYS_NO_VECTOR_TABLE if SPL
 	imply NAND_OMAP_ELM
@@ -55,6 +56,7 @@ config OMAP54XX
 	bool "OMAP54XX SoC"
 	select ARM_CORTEX_A15_CVE_2017_5715
 	select ARM_ERRATA_798870
+	select DM_EVENT
 	select SYS_THUMB_BUILD
 	imply NAND_OMAP_ELM
 	imply NAND_OMAP_GPMC
@@ -75,14 +77,6 @@ config OMAP54XX
 	imply SPL_SERIAL
 	imply SYS_I2C_OMAP24XX
 
-config TI814X
-	bool "TI814X SoC"
-	select SPECIFY_CONSOLE_INDEX
-	help
-	  Support for AM335x SOC from Texas Instruments.
-	  The AM335x high performance SOC features a Cortex-A8
-	  ARM core and more.
-
 config TI816X
 	bool "TI816X SoC"
 	select SPECIFY_CONSOLE_INDEX
@@ -96,6 +90,7 @@ config TI816X
 config AM43XX
 	bool "AM43XX SoC"
 	select SPECIFY_CONSOLE_INDEX
+	select SYS_L2_PL310 if !SYS_L2CACHE_OFF
 	imply NAND_OMAP_ELM
 	imply NAND_OMAP_GPMC
 	imply SPL_DM
@@ -118,6 +113,7 @@ config AM43XX
 config AM33XX
 	bool "AM33XX SoC"
 	select ARM_CORTEX_A8_CVE_2017_5715
+	select DM_EVENT
 	select SPECIFY_CONSOLE_INDEX
 	imply NAND_OMAP_ELM
 	imply NAND_OMAP_GPMC
@@ -142,6 +138,9 @@ config SYS_MPUCLK
 	default 500
 	help
 	  Defines the MPU clock speed (in MHz).
+
+config SYS_OMAP_ABE_SYSCK
+	bool
 
 config TI_SECURE_EMIF_REGION_START
 	hex "Reserved EMIF region start address"

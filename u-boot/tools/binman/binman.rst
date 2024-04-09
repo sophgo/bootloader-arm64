@@ -95,6 +95,19 @@ Binman uses the following terms:
 - binary - an input binary that goes into the image
 
 
+Installation
+------------
+
+You can install binman using::
+
+   pip install binary-manager
+
+The name is chosen since binman conflicts with an existing package.
+
+If you are using binman within the U-Boot tree, it may be easiest to add a
+symlink from your local `~/.bin` directory to `/path/to/tools/binman/binman`.
+
+
 Relationship to FIT
 -------------------
 
@@ -298,7 +311,7 @@ C preprocessor::
 
     #ifdef CONFIG_HAVE_MRC
         intel-mrc {
-                offset = <CONFIG_X86_MRC_ADDR>;
+                offset = <CFG_X86_MRC_ADDR>;
         };
     #endif
 
@@ -393,9 +406,9 @@ system-library directory, replace the last line with:
 Running binman
 --------------
 
-Type::
+Type:
 
-.. code-block: bash
+.. code-block:: bash
 
    make NO_PYTHON=1 PREFIX=/ install
     binman build -b <board_name>
@@ -487,6 +500,14 @@ For x86 devices (with the end-at-4gb property) this base address is not added
 since it is assumed that images are XIP and the offsets already include the
 address.
 
+While U-Boot's symbol updating is handled automatically by the u-boot-spl
+entry type (and others), it is possible to use this feature with any blob. To
+do this, add a `write-symbols` (boolean) property to the node, set the ELF
+filename using `elf-filename` and set 'elf-base-sym' to the base symbol for the
+start of the binary image (this defaults to `__image_copy_start` which is what
+U-Boot uses). See `testBlobSymbol()` for an example.
+
+.. _binman_fdt:
 
 Access to binman entry offsets at run time (fdt)
 ------------------------------------------------
@@ -504,7 +525,6 @@ just the information about the image. This is preceded by a magic string so can
 be located anywhere in the image. An image header (typically at the start or end
 of the image) can be used to point to the FDT map. See fdtmap and image-header
 entries for more information.
-
 
 Map files
 ---------
@@ -608,6 +628,14 @@ size:
     this size. If this is not provided, it will be set to the size of the
     contents.
 
+min-size:
+    Sets the minimum size of the entry. This size includes explicit padding
+    ('pad-before' and 'pad-after'), but not padding added to meet alignment
+    requirements. While this does not affect the contents of the entry within
+    binman itself (the padding is performed only when its parent section is
+    assembled), the end result will be that the entry ends with the padding
+    bytes, so may grow. Defaults to 0.
+
 pad-before:
     Padding before the contents of the entry. Normally this is 0, meaning
     that the contents start at the beginning of the entry. This can be used
@@ -690,6 +718,15 @@ no-expanded:
     `no-expanded` property disables this just for a single entry. Put the
     `no-expanded` boolean property in the node to select this behaviour.
 
+optional:
+    External blobs are normally required to be present for the image to be
+    built (but see `External blobs`_). This properly allows an entry to be
+    optional, so that when it is cannot be found, this problem is ignored and
+    an empty file is used for this blob. This should be used only when the blob
+    is entirely optional and is not needed for correct operation of the image.
+    Note that missing, optional blobs do not produce a non-zero exit code from
+    binman, although it does show a warning about the missing external blob.
+
 The attributes supported for images and sections are described below. Several
 are similar to those for entries.
 
@@ -766,11 +803,11 @@ end-at-4gb:
 skip-at-start:
     This property specifies the entry offset of the first entry.
 
-    For PowerPC mpc85xx based CPU, CONFIG_SYS_TEXT_BASE is the entry
+    For PowerPC mpc85xx based CPU, CONFIG_TEXT_BASE is the entry
     offset of the first entry. It can be 0xeff40000 or 0xfff40000 for
     nor flash boot, 0x201000 for sd boot etc.
 
-    'end-at-4gb' property is not applicable where CONFIG_SYS_TEXT_BASE +
+    'end-at-4gb' property is not applicable where CONFIG_TEXT_BASE +
     Image size != 4gb.
 
 align-default:
@@ -779,6 +816,48 @@ align-default:
     in the section (direct subentries), not any subentries of those entries.
     This means that each section must specify its own default alignment, if
     required.
+
+symlink:
+    Adds a symlink to the image with string given in the symlink property.
+
+overlap:
+    Indicates that this entry overlaps with others in the same section. These
+    entries should appear at the end of the section. Overlapping entries are not
+    packed with other entries, but their contents are written over other entries
+    in the section. Overlapping entries must have an explicit offset and size.
+
+write-symbols:
+    Indicates that the blob should be updated with symbol values calculated by
+    binman. This is automatic for certain entry types, e.g. `u-boot-spl`. See
+    binman_syms_ for more information.
+
+elf-filename:
+    Sets the file name of a blob's associated ELF file. For example, if the
+    blob is `zephyr.bin` then the ELF file may be `zephyr.elf`. This allows
+    binman to locate symbols and understand the structure of the blob. See
+    binman_syms_ for more information.
+
+elf-base-sym:
+    Sets the name of the ELF symbol that points to the start of a blob. For
+    U-Boot this is `__image_copy_start` and that is the default used by binman
+    if this property is missing. For other projects, a difference symbol may be
+    needed. Add this symbol to the properties for the blob so that symbols can
+    be read correctly. See binman_syms_ for more information.
+
+offset-from-elf:
+    Sets the offset of an entry based on a symbol value in an another entry.
+    The format is <&phandle>, "sym_name", <offset> where phandle is the entry
+    containing the blob (with associated ELF file providing symbols), <sym_name>
+    is the symbol to lookup (relative to elf-base-sym) and <offset> is an offset
+    to add to that value.
+
+preserve:
+    Indicates that this entry should be preserved by any firmware updates. This
+    flag should be checked by the updater when it is deciding which entries to
+    update. This flag is normally attached to sections but can be attached to
+    a single entry in a section if the updater supports it. Not that binman
+    itself has no control over the updater's behaviour, so this is just a
+    signal. It is not enforced by binman.
 
 Examples of the above options can be found in the tests. See the
 tools/binman/test directory.
@@ -834,6 +913,11 @@ name-prefix:
     renamed to 'ro-u-boot' and 'rw-u-boot'. This can be useful to
     distinguish binaries with otherwise identical names.
 
+filename:
+    This allows the contents of the section to be written to a file in the
+    output directory. This can sometimes be useful to use the data in one
+    section in different image, since there is currently no way to share data
+    beteen images other than through files.
 
 Image Properties
 ----------------
@@ -1005,6 +1089,28 @@ For the BSS case, a 'spl-bss-pad' entry arg controls whether it is present. All
 entry args are provided by the U-Boot Makefile.
 
 
+Optional entries
+----------------
+
+Some entries need to exist only if certain conditions are met. For example, an
+entry may want to appear in the image only if a file has a particular format.
+Obviously the entry must exist in the image description for it to be processed
+at all, so a way needs to be found to have the entry remove itself.
+
+To handle this, when entry.ObtainContents() is called, the entry can call
+entry.mark_absent() to mark itself as absent, passing a suitable message as the
+reason.
+
+Any absent entries are dropped immediately after ObtainContents() has been
+called on all entries.
+
+It is not possible for an entry to mark itself absent at any other point in the
+processing. It must happen in the ObtainContents() method.
+
+The effect is as if the entry had never been present at all, since the image
+is packed without it and it disappears from the list of entries.
+
+
 Compression
 -----------
 
@@ -1037,8 +1143,7 @@ It is sometimes inconvenient to add a 'binman' node to the .dts file for each
 board. This can be done by using #include to bring in a common file. Another
 approach supported by the U-Boot build system is to automatically include
 a common header. You can then put the binman node (and anything else that is
-specific to U-Boot, such as u-boot,dm-pre-reloc properies) in that header
-file.
+specific to U-Boot, such as bootph-all properies) in that header file.
 
 Binman will search for the following files in arch/<arch>/dts::
 
@@ -1242,6 +1347,42 @@ You can also replace just a selection of entries::
 
     $ binman replace -i image.bin "*u-boot*" -I indir
 
+It is possible to replace whole sections as well, but in that case any
+information about entries within the section may become outdated. This is
+because Binman cannot know whether things have moved around or resized within
+the section, once you have updated its data.
+
+Technical note: With 'allow-repack', Binman writes information about the
+original offset and size properties of each entry, if any were specified, in
+the 'orig-offset' and 'orig-size' properties. This allows Binman to distinguish
+between an entry which ended up being packed at an offset (or assigned a size)
+and an entry which had a particular offset / size requested in the Binman
+configuration. Where are particular offset / size was requested, this is treated
+as set in stone, so Binman will ensure it doesn't change. Without this feature,
+repacking an entry might cause it to disobey the original constraints provided
+when it was created.
+
+ Repacking an image involves
+
+.. _`BinmanLogging`:
+
+Signing FIT container with private key in an image
+--------------------------------------------------
+
+You can sign FIT container with private key in your image.
+For example::
+
+    $ binman sign -i image.bin -k privatekey -a sha256,rsa4096 fit
+
+binman will extract FIT container, sign and replace it immediately.
+
+If you want to sign and replace FIT container in place::
+
+    $ binman sign -i image.bin -k privatekey -a sha256,rsa4096 -f fit.fit fit
+
+which will sign FIT container with private key and replace it immediately
+inside your image.
+
 
 Logging
 -------
@@ -1321,6 +1462,16 @@ You can also use `--fetch all` to fetch all tools or `--fetch <tool>` to fetch
 a particular tool. Some tools are built from source code, in which case you will
 need to have at least the `build-essential` and `git` packages installed.
 
+Tools are fetched into the `~/.binman-tools` directory. This directory is
+automatically added to the toolpath so there is no need to use `--toolpath` to
+specify it. If you want to use these tools outside binman, you may want to
+add this directory to your `PATH`. For example, if you use bash, add this to
+the end of `.bashrc`::
+
+   PATH="$HOME/.binman-tools:$PATH"
+
+To select a custom directory, use the `--tooldir` option.
+
 Bintool Documentation
 =====================
 
@@ -1333,6 +1484,343 @@ generated from the source code using:
    :maxdepth: 2
 
    bintools
+
+Binman commands and arguments
+=============================
+
+Usage::
+
+    binman [-h] [-B BUILD_DIR] [-D] [--tooldir TOOLDIR] [-H]
+        [--toolpath TOOLPATH] [-T THREADS] [--test-section-timeout]
+        [-v VERBOSITY] [-V]
+        {build,bintool-docs,entry-docs,ls,extract,replace,test,tool} ...
+
+Binman provides the following commands:
+
+- **build** - build images
+- **bintools-docs** - generate documentation about bintools
+- **entry-docs** - generate documentation about entry types
+- **ls** - list an image
+- **extract** - extract files from an image
+- **replace** - replace one or more entries in an image
+- **test** - run tests
+- **tool** - manage bintools
+
+Options:
+
+-h, --help
+    Show help message and exit
+
+-B BUILD_DIR, --build-dir BUILD_DIR
+    Directory containing the build output
+
+-D, --debug
+    Enabling debugging (provides a full traceback on error)
+
+--tooldir TOOLDIR     Set the directory to store tools
+
+-H, --full-help
+    Display the README file
+
+--toolpath TOOLPATH
+    Add a path to the list of directories containing tools
+
+-T THREADS, --threads THREADS
+    Number of threads to use (0=single-thread). Note that -T0 is useful for
+    debugging since everything runs in one thread.
+
+-v VERBOSITY, --verbosity VERBOSITY
+    Control verbosity: 0=silent, 1=warnings, 2=notices, 3=info, 4=detail,
+    5=debug
+
+-V, --version
+    Show the binman version
+
+Test options:
+
+--test-section-timeout
+    Use a zero timeout for section multi-threading (for testing)
+
+Commands are described below.
+
+binman build
+------------
+
+This builds one or more images using the provided image description.
+
+Usage::
+
+    binman build [-h] [-a ENTRY_ARG] [-b BOARD] [-d DT] [--fake-dtb]
+        [--fake-ext-blobs] [--force-missing-bintools FORCE_MISSING_BINTOOLS]
+        [-i IMAGE] [-I INDIR] [-m] [-M] [-n] [-O OUTDIR] [-p] [-u]
+        [--update-fdt-in-elf UPDATE_FDT_IN_ELF] [-W]
+
+Options:
+
+-h, --help
+    Show help message and exit
+
+-a ENTRY_ARG, --entry-arg ENTRY_ARG
+    Set argument value `arg=value`. See
+    `Passing command-line arguments to entries`_.
+
+-b BOARD, --board BOARD
+    Board name to build. This can be used instead of `-d`, in which case the
+    file `u-boot.dtb` is used, within the build directory's board subdirectory.
+
+-d DT, --dt DT
+    Configuration file (.dtb) to use. This must have a top-level node called
+    `binman`. See `Image description format`_.
+
+-i IMAGE, --image IMAGE
+    Image filename to build (if not specified, build all)
+
+-I INDIR, --indir INDIR
+    Add a path to the list of directories to use for input files. This can be
+    specified multiple times to add more than one path.
+
+-m, --map
+    Output a map file for each image. See `Map files`_.
+
+-M, --allow-missing
+    Allow external blobs and bintools to be missing. See `External blobs`_.
+
+-n, --no-expanded
+    Don't use 'expanded' versions of entries where available; normally 'u-boot'
+    becomes 'u-boot-expanded', for example. See `Expanded entries`_.
+
+-O OUTDIR, --outdir OUTDIR
+    Path to directory to use for intermediate and output files
+
+-p, --preserve
+    Preserve temporary output directory even if option -O is not given
+
+-u, --update-fdt
+    Update the binman node with offset/size info. See
+    `Access to binman entry offsets at run time (fdt)`_.
+
+--update-fdt-in-elf UPDATE_FDT_IN_ELF
+    Update an ELF file with the output dtb. The argument is a string consisting
+    of four parts, separated by commas. See `Updating an ELF file`_.
+
+-W, --ignore-missing
+    Return success even if there are missing blobs/bintools (requires -M)
+
+Options used only for testing:
+
+--fake-dtb
+    Use fake device tree contents
+
+--fake-ext-blobs
+    Create fake ext blobs with dummy content
+
+--force-missing-bintools FORCE_MISSING_BINTOOLS
+    Comma-separated list of bintools to consider missing
+
+binman bintool-docs
+-------------------
+
+Usage::
+
+    binman bintool-docs [-h]
+
+This outputs documentation for the bintools in rST format. See
+`Bintool Documentation`_.
+
+binman entry-docs
+-----------------
+
+Usage::
+
+    binman entry-docs [-h]
+
+This outputs documentation for the entry types in rST format. See
+`Entry Documentation`_.
+
+binman ls
+---------
+
+Usage::
+
+    binman ls [-h] -i IMAGE [paths ...]
+
+Positional arguments:
+
+paths
+    Paths within file to list (wildcard)
+
+Pptions:
+
+-h, --help
+    show help message and exit
+
+-i IMAGE, --image IMAGE
+    Image filename to list
+
+This lists an image, showing its contents. See `Listing images`_.
+
+binman extract
+--------------
+
+Usage::
+
+    binman extract [-h] [-F FORMAT] -i IMAGE [-f FILENAME] [-O OUTDIR] [-U]
+        [paths ...]
+
+Positional arguments:
+
+Paths
+    Paths within file to extract (wildcard)
+
+Options:
+
+-h, --help
+    show help message and exit
+
+-F FORMAT, --format FORMAT
+    Select an alternative format for extracted data
+
+-i IMAGE, --image IMAGE
+    Image filename to extract
+
+-f FILENAME, --filename FILENAME
+    Output filename to write to
+
+-O OUTDIR, --outdir OUTDIR
+    Path to directory to use for output files
+
+-U, --uncompressed
+    Output raw uncompressed data for compressed entries
+
+This extracts the contents of entries from an image. See
+`Extracting files from images`_.
+
+binman replace
+--------------
+
+Usage::
+
+    binman replace [-h] [-C] -i IMAGE [-f FILENAME] [-F] [-I INDIR] [-m]
+        [paths ...]
+
+Positional arguments:
+
+paths
+    Paths within file to replace (wildcard)
+
+Options:
+
+-h, --help
+    show help message and exit
+
+-C, --compressed
+    Input data is already compressed if needed for the entry
+
+-i IMAGE, --image IMAGE
+    Image filename to update
+
+-f FILENAME, --filename FILENAME
+    Input filename to read from
+
+-F, --fix-size
+    Don't allow entries to be resized
+
+-I INDIR, --indir INDIR
+    Path to directory to use for input files
+
+-m, --map
+    Output a map file for the updated image
+
+-O OUTDIR, --outdir OUTDIR
+    Path to directory to use for intermediate and output files
+
+-p, --preserve
+    Preserve temporary output directory even if option -O is not given
+
+This replaces one or more entries in an existing image. See
+`Replacing files in an image`_.
+
+binman test
+-----------
+
+Usage::
+
+    binman test [-h] [-P PROCESSES] [-T] [-X] [tests ...]
+
+Positional arguments:
+
+tests
+    Test names to run (omit for all)
+
+Options:
+
+-h, --help
+    show help message and exit
+
+-P PROCESSES, --processes PROCESSES
+    set number of processes to use for running tests. This defaults to the
+    number of CPUs on the machine
+
+-T, --test-coverage
+    run tests and check for 100% coverage
+
+-X, --test-preserve-dirs
+    Preserve and display test-created input directories; also preserve the
+    output directory if a single test is run (pass test name at the end of the
+    command line
+
+binman sign
+-----------
+
+Usage::
+
+    binman sign [-h] -a ALGO [-f FILE] -i IMAGE -k KEY [paths ...]
+
+positional arguments:
+
+paths
+    Paths within file to sign (wildcard)
+
+options:
+
+-h, --help
+    show this help message and exit
+
+-a ALGO, --algo ALGO
+    Hash algorithm e.g. sha256,rsa4096
+
+-f FILE, --file FILE
+    Input filename to sign
+
+-i IMAGE, --image IMAGE
+    Image filename to update
+
+-k KEY, --key KEY
+    Private key file for signing
+
+binman tool
+-----------
+
+Usage::
+
+    binman tool [-h] [-l] [-f] [bintools ...]
+
+Positional arguments:
+
+bintools
+    Bintools to process
+
+Options:
+
+-h, --help
+    show help message and exit
+
+-l, --list
+    List all known bintools
+
+-f, --fetch
+    Fetch a bintool from a known location. Use `all` to fetch all and `missing`
+    to fetch any missing tools.
 
 
 Technical details
@@ -1380,7 +1868,8 @@ implementation of Pack() is usually sufficient.
 
 Note: for sections, this also checks that the entries do not overlap, nor extend
 outside the section. If the section does not have a defined size, the size is
-set large enough to hold all the entries.
+set large enough to hold all the entries. For entries that are explicitly marked
+as overlapping, this check is skipped.
 
 6. SetImagePos() - sets the image position of every entry. This is the absolute
 position 'image-pos', as opposed to 'offset' which is relative to the containing
@@ -1413,6 +1902,8 @@ what happens in this stage.
 final step.
 
 
+.. _`External tools`:
+
 External tools
 --------------
 
@@ -1433,6 +1924,8 @@ a space-separated list of paths to search, e.g.::
 
    BINMAN_TOOLPATHS="/tools/g12a /tools/tegra" binman ...
 
+
+.. _`External blobs`:
 
 External blobs
 --------------
@@ -1458,6 +1951,10 @@ space-separated list of directories to search for binary blobs::
        odroid-c4/build/board/hardkernel/odroidc4/firmware \
        odroid-c4/build/scp_task" binman ...
 
+Note that binman fails with exit code 103 when there are missing blobs. If you
+wish binman to continue anyway, you can pass `-W` to binman.
+
+
 Code coverage
 -------------
 
@@ -1467,6 +1964,48 @@ implementations target 100% test coverage. Run 'binman test -T' to check this.
 To enable Python test coverage on Debian-type distributions (e.g. Ubuntu)::
 
    $ sudo apt-get install python-coverage python3-coverage python-pytest
+
+
+Exit status
+-----------
+
+Binman produces the following exit codes:
+
+0
+    Success
+
+1
+    Any sort of failure - see output for more details
+
+103
+    There are missing external blobs or bintools. This is only returned if
+    -M is passed to binman, otherwise missing blobs return an exit status of 1.
+    Note, if -W is passed as well as -M, then this is converted into a warning
+    and will return an exit status of 0 instead.
+
+
+U-Boot environment variables for binman
+---------------------------------------
+
+The U-Boot Makefile supports various environment variables to control binman.
+All of these are set within the Makefile and result in passing various
+environment variables (or make flags) to binman:
+
+BINMAN_DEBUG
+    Enables backtrace debugging by adding a `-D` argument. See
+    :ref:`BinmanLogging`.
+
+BINMAN_INDIRS
+    Sets the search path for input files used by binman by adding one or more
+    `-I` arguments. See :ref:`External blobs`.
+
+BINMAN_TOOLPATHS
+    Sets the search path for external tool used by binman by adding one or more
+    `--toolpath` arguments. See :ref:`External tools`.
+
+BINMAN_VERBOSE
+    Sets the logging verbosity of binman by adding a `-v` argument. See
+    :ref:`BinmanLogging`.
 
 
 Error messages

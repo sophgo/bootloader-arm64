@@ -24,8 +24,9 @@ obj-$(CONFIG_CMD_MII) += miiphyutil.o
 obj-$(CONFIG_PHYLIB) += miiphyutil.o
 
 obj-$(CONFIG_USB_HOST) += usb.o usb_hub.o
-obj-$(CONFIG_USB_GADGET) += usb.o usb_hub.o
+obj-$(CONFIG_USB_GADGET) += usb.o
 obj-$(CONFIG_USB_STORAGE) += usb_storage.o
+obj-$(CONFIG_USB_ONBOARD_HUB) += usb_onboard_hub.o
 
 # others
 obj-$(CONFIG_CONSOLE_MUX) += iomux.o
@@ -35,19 +36,16 @@ obj-$(CONFIG_I2C_EDID) += edid.o
 obj-$(CONFIG_KALLSYMS) += kallsyms.o
 obj-y += splash.o
 obj-$(CONFIG_SPLASH_SOURCE) += splash_source.o
-ifndef CONFIG_DM_VIDEO
-obj-$(CONFIG_LCD) += lcd.o lcd_console.o
-endif
-obj-$(CONFIG_LCD_ROTATION) += lcd_console_rotation.o
 obj-$(CONFIG_MENU) += menu.o
 obj-$(CONFIG_UPDATE_COMMON) += update.o
 obj-$(CONFIG_USB_KEYBOARD) += usb_kbd.o
-obj-$(CONFIG_CMDLINE) += cli_readline.o cli_simple.o
+obj-$(CONFIG_CMDLINE) += cli_getch.o cli_readline.o cli_simple.o
 
 endif # !CONFIG_SPL_BUILD
 
 obj-$(CONFIG_$(SPL_TPL_)BOOTSTAGE) += bootstage.o
 obj-$(CONFIG_$(SPL_TPL_)BLOBLIST) += bloblist.o
+obj-$(CONFIG_$(SPL_)BMP) += bmp.o
 
 ifdef CONFIG_SPL_BUILD
 ifdef CONFIG_SPL_DFU
@@ -59,6 +57,8 @@ obj-$(CONFIG_$(SPL_TPL_)OF_LIBFDT) += fdt_support.o
 obj-$(CONFIG_SPL_USB_HOST) += usb.o usb_hub.o
 obj-$(CONFIG_SPL_USB_STORAGE) += usb_storage.o
 obj-$(CONFIG_SPL_MUSB_NEW) += usb.o
+obj-$(CONFIG_SPL_SPLASH_SCREEN) += splash.o
+obj-$(CONFIG_SPL_SPLASH_SOURCE) += splash_source.o
 endif # CONFIG_SPL_BUILD
 
 #others
@@ -84,6 +84,7 @@ obj-y += malloc_simple.o
 endif
 endif
 
+obj-$(CONFIG_CYCLIC) += cyclic.o
 obj-$(CONFIG_$(SPL_TPL_)EVENT) += event.o
 
 obj-$(CONFIG_$(SPL_TPL_)HASH) += hash.o
@@ -96,8 +97,8 @@ obj-y += eeprom/eeprom_field.o eeprom/eeprom_layout.o
 endif
 
 obj-y += cli.o
-obj-$(CONFIG_FSL_DDR_INTERACTIVE) += cli_simple.o cli_readline.o
-obj-$(CONFIG_STM32MP1_DDR_INTERACTIVE) += cli_simple.o cli_readline.o
+obj-$(CONFIG_FSL_DDR_INTERACTIVE) += cli_getch.o cli_simple.o cli_readline.o
+obj-$(CONFIG_STM32MP1_DDR_INTERACTIVE) += cli_getch.o cli_simple.o cli_readline.o
 obj-$(CONFIG_DFU_OVER_USB) += dfu.o
 obj-y += command.o
 obj-$(CONFIG_$(SPL_TPL_)LOG) += log.o

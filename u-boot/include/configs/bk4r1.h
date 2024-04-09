@@ -51,14 +51,13 @@
 #include <linux/sizes.h>
 
 /* NAND support */
-#define CONFIG_SYS_MAX_NAND_DEVICE 1
 
 #define IMX_FEC1_BASE			ENET1_BASE_ADDR
 
 /* boot command, including the target-defined one if any */
 
 /* Extra env settings (including the target-defined ones if any) */
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#define CFG_EXTRA_ENV_SETTINGS \
 	BK4_EXTRA_ENV_SETTINGS \
 	"fdt_high=0xffffffff\0" \
 	"initrd_high=0xffffffff\0" \
@@ -200,8 +199,8 @@
 #define PHYS_SDRAM			(0x80000000)
 #define PHYS_SDRAM_SIZE		(SZ_512M)
 
-#define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM
-#define CONFIG_SYS_INIT_RAM_ADDR	IRAM_BASE_ADDR
-#define CONFIG_SYS_INIT_RAM_SIZE	IRAM_SIZE
+#define CFG_SYS_SDRAM_BASE		PHYS_SDRAM
+#define CFG_SYS_INIT_RAM_ADDR	IRAM_BASE_ADDR
+#define CFG_SYS_INIT_RAM_SIZE	IRAM_SIZE
 
 #endif /* __CONFIG_H */

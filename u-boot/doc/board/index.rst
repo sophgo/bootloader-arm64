@@ -11,14 +11,18 @@ Board-specific doc
    AndesTech/index
    allwinner/index
    amlogic/index
+   anbernic/index
    apple/index
    armltd/index
    atmel/index
+   beacon/index
    broadcom/index
    bsh/index
+   cloos/index
    congatec/index
    coreboot/index
    emulation/index
+   gateworks/index
    google/index
    highbank/index
    intel/index
@@ -30,6 +34,7 @@ Board-specific doc
    openpiton/index
    purism/index
    qualcomm/index
+   renesas/index
    rockchip/index
    samsung/index
    siemens/index
@@ -37,6 +42,7 @@ Board-specific doc
    sipeed/index
    socionext/index
    st/index
+   starfive/index
    ste/index
    tbs/index
    ti/index

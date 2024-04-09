@@ -20,14 +20,14 @@ int board_eth_init(struct bd_info *bis)
 	struct memac_mdio_info dtsec_mdio_info;
 	struct mii_dev *dev;
 	u32 srds_s1;
-	struct ccsr_gur *gur = (void *)(CONFIG_SYS_FSL_GUTS_ADDR);
+	struct ccsr_gur *gur = (void *)(CFG_SYS_FSL_GUTS_ADDR);
 
 	srds_s1 = in_be32(&gur->rcwsr[4]) &
 			FSL_CHASSIS2_RCWSR4_SRDS1_PRTCL_MASK;
 	srds_s1 >>= FSL_CHASSIS2_RCWSR4_SRDS1_PRTCL_SHIFT;
 
 	dtsec_mdio_info.regs =
-		(struct memac_mdio_controller *)CONFIG_SYS_FM1_DTSEC_MDIO_ADDR;
+		(struct memac_mdio_controller *)CFG_SYS_FM1_DTSEC_MDIO_ADDR;
 
 	dtsec_mdio_info.name = DEFAULT_FM_MDIO_NAME;
 
@@ -70,7 +70,7 @@ int fdt_update_ethernet_dt(void *blob)
 	int i, prop;
 	int offset, nodeoff;
 	const char *path;
-	struct ccsr_gur *gur = (void *)(CONFIG_SYS_FSL_GUTS_ADDR);
+	struct ccsr_gur *gur = (void *)(CFG_SYS_FSL_GUTS_ADDR);
 
 	srds_s1 = in_be32(&gur->rcwsr[4]) &
 			FSL_CHASSIS2_RCWSR4_SRDS1_PRTCL_MASK;

@@ -27,6 +27,7 @@ List of mainline supported Rockchip boards:
      - Engicam PX30.Core C.TOUCH 2.0 10.1 (px30-core-ctouch2-of10-px30)
      - Engicam PX30.Core EDIMM2.2 Starter Kit (px30-core-edimm2.2-px30)
      - Firefly Core-PX30-JD4 (firefly-px30)
+     - Theobroma Systems PX30-µQ7 SoM - Ringneck (ringneck-px30)
 * rk3036
      - Rockchip Evb-RK3036 (evb-rk3036)
      - Kylin (kylin_rk3036)
@@ -82,12 +83,30 @@ List of mainline supported Rockchip boards:
      - Khadas Edge-V (hadas-edge-v-rk3399)
      - Orange Pi RK3399 (orangepi-rk3399)
      - Pine64 RockPro64 (rockpro64-rk3399)
-     - Radxa ROCK Pi 4 (rock-pi-4-rk3399)
+     - Radxa ROCK 4C+ (rock-4c-plus-rk3399)
+     - Radxa ROCK 4SE (rock-pi-4-rk3399)
+     - Radxa ROCK Pi 4A/B/A+/B+ (rock-pi-4-rk3399)
+     - Radxa ROCK Pi 4C (rock-pi-4c-rk3399)
      - Rockchip Evb-RK3399 (evb_rk3399)
      - Theobroma Systems RK3399-Q7 SoM - Puma (puma_rk3399)
+
+* rk3566
+     - Anbernic RGxx3 (rgxx3-rk3566)
+
+* rk3568
+     - Rockchip Evb-RK3568 (evb-rk3568)
+
+* rk3588
+     - Rockchip EVB (evb-rk3588)
+     - Edgeble Neural Compute Module 6 SoM - Neu6a (neu6a-io-rk3588)
+     - Radxa ROCK 5B (rock5b-rk3588)
+
 * rv1108
      - Rockchip Evb-rv1108 (evb-rv1108)
      - Elgin-R1 (elgin-rv1108)
+
+* rv1126
+     - Edgeble Neural Compute Module 2 SoM - Neu2/Neu2k (neu2-io-r1126)
 
 Building
 --------
@@ -161,6 +180,25 @@ To build rk3399 boards:
 
         export BL31=../arm-trusted-firmware/build/rk3399/release/bl31/bl31.elf
         make evb-rk3399_defconfig
+        make CROSS_COMPILE=aarch64-linux-gnu-
+
+To build rk3568 boards:
+
+.. code-block:: bash
+
+        export BL31=../arm-trusted-firmware/build/rk3568/release/bl31/bl31.elf
+        [or]export BL31=../rkbin/bin/rk35/rk3568_bl31_v1.34.elf
+        export ROCKCHIP_TPL=../rkbin/bin/rk35/rk3568_ddr_1560MHz_v1.13.bin
+        make evb-rk3568_defconfig
+        make CROSS_COMPILE=aarch64-linux-gnu-
+
+To build rk3588 boards:
+
+.. code-block:: bash
+
+        export BL31=../rkbin/bin/rk35/rk3588_bl31_v1.33.elf
+        export ROCKCHIP_TPL=../rkbin/bin/rk35/rk3588_ddr_lp4_2112MHz_lp5_2736MHz_v1.09.bin
+        make evb-rk3588_defconfig
         make CROSS_COMPILE=aarch64-linux-gnu-
 
 Flashing
@@ -358,9 +396,8 @@ Program with commands in a bash script ./flash.sh:
 
         #!/bin/sh
 
-        printf "RK30" > tplspl.bin
-        dd if=u-boot-tpl.bin >> tplspl.bin
-        truncate -s %2048 tplspl.bin
+        printf "RK30" | dd conv=notrunc bs=4 count=1 of=u-boot-tpl.bin
+        truncate -s %2048 u-boot-tpl.bin
         truncate -s %2048 u-boot-spl.bin
         ../tools/boot_merger --verbose config-flash.ini
         ../tools/upgrade_tool ul ./RK30xxLoader_uboot.bin
@@ -384,7 +421,7 @@ config-flash.ini:
         NUM=2
         LOADER1=FlashData
         LOADER2=FlashBoot
-        FlashData=tplspl.bin
+        FlashData=u-boot-tpl.bin
         FlashBoot=u-boot-spl.bin
         [OUTPUT]
         PATH=RK30xxLoader_uboot.bin

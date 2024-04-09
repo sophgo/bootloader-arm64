@@ -589,7 +589,7 @@ static ulong get_image_ivt_offset(ulong img_addr)
 	switch (genimg_get_format(buf)) {
 #if CONFIG_IS_ENABLED(LEGACY_IMAGE_FORMAT)
 	case IMAGE_FORMAT_LEGACY:
-		return (image_get_image_size((image_header_t *)img_addr)
+		return (image_get_image_size((struct legacy_img_hdr *)img_addr)
 			+ 0x1000 - 1)  & ~(0x1000 - 1);
 #endif
 #if CONFIG_IS_ENABLED(FIT)
@@ -932,10 +932,10 @@ int imx_hab_authenticate_image(uint32_t ddr_start, uint32_t image_size,
 	printf("ivt entry = 0x%08x, dcd = 0x%08x, csf = 0x%08x\n", ivt->entry,
 	       ivt->dcd, ivt->csf);
 	puts("Dumping IVT\n");
-	print_buffer(ivt_addr, (void *)(ivt_addr), 4, 0x8, 0);
+	print_buffer(ivt_addr, (void *)(uintptr_t)(ivt_addr), 4, 0x8, 0);
 
 	puts("Dumping CSF Header\n");
-	print_buffer(ivt->csf, (void *)(ivt->csf), 4, 0x10, 0);
+	print_buffer(ivt->csf, (void *)(uintptr_t)(ivt->csf), 4, 0x10, 0);
 
 #if  !defined(CONFIG_SPL_BUILD)
 	get_hab_status();
@@ -944,7 +944,7 @@ int imx_hab_authenticate_image(uint32_t ddr_start, uint32_t image_size,
 	puts("\nCalling authenticate_image in ROM\n");
 	printf("\tivt_offset = 0x%x\n", ivt_offset);
 	printf("\tstart = 0x%08lx\n", start);
-	printf("\tbytes = 0x%x\n", bytes);
+	printf("\tbytes = 0x%lx\n", (ulong)bytes);
 #endif
 
 #ifndef CONFIG_ARM64

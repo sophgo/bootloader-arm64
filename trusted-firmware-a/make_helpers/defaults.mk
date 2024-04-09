@@ -160,6 +160,10 @@ ENABLE_FEAT_PAN			:= 0
 # Flag to enable access to the Random Number Generator registers
 ENABLE_FEAT_RNG			:= 0
 
+# Flag to enable support for EL3 trapping of reads of the RNDR and RNDRRS
+# registers, by setting SCR_EL3.TRNDR.
+ENABLE_FEAT_RNG_TRAP		:= 0
+
 # Flag to enable Speculation Barrier Instruction
 ENABLE_FEAT_SB			:= 0
 
@@ -212,9 +216,9 @@ GENERATE_COT			:= 0
 # default, they are for Secure EL1.
 GICV2_G0_FOR_EL3		:= 0
 
-# Route External Aborts to EL3. Disabled by default; External Aborts are handled
+# Route NS External Aborts to EL3. Disabled by default; External Aborts are handled
 # by lower ELs.
-HANDLE_EA_EL3_FIRST		:= 0
+HANDLE_EA_EL3_FIRST_NS		:= 0
 
 # Secure hash algorithm flag, accepts 3 values: sha256, sha384 and sha512.
 # The default value is sha256.
@@ -266,8 +270,14 @@ SAVE_KEYS			:= 0
 # Software Delegated Exception support
 SDEI_SUPPORT			:= 0
 
-# True Random Number firmware Interface
+# True Random Number firmware Interface support
 TRNG_SUPPORT			:= 0
+
+# Check to see if Errata ABI is supported
+ERRATA_ABI_SUPPORT		:= 0
+
+# Check to enable Errata ABI for platforms with non-arm interconnect
+ERRATA_NON_ARM_INTERCONNECT	:= 0
 
 # SMCCC PCI support
 SMC_PCI_SUPPORT			:= 0
@@ -373,6 +383,9 @@ ifeq (${ARCH},aarch32)
 endif
 ENABLE_SVE_FOR_SWD		:= 0
 
+# Default SVE vector length to maximum architected value
+SVE_VECTOR_LEN			:= 2048
+
 # SME defaults to disabled
 ENABLE_SME_FOR_NS		:= 0
 ENABLE_SME_FOR_SWD		:= 0
@@ -406,14 +419,21 @@ SUPPORT_STACK_MEMTAG		:= no
 # Select workaround for AT speculative behaviour.
 ERRATA_SPECULATIVE_AT		:= 0
 
-# Trap RAS error record access from lower EL
-RAS_TRAP_LOWER_EL_ERR_ACCESS	:= 0
+# Trap RAS error record access from Non secure
+RAS_TRAP_NS_ERR_REC_ACCESS	:= 0
 
 # Build option to create cot descriptors using fconf
 COT_DESC_IN_DTB			:= 0
 
-# Build option to provide openssl directory path
+# Build option to provide OpenSSL directory path
 OPENSSL_DIR			:= /usr
+
+# Select the openssl binary provided in OPENSSL_DIR variable
+ifeq ("$(wildcard ${OPENSSL_DIR}/bin)", "")
+    OPENSSL_BIN_PATH = ${OPENSSL_DIR}/apps
+else
+    OPENSSL_BIN_PATH = ${OPENSSL_DIR}/bin
+endif
 
 # Build option to use the SP804 timer instead of the generic one
 USE_SP804_TIMER			:= 0
@@ -466,3 +486,7 @@ PLAT_RSS_NOT_SUPPORTED		:= 0
 
 # Dynamic Root of Trust for Measurement support
 DRTM_SUPPORT			:= 0
+
+# Check platform if cache management operations should be performed.
+# Disabled by default.
+CONDITIONAL_CMO			:= 0

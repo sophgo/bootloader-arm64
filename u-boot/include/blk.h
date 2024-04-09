@@ -7,6 +7,7 @@
 #ifndef BLK_H
 #define BLK_H
 
+#include <dm/uclass-id.h>
 #include <efi.h>
 
 #ifdef CONFIG_SYS_64BIT_LBA
@@ -21,26 +22,10 @@ typedef ulong lbaint_t;
 
 struct udevice;
 
-/* Interface types: */
-enum if_type {
-	IF_TYPE_UNKNOWN = 0,
-	IF_TYPE_IDE,
-	IF_TYPE_SCSI,
-	IF_TYPE_ATAPI,
-	IF_TYPE_USB,
-	IF_TYPE_DOC,
-	IF_TYPE_MMC,
-	IF_TYPE_SD,
-	IF_TYPE_SATA,
-	IF_TYPE_HOST,
-	IF_TYPE_NVME,
-	IF_TYPE_EFI_LOADER,
-	IF_TYPE_PVBLOCK,
-	IF_TYPE_VIRTIO,
-	IF_TYPE_EFI_MEDIA,
-
-	IF_TYPE_COUNT,			/* Number of interface types */
-};
+static inline bool blk_enabled(void)
+{
+	return CONFIG_IS_ENABLED(BLK) || IS_ENABLED(CONFIG_SPL_LEGACY_BLOCK);
+}
 
 #define BLK_VEN_SIZE		40
 #define BLK_PRD_SIZE		20
@@ -69,7 +54,7 @@ struct blk_desc {
 	 * TODO: With driver model we should be able to use the parent
 	 * device's uclass instead.
 	 */
-	enum if_type	if_type;	/* type of the interface */
+	enum uclass_id	uclass_id;	/* type of the interface */
 	int		devnum;		/* device number */
 	unsigned char	part_type;	/* partition type */
 	unsigned char	target;		/* target SCSI ID */
@@ -77,10 +62,9 @@ struct blk_desc {
 	unsigned char	hwpart;		/* HW partition, e.g. for eMMC */
 	unsigned char	type;		/* device type */
 	unsigned char	removable;	/* removable device */
-#ifdef CONFIG_LBA48
 	/* device can use 48bit addr (ATA/ATAPI v7) */
-	unsigned char	lba48;
-#endif
+	bool	lba48;
+	unsigned char	atapi;		/* Use ATAPI protocol */
 	lbaint_t	lba;		/* number of blocks */
 	unsigned long	blksz;		/* block size */
 	int		log2blksz;	/* for convenience: log2(blksz) */
@@ -129,12 +113,12 @@ int blkcache_init(void);
 /**
  * blkcache_read() - attempt to read a set of blocks from cache
  *
- * @param iftype - IF_TYPE_x for type of device
+ * @param iftype - uclass_id_x for type of device
  * @param dev - device index of particular type
  * @param start - starting block number
  * @param blkcnt - number of blocks to read
  * @param blksz - size in bytes of each block
- * @param buf - buffer to contain cached data
+ * @param buffer - buffer to contain cached data
  *
  * Return: - 1 if block returned from cache, 0 otherwise.
  */
@@ -146,12 +130,12 @@ int blkcache_read(int iftype, int dev,
  * blkcache_fill() - make data read from a block device available
  * to the block cache
  *
- * @param iftype - IF_TYPE_x for type of device
+ * @param iftype - uclass_id_x for type of device
  * @param dev - device index of particular type
  * @param start - starting block number
  * @param blkcnt - number of blocks available
  * @param blksz - size in bytes of each block
- * @param buf - buffer containing data to cache
+ * @param buffer - buffer containing data to cache
  *
  */
 void blkcache_fill(int iftype, int dev,
@@ -162,8 +146,8 @@ void blkcache_fill(int iftype, int dev,
  * blkcache_invalidate() - discard the cache for a set of blocks
  * because of a write or device (re)initialization.
  *
- * @param iftype - IF_TYPE_x for type of device
- * @param dev - device index of particular type
+ * @iftype - UCLASS_ID_ for type of device, or -1 for any
+ * @dev - device index of particular type, if @iftype is not -1
  */
 void blkcache_invalidate(int iftype, int dev);
 
@@ -193,6 +177,9 @@ struct block_cache_stats {
  */
 void blkcache_stats(struct block_cache_stats *stats);
 
+/** blkcache_free() - free all memory allocated to the block cache */
+void blkcache_free(void);
+
 #else
 
 static inline int blkcache_read(int iftype, int dev,
@@ -207,6 +194,8 @@ static inline void blkcache_fill(int iftype, int dev,
 				 unsigned long blksz, void const *buffer) {}
 
 static inline void blkcache_invalidate(int iftype, int dev) {}
+
+static inline void blkcache_free(void) {}
 
 #endif
 
@@ -265,7 +254,7 @@ struct blk_ops {
 	 * The MMC standard provides for two boot partitions (numbered 1 and 2),
 	 * rpmb (3), and up to 4 addition general-purpose partitions (4-7).
 	 *
-	 * @desc:	Block device to update
+	 * @dev:	Block device to update
 	 * @hwpart:	Hardware partition number to select. 0 means the raw
 	 *		device, 1 is the first partition, 2 is the second, etc.
 	 * @return 0 if OK, -ve on error
@@ -289,27 +278,64 @@ unsigned long blk_derase(struct blk_desc *block_dev, lbaint_t start,
 			 lbaint_t blkcnt);
 
 /**
+ * blk_read() - Read from a block device
+ *
+ * @dev: Device to read from
+ * @start: Start block for the read
+ * @blkcnt: Number of blocks to read
+ * @buf: Place to put the data
+ * @return number of blocks read (which may be less than @blkcnt),
+ * or -ve on error. This never returns 0 unless @blkcnt is 0
+ */
+long blk_read(struct udevice *dev, lbaint_t start, lbaint_t blkcnt,
+	      void *buffer);
+
+/**
+ * blk_write() - Write to a block device
+ *
+ * @dev: Device to write to
+ * @start: Start block for the write
+ * @blkcnt: Number of blocks to write
+ * @buf: Data to write
+ * @return number of blocks written (which may be less than @blkcnt),
+ * or -ve on error. This never returns 0 unless @blkcnt is 0
+ */
+long blk_write(struct udevice *dev, lbaint_t start, lbaint_t blkcnt,
+	       const void *buffer);
+
+/**
+ * blk_erase() - Erase part of a block device
+ *
+ * @dev: Device to erase
+ * @start: Start block for the erase
+ * @blkcnt: Number of blocks to erase
+ * @return number of blocks erased (which may be less than @blkcnt),
+ * or -ve on error. This never returns 0 unless @blkcnt is 0
+ */
+long blk_erase(struct udevice *dev, lbaint_t start, lbaint_t blkcnt);
+
+/**
  * blk_find_device() - Find a block device
  *
  * This function does not activate the device. The device will be returned
  * whether or not it is activated.
  *
- * @if_type:	Interface type (enum if_type_t)
+ * @uclass_id:	Interface type (enum uclass_id_t)
  * @devnum:	Device number (specific to each interface type)
  * @devp:	the device, if found
  * Return: 0 if found, -ENODEV if no device found, or other -ve error value
  */
-int blk_find_device(int if_type, int devnum, struct udevice **devp);
+int blk_find_device(int uclass_id, int devnum, struct udevice **devp);
 
 /**
  * blk_get_device() - Find and probe a block device ready for use
  *
- * @if_type:	Interface type (enum if_type_t)
+ * @uclass_id:	Interface type (enum uclass_id_t)
  * @devnum:	Device number (specific to each interface type)
  * @devp:	the device, if found
  * Return: 0 if found, -ENODEV if no device found, or other -ve error value
  */
-int blk_get_device(int if_type, int devnum, struct udevice **devp);
+int blk_get_device(int uclass_id, int devnum, struct udevice **devp);
 
 /**
  * blk_first_device() - Find the first device for a given interface
@@ -320,7 +346,7 @@ int blk_get_device(int if_type, int devnum, struct udevice **devp);
  * @devp:	the device, if found
  * Return: 0 if found, -ENODEV if no device, or other -ve error value
  */
-int blk_first_device(int if_type, struct udevice **devp);
+int blk_first_device(int uclass_id, struct udevice **devp);
 
 /**
  * blk_next_device() - Find the next device for a given interface
@@ -342,7 +368,7 @@ int blk_next_device(struct udevice **devp);
  * @parent:	Parent of the new device
  * @drv_name:	Driver name to use for the block device
  * @name:	Name for the device
- * @if_type:	Interface type (enum if_type_t)
+ * @uclass_id:	Interface type (enum uclass_id_t)
  * @devnum:	Device number, specific to the interface type, or -1 to
  *		allocate the next available number
  * @blksz:	Block size of the device in bytes (typically 512)
@@ -350,7 +376,7 @@ int blk_next_device(struct udevice **devp);
  * @devp:	the new device (which has not been probed)
  */
 int blk_create_device(struct udevice *parent, const char *drv_name,
-		      const char *name, int if_type, int devnum, int blksz,
+		      const char *name, int uclass_id, int devnum, int blksz,
 		      lbaint_t lba, struct udevice **devp);
 
 /**
@@ -359,7 +385,7 @@ int blk_create_device(struct udevice *parent, const char *drv_name,
  * @parent:	Parent of the new device
  * @drv_name:	Driver name to use for the block device
  * @name:	Name for the device (parent name is prepended)
- * @if_type:	Interface type (enum if_type_t)
+ * @uclass_id:	Interface type (enum uclass_id_t)
  * @devnum:	Device number, specific to the interface type, or -1 to
  *		allocate the next available number
  * @blksz:	Block size of the device in bytes (typically 512)
@@ -367,7 +393,7 @@ int blk_create_device(struct udevice *parent, const char *drv_name,
  * @devp:	the new device (which has not been probed)
  */
 int blk_create_devicef(struct udevice *parent, const char *drv_name,
-		       const char *name, int if_type, int devnum, int blksz,
+		       const char *name, int uclass_id, int devnum, int blksz,
 		       lbaint_t lba, struct udevice **devp);
 
 /**
@@ -387,33 +413,33 @@ int blk_probe_or_unbind(struct udevice *dev);
  *
  * The devices are removed and then unbound.
  *
- * @if_type:	Interface type to unbind
+ * @uclass_id:	Interface type to unbind
  * Return: 0 if OK, -ve on error
  */
-int blk_unbind_all(int if_type);
+int blk_unbind_all(int uclass_id);
 
 /**
  * blk_find_max_devnum() - find the maximum device number for an interface type
  *
- * Finds the last allocated device number for an interface type @if_type. The
+ * Finds the last allocated device number for an interface type @uclass_id. The
  * next number is safe to use for a newly allocated device.
  *
- * @if_type:	Interface type to scan
+ * @uclass_id:	Interface type to scan
  * Return: maximum device number found, or -ENODEV if none, or other -ve on
  * error
  */
-int blk_find_max_devnum(enum if_type if_type);
+int blk_find_max_devnum(enum uclass_id uclass_id);
 
 /**
  * blk_next_free_devnum() - get the next device number for an interface type
  *
  * Finds the next number that is safe to use for a newly allocated device for
- * an interface type @if_type.
+ * an interface type @uclass_id.
  *
- * @if_type:	Interface type to scan
+ * @uclass_id:	Interface type to scan
  * Return: next device number safe to use, or -ve on error
  */
-int blk_next_free_devnum(enum if_type if_type);
+int blk_next_free_devnum(enum uclass_id uclass_id);
 
 /**
  * blk_select_hwpart() - select a hardware partition
@@ -427,9 +453,35 @@ int blk_next_free_devnum(enum if_type if_type);
 int blk_select_hwpart(struct udevice *dev, int hwpart);
 
 /**
+ * blk_find_from_parent() - find a block device by looking up its parent
+ *
+ * All block devices have a parent 'media' device which provides the block
+ * driver for the block device, ensuring that access to the underlying medium
+ * is available.
+ *
+ * The block device is not activated by this function. See
+ * blk_get_from_parent() for that.
+ *
+ * @parent: Media device
+ * @devp: Returns the associated block device, if any
+ * Returns: 0 if OK, -ENODEV if @parent is not a media device and has no
+ * UCLASS_BLK child
+ */
+int blk_find_from_parent(struct udevice *parent, struct udevice **devp);
+
+/**
  * blk_get_from_parent() - obtain a block device by looking up its parent
  *
- * All devices with
+ * All block devices have a parent 'media' device which provides the block
+ * driver for the block device, ensuring that access to the underlying medium
+ * is available.
+ *
+ * The block device is probed and ready for use.
+ *
+ * @parent: Media device
+ * @devp: Returns the associated block device, if any
+ * Returns: 0 if OK, -ENODEV if @parent is not a media device and has no
+ * UCLASS_BLK child
  */
 int blk_get_from_parent(struct udevice *parent, struct udevice **devp);
 
@@ -443,7 +495,7 @@ const char *blk_get_devtype(struct udevice *dev);
 
 /**
  * blk_get_by_device() - Get the block device descriptor for the given device
- * @dev:	Instance of a storage device
+ * @dev:	Instance of a storage device (the parent of the block device)
  *
  * Return: With block device descriptor on success , NULL if there is no such
  *	   block device.
@@ -462,7 +514,7 @@ static inline ulong blk_dread(struct blk_desc *block_dev, lbaint_t start,
 			      lbaint_t blkcnt, void *buffer)
 {
 	ulong blks_read;
-	if (blkcache_read(block_dev->if_type, block_dev->devnum,
+	if (blkcache_read(block_dev->uclass_id, block_dev->devnum,
 			  start, blkcnt, block_dev->blksz, buffer))
 		return blkcnt;
 
@@ -473,7 +525,7 @@ static inline ulong blk_dread(struct blk_desc *block_dev, lbaint_t start,
 	 */
 	blks_read = block_dev->block_read(block_dev, start, blkcnt, buffer);
 	if (blks_read == blkcnt)
-		blkcache_fill(block_dev->if_type, block_dev->devnum,
+		blkcache_fill(block_dev->uclass_id, block_dev->devnum,
 			      start, blkcnt, block_dev->blksz, buffer);
 
 	return blks_read;
@@ -482,14 +534,14 @@ static inline ulong blk_dread(struct blk_desc *block_dev, lbaint_t start,
 static inline ulong blk_dwrite(struct blk_desc *block_dev, lbaint_t start,
 			       lbaint_t blkcnt, const void *buffer)
 {
-	blkcache_invalidate(block_dev->if_type, block_dev->devnum);
+	blkcache_invalidate(block_dev->uclass_id, block_dev->devnum);
 	return block_dev->block_write(block_dev, start, blkcnt, buffer);
 }
 
 static inline ulong blk_derase(struct blk_desc *block_dev, lbaint_t start,
 			       lbaint_t blkcnt)
 {
-	blkcache_invalidate(block_dev->if_type, block_dev->devnum);
+	blkcache_invalidate(block_dev->uclass_id, block_dev->devnum);
 	return block_dev->block_erase(block_dev, start, blkcnt);
 }
 
@@ -500,15 +552,15 @@ static inline ulong blk_derase(struct blk_desc *block_dev, lbaint_t start,
  * driver should be provided using U_BOOT_LEGACY_BLK() for each interface
  * type that is to be supported.
  *
- * @if_typename:	Interface type name
- * @if_type:		Interface type
+ * @uclass_idname:	Interface type name
+ * @uclass_id:		Interface type
  * @max_devs:		Maximum number of devices supported
  * @desc:		Pointer to list of devices for this interface type,
  *			or NULL to use @get_dev() instead
  */
 struct blk_driver {
-	const char *if_typename;
-	enum if_type if_type;
+	const char *uclass_idname;
+	enum uclass_id uclass_id;
 	int max_devs;
 	struct blk_desc *desc;
 	/**
@@ -555,33 +607,33 @@ struct blk_driver {
 #define U_BOOT_LEGACY_BLK(__name)					\
 	ll_entry_declare(struct blk_driver, __name, blk_driver)
 
-struct blk_driver *blk_driver_lookup_type(int if_type);
+struct blk_driver *blk_driver_lookup_type(int uclass_id);
 
 #endif /* !CONFIG_BLK */
 
 /**
- * blk_get_devnum_by_typename() - Get a block device by type and number
+ * blk_get_devnum_by_uclass_idname() - Get a block device by type and number
  *
  * This looks through the available block devices of the given type, returning
  * the one with the given @devnum.
  *
- * @if_type:	Block device type
+ * @uclass_id:	Block device type
  * @devnum:	Device number
  * Return: point to block device descriptor, or NULL if not found
  */
-struct blk_desc *blk_get_devnum_by_type(enum if_type if_type, int devnum);
+struct blk_desc *blk_get_devnum_by_uclass_id(enum uclass_id uclass_id, int devnum);
 
 /**
- * blk_get_devnum_by_type() - Get a block device by type name, and number
+ * blk_get_devnum_by_uclass_id() - Get a block device by type name, and number
  *
- * This looks up the block device type based on @if_typename, then calls
- * blk_get_devnum_by_type().
+ * This looks up the block device type based on @uclass_idname, then calls
+ * blk_get_devnum_by_uclass_id().
  *
- * @if_typename:	Block device type name
+ * @uclass_idname:	Block device type name
  * @devnum:		Device number
  * Return: point to block device descriptor, or NULL if not found
  */
-struct blk_desc *blk_get_devnum_by_typename(const char *if_typename,
+struct blk_desc *blk_get_devnum_by_uclass_idname(const char *uclass_idname,
 					    int devnum);
 
 /**
@@ -600,34 +652,34 @@ int blk_dselect_hwpart(struct blk_desc *desc, int hwpart);
 /**
  * blk_list_part() - list the partitions for block devices of a given type
  *
- * This looks up the partition type for each block device of type @if_type,
+ * This looks up the partition type for each block device of type @uclass_id,
  * then displays a list of partitions.
  *
- * @if_type:	Block device type
+ * @uclass_id:	Block device type
  * Return: 0 if OK, -ENODEV if there is none of that type
  */
-int blk_list_part(enum if_type if_type);
+int blk_list_part(enum uclass_id uclass_id);
 
 /**
  * blk_list_devices() - list the block devices of a given type
  *
- * This lists each block device of the type @if_type, showing the capacity
+ * This lists each block device of the type @uclass_id, showing the capacity
  * as well as type-specific information.
  *
- * @if_type:	Block device type
+ * @uclass_id:	Block device type
  */
-void blk_list_devices(enum if_type if_type);
+void blk_list_devices(enum uclass_id uclass_id);
 
 /**
  * blk_show_device() - show information about a given block device
  *
  * This shows the block device capacity as well as type-specific information.
  *
- * @if_type:	Block device type
+ * @uclass_id:	Block device type
  * @devnum:	Device number
  * Return: 0 if OK, -ENODEV for invalid device number
  */
-int blk_show_device(enum if_type if_type, int devnum);
+int blk_show_device(enum uclass_id uclass_id, int devnum);
 
 /**
  * blk_print_device_num() - show information about a given block device
@@ -635,45 +687,47 @@ int blk_show_device(enum if_type if_type, int devnum);
  * This is similar to blk_show_device() but returns an error if the block
  * device type is unknown.
  *
- * @if_type:	Block device type
+ * @uclass_id:	Block device type
  * @devnum:	Device number
  * Return: 0 if OK, -ENODEV for invalid device number, -ENOENT if the block
  * device is not connected
  */
-int blk_print_device_num(enum if_type if_type, int devnum);
+int blk_print_device_num(enum uclass_id uclass_id, int devnum);
 
 /**
  * blk_print_part_devnum() - print the partition information for a device
  *
- * @if_type:	Block device type
+ * @uclass_id:	Block device type
  * @devnum:	Device number
  * Return: 0 if OK, -ENOENT if the block device is not connected, -ENOSYS if
  * the interface type is not supported, other -ve on other error
  */
-int blk_print_part_devnum(enum if_type if_type, int devnum);
+int blk_print_part_devnum(enum uclass_id uclass_id, int devnum);
 
 /**
  * blk_read_devnum() - read blocks from a device
  *
- * @if_type:	Block device type
+ * @uclass_id:	Block device type
  * @devnum:	Device number
+ * @start:	Start block number to read (0=first)
  * @blkcnt:	Number of blocks to read
  * @buffer:	Address to write data to
  * Return: number of blocks read, or -ve error number on error
  */
-ulong blk_read_devnum(enum if_type if_type, int devnum, lbaint_t start,
+ulong blk_read_devnum(enum uclass_id uclass_id, int devnum, lbaint_t start,
 		      lbaint_t blkcnt, void *buffer);
 
 /**
  * blk_write_devnum() - write blocks to a device
  *
- * @if_type:	Block device type
+ * @uclass_id:	Block device type
  * @devnum:	Device number
+ * @start:	Start block number to write (0=first)
  * @blkcnt:	Number of blocks to write
  * @buffer:	Address to read data from
  * Return: number of blocks written, or -ve error number on error
  */
-ulong blk_write_devnum(enum if_type if_type, int devnum, lbaint_t start,
+ulong blk_write_devnum(enum uclass_id uclass_id, int devnum, lbaint_t start,
 		       lbaint_t blkcnt, const void *buffer);
 
 /**
@@ -682,31 +736,31 @@ ulong blk_write_devnum(enum if_type if_type, int devnum, lbaint_t start,
  * This is similar to blk_dselect_hwpart() but it looks up the interface and
  * device number.
  *
- * @if_type:	Block device type
+ * @uclass_id:	Block device type
  * @devnum:	Device number
  * @hwpart:	Partition number to select
  * Return: 0 if OK, -ve on error
  */
-int blk_select_hwpart_devnum(enum if_type if_type, int devnum, int hwpart);
+int blk_select_hwpart_devnum(enum uclass_id uclass_id, int devnum, int hwpart);
 
 /**
- * blk_get_if_type_name() - Get the name of an interface type
+ * blk_get_uclass_name() - Get the name of an interface type
  *
- * @if_type: Interface type to check
+ * @uclass_id: Interface type to check
  * Return: name of interface, or NULL if none
  */
-const char *blk_get_if_type_name(enum if_type if_type);
+const char *blk_get_uclass_name(enum uclass_id uclass_id);
 
 /**
  * blk_common_cmd() - handle common commands with block devices
  *
  * @args: Number of arguments to the command (argv[0] is the command itself)
  * @argv: Command arguments
- * @if_type: Interface type
+ * @uclass_id: Interface type
  * @cur_devnump: Current device number for this interface type
  * Return: 0 if OK, CMD_RET_ERROR on error
  */
-int blk_common_cmd(int argc, char *const argv[], enum if_type if_type,
+int blk_common_cmd(int argc, char *const argv[], enum uclass_id uclass_id,
 		   int *cur_devnump);
 
 enum blk_flag_t {

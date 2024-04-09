@@ -77,7 +77,7 @@ int x86_cleanup_before_linux(void);
 void x86_enable_caches(void);
 void x86_disable_caches(void);
 int x86_init_cache(void);
-ulong board_get_usable_ram_top(ulong total_size);
+phys_size_t board_get_usable_ram_top(phys_size_t total_size);
 int default_print_cpuinfo(void);
 
 /* Set up a UART which can be used with printch(), printhex8(), etc. */
@@ -108,7 +108,7 @@ void	board_init_f_r(void) __attribute__ ((noreturn));
 int arch_misc_init(void);
 
 /* Read the time stamp counter */
-static inline __attribute__((no_instrument_function)) uint64_t rdtsc(void)
+static inline notrace uint64_t rdtsc(void)
 {
 	uint32_t high, low;
 	__asm__ __volatile__("rdtsc" : "=a" (low), "=d" (high));

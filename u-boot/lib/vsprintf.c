@@ -145,6 +145,7 @@ static noinline char *put_dec(char *buf, uint64_t num)
 #define LEFT	16		/* left justified */
 #define SMALL	32		/* Must be 32 == 0x20 */
 #define SPECIAL	64		/* 0x */
+#define ERRSTR	128		/* %dE showing error string if enabled */
 
 /*
  * Macro to add a new character to our output string, but only if it will
@@ -450,10 +451,6 @@ static char *uuid_string(char *buf, char *end, u8 *addr, int field_width,
  *       decimal for v4 and colon separated network-order 16 bit hex for v6)
  * - 'i' [46] for 'raw' IPv4/IPv6 addresses, IPv6 omits the colons, IPv4 is
  *       currently the same
- *
- * Note: IPv6 support is currently if(0)'ed out. If you ever need
- * %pI6, please add an IPV6 Kconfig knob, make your code select or
- * depend on that, and change the 0 below to CONFIG_IS_ENABLED(IPV6).
  */
 static char *pointer(const char *fmt, char *buf, char *end, void *ptr,
 		int field_width, int precision, int flags)
@@ -498,8 +495,7 @@ static char *pointer(const char *fmt, char *buf, char *end, void *ptr,
 		flags |= SPECIAL;
 		/* Fallthrough */
 	case 'I':
-		/* %pI6 currently unused */
-		if (0 && fmt[1] == '6')
+		if (IS_ENABLED(CONFIG_IPV6) && fmt[1] == '6')
 			return ip6_addr_string(buf, end, ptr, field_width,
 					       precision, flags);
 		if (fmt[1] == '4')
@@ -633,7 +629,7 @@ repeat:
 
 		case 's':
 /* U-Boot uses UTF-16 strings in the EFI context only. */
-#if (CONFIG_IS_ENABLED(EFI_LOADER) || CONFIG_IS_ENABLED(EFI_APP)) && \
+#if (CONFIG_IS_ENABLED(EFI_LOADER) || IS_ENABLED(CONFIG_EFI_APP)) && \
 	!defined(API_BUILD)
 			if (qualifier == 'l') {
 				str = string16(str, end, va_arg(args, u16 *),
@@ -678,13 +674,18 @@ repeat:
 
 		case 'x':
 			flags |= SMALL;
+		/* fallthrough */
 		case 'X':
 			base = 16;
 			break;
 
 		case 'd':
+			if (fmt[1] == 'E')
+				flags |= ERRSTR;
+		/* fallthrough */
 		case 'i':
 			flags |= SIGN;
+		/* fallthrough */
 		case 'u':
 			break;
 
@@ -717,6 +718,15 @@ repeat:
 		}
 		str = number(str, end, num, base, field_width, precision,
 			     flags);
+		if (IS_ENABLED(CONFIG_ERRNO_STR) && (flags & ERRSTR)) {
+			const char *p;
+
+			ADDCH(str, ':');
+			ADDCH(str, ' ');
+			for (p = errno_str(num); *p; p++)
+				ADDCH(str, *p);
+			fmt++;
+		}
 	}
 
 	if (size > 0) {

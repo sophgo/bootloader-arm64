@@ -87,6 +87,13 @@ static void stdio_serial_puts(struct stdio_dev *dev, const char *s)
 	serial_puts(s);
 }
 
+#ifdef CONFIG_CONSOLE_FLUSH_SUPPORT
+static void stdio_serial_flush(struct stdio_dev *dev)
+{
+	serial_flush();
+}
+#endif
+
 static int stdio_serial_getc(struct stdio_dev *dev)
 {
 	return serial_getc();
@@ -112,6 +119,7 @@ static void drv_system_init (void)
 	dev.flags = DEV_FLAGS_OUTPUT | DEV_FLAGS_INPUT;
 	dev.putc = stdio_serial_putc;
 	dev.puts = stdio_serial_puts;
+	STDIO_DEV_ASSIGN_FLUSH(&dev, stdio_serial_flush);
 	dev.getc = stdio_serial_getc;
 	dev.tstc = stdio_serial_tstc;
 	stdio_register (&dev);
@@ -192,7 +200,7 @@ struct stdio_dev *stdio_get_by_name(const char *name)
 		if (strcmp(sdev->name, name) == 0)
 			return sdev;
 	}
-	if (IS_ENABLED(CONFIG_DM_VIDEO)) {
+	if (IS_ENABLED(CONFIG_VIDEO)) {
 		/*
 		 * We did not find a suitable stdio device. If there is a video
 		 * driver with a name starting with 'vidconsole', we can try
@@ -306,7 +314,6 @@ int stdio_init_tables(void)
 int stdio_add_devices(void)
 {
 	struct udevice *dev;
-	struct uclass *uc;
 	int ret;
 
 	if (IS_ENABLED(CONFIG_DM_KEYBOARD)) {
@@ -316,30 +323,24 @@ int stdio_add_devices(void)
 		 * have a list of input devices to start up in the stdin
 		 * environment variable. That work probably makes more sense
 		 * when stdio itself is converted to driver model.
-		 *
-		 * TODO(sjg@chromium.org): Convert changing
-		 * uclass_first_device() etc. to return the device even on
-		 * error. Then we could use that here.
 		 */
-		ret = uclass_get(UCLASS_KEYBOARD, &uc);
-		if (ret)
-			return ret;
 
 		/*
 		 * Don't report errors to the caller - assume that they are
 		 * non-fatal
 		 */
-		uclass_foreach_dev(dev, uc) {
-			ret = device_probe(dev);
+		for (ret = uclass_first_device_check(UCLASS_KEYBOARD, &dev);
+				dev;
+				ret = uclass_next_device_check(&dev)) {
 			if (ret)
-				printf("Failed to probe keyboard '%s'\n",
-				       dev->name);
+				printf("%s: Failed to probe keyboard '%s' (ret=%d)\n",
+				       __func__, dev->name, ret);
 		}
 	}
 #if CONFIG_IS_ENABLED(SYS_I2C_LEGACY)
 	i2c_init_all();
 #endif
-	if (IS_ENABLED(CONFIG_DM_VIDEO)) {
+	if (IS_ENABLED(CONFIG_VIDEO)) {
 		/*
 		 * If the console setting is not in environment variables then
 		 * console_init_r() will not be calling iomux_doenv() (which
@@ -353,27 +354,20 @@ int stdio_add_devices(void)
 		int ret;
 
 		if (!IS_ENABLED(CONFIG_SYS_CONSOLE_IS_IN_ENV)) {
-			for (ret = uclass_first_device(UCLASS_VIDEO, &vdev);
-			     vdev;
-			     ret = uclass_next_device(&vdev))
-				;
-			if (ret)
-				printf("%s: Video device failed (ret=%d)\n",
-				       __func__, ret);
+			for (ret = uclass_first_device_check(UCLASS_VIDEO,
+							     &vdev);
+					vdev;
+					ret = uclass_next_device_check(&vdev)) {
+				if (ret)
+					printf("%s: Failed to probe video device '%s' (ret=%d)\n",
+					       __func__, vdev->name, ret);
+			}
 		}
 		if (IS_ENABLED(CONFIG_SPLASH_SCREEN) &&
 		    IS_ENABLED(CONFIG_CMD_BMP))
 			splash_display();
-	} else {
-		if (IS_ENABLED(CONFIG_LCD))
-			drv_lcd_init();
-		if (IS_ENABLED(CONFIG_VIDEO_VCXK))
-			drv_video_init();
 	}
 
-#if defined(CONFIG_KEYBOARD) && !defined(CONFIG_DM_KEYBOARD)
-	drv_keyboard_init();
-#endif
 	drv_system_init();
 	serial_stdio_init();
 #ifdef CONFIG_USB_TTY

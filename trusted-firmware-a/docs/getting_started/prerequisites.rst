@@ -7,13 +7,14 @@ AArch32 and AArch64 target platforms.
 It may possible to build |TF-A| with combinations of software packages that are
 different from those listed below, however only the software described in this
 document can be officially supported.
+
 Build Host
 ----------
 
 |TF-A| can be built using either a Linux or a Windows machine as the build host.
 
 A relatively recent Linux distribution is recommended for building |TF-A|. We
-have performed tests using Ubuntu 16.04 LTS (64-bit) but other distributions
+have performed tests using Ubuntu 20.04 LTS (64-bit) but other distributions
 should also work fine as a base, provided that the necessary tools and libraries
 can be installed.
 
@@ -25,7 +26,11 @@ Toolchain
 |TF-A| can be built with any of the following *cross-compiler* toolchains that
 target the Armv7-A or Armv8-A architectures:
 
-- GCC >= 11.2-2022.02 (from the `Arm Developer website`_)
+- GCC >= 11.3.Rel1 (from the `Arm Developer website`_)
+
+   You will need the targets ``arm-none-eabi`` and ``aarch64-none-elf`` for
+   AArch32 and AArch64 builds respectively.
+
 - Clang >= 14.0.0
 - Arm Compiler >= 6.18
 
@@ -53,14 +58,20 @@ The following tools are required to obtain and build |TF-A|:
 The following libraries must be available to build one or more components or
 supporting tools:
 
-- OpenSSL >= 3.0
+- OpenSSL >= 1.1.1 (v3.0.0 to v3.0.6 highly discouraged due to security issues)
 
-   Required to build the cert_create tool.
+   Required to build the cert_create, encrypt_fw, and fiptool tools.
+
+   .. note::
+
+    If using OpenSSL 3, older Linux versions may require it to be built from
+    source code, as it may not be available in the default package repositories.
+    Please refer to the OpenSSL project documentation for more information.
 
 The following libraries are required for Trusted Board Boot and Measured Boot
 support:
 
-- mbed TLS == 2.28.0 (tag: ``mbedtls-2.28.0``)
+- mbed TLS == 2.28.1 (tag: ``mbedtls-2.28.1``)
 
 These tools are optional:
 
@@ -89,7 +100,7 @@ required packages with the following command:
 
 .. code:: shell
 
-    sudo apt install build-essential git libssl-dev
+    sudo apt install build-essential git
 
 The optional packages can be installed using:
 
@@ -97,14 +108,15 @@ The optional packages can be installed using:
 
     sudo apt install device-tree-compiler
 
-Additionally, to install an up-to-date version of Node.js, you can use the `Node
-Version Manager`_ to install a version of your choosing (we recommend 16, but
-later LTS versions might offer a more stable experience):
+Additionally, to install a version of Node.js compatible with TF-A's repository
+scripts, you can use the `Node Version Manager`_. To install both NVM and an
+appropriate version of Node.js, run the following **from the root directory of
+the repository**:
 
 .. code:: shell
 
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | "$SHELL"
-    exec "$SHELL" -ic "nvm install 16; exec $SHELL"
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+    exec "$SHELL" -ic "nvm install; exec $SHELL"
 
 .. _Node Version Manager: https://github.com/nvm-sh/nvm#install--update-script
 

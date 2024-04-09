@@ -11,6 +11,7 @@
 #include <linux/bitops.h>
 #include <linux/mtd/cfi.h>
 #include <linux/mtd/mtd.h>
+#include <spi-mem.h>
 
 /*
  * Manufacturer IDs
@@ -140,6 +141,7 @@
 #define SPINOR_REG_ADDR_STR1V	0x00800000
 #define SPINOR_REG_ADDR_CFR1V	0x00800002
 #define SPINOR_REG_ADDR_CFR3V	0x00800004
+#define SPINOR_REG_ADDR_ARCFN	0x00000006
 #define CFR3V_UNHYSA		BIT(3)	/* Uniform sectors or not */
 #define CFR3V_PGMBUF		BIT(4)	/* Program buffer size */
 
@@ -188,12 +190,17 @@
 #define SPINOR_OP_WR_ANY_REG			0x71	/* Write any register */
 #define SPINOR_OP_S28_SE_4K			0x21
 #define SPINOR_REG_CYPRESS_CFR2V		0x00800003
-#define SPINOR_REG_CYPRESS_CFR2V_MEMLAT_11_24	0xb
+#define SPINOR_REG_CYPRESS_CFR2_MEMLAT_11_24	0xb
 #define SPINOR_REG_CYPRESS_CFR3V		0x00800004
-#define SPINOR_REG_CYPRESS_CFR3V_PGSZ		BIT(4) /* Page size. */
-#define SPINOR_REG_CYPRESS_CFR3V_UNISECT	BIT(3) /* Uniform sector mode */
+#define SPINOR_REG_CYPRESS_CFR3_PGSZ		BIT(4) /* Page size. */
+#define SPINOR_REG_CYPRESS_CFR3_UNISECT		BIT(3) /* Uniform sector mode */
 #define SPINOR_REG_CYPRESS_CFR5V		0x00800006
-#define SPINOR_REG_CYPRESS_CFR5V_OCT_DTR_EN	0x3
+#define SPINOR_REG_CYPRESS_CFR5_BIT6		BIT(6)
+#define SPINOR_REG_CYPRESS_CFR5_DDR		BIT(1)
+#define SPINOR_REG_CYPRESS_CFR5_OPI		BIT(0)
+#define SPINOR_REG_CYPRESS_CFR5_OCT_DTR_EN				\
+	(SPINOR_REG_CYPRESS_CFR5_BIT6 |	SPINOR_REG_CYPRESS_CFR5_DDR |	\
+	 SPINOR_REG_CYPRESS_CFR5_OPI)
 #define SPINOR_OP_CYPRESS_RD_FAST		0xee
 
 /* Supported SPI protocols */
@@ -493,6 +500,10 @@ struct spi_flash {
  * @rdsr_dummy		dummy cycles needed for Read Status Register command.
  * @rdsr_addr_nbytes:	dummy address bytes needed for Read Status Register
  *			command.
+ * @addr_mode_nbytes:	number of address bytes of current address mode. Useful
+ *			when the flash operates with 4B opcodes but needs the
+ *			internal address mode for opcodes that don't have a 4B
+ *			opcode correspondent.
  * @bank_read_cmd:	Bank read cmd
  * @bank_write_cmd:	Bank write cmd
  * @bank_curr:		Current flash bank
@@ -522,6 +533,7 @@ struct spi_flash {
  * @quad_enable:	[FLASH-SPECIFIC] enables SPI NOR quad mode
  * @octal_dtr_enable:	[FLASH-SPECIFIC] enables SPI NOR octal DTR mode.
  * @ready:		[FLASH-SPECIFIC] check if the flash is ready
+ * @dirmap:		pointers to struct spi_mem_dirmap_desc for reads/writes.
  * @priv:		the private data
  */
 struct spi_nor {
@@ -538,6 +550,7 @@ struct spi_nor {
 	u8			program_opcode;
 	u8			rdsr_dummy;
 	u8			rdsr_addr_nbytes;
+	u8			addr_mode_nbytes;
 #ifdef CONFIG_SPI_FLASH_BAR
 	u8			bank_read_cmd;
 	u8			bank_write_cmd;
@@ -572,6 +585,11 @@ struct spi_nor {
 	int (*octal_dtr_enable)(struct spi_nor *nor);
 	int (*ready)(struct spi_nor *nor);
 
+	struct {
+		struct spi_mem_dirmap_desc *rdesc;
+		struct spi_mem_dirmap_desc *wdesc;
+	} dirmap;
+
 	void *priv;
 	char mtd_name[MTD_NAME_SIZE(MTD_DEV_TYPE_NOR)];
 /* Compatibility for spi_flash, remove once sf layer is merged with mtd */
@@ -594,6 +612,17 @@ device_node *spi_nor_get_flash_node(struct spi_nor *nor)
 	return mtd_get_of_node(&nor->mtd);
 }
 #endif /* __UBOOT__ */
+
+/**
+ * spi_nor_setup_op() - Set up common properties of a spi-mem op.
+ * @nor:		pointer to a 'struct spi_nor'
+ * @op:			pointer to the 'struct spi_mem_op' whose properties
+ *			need to be initialized.
+ * @proto:		the protocol from which the properties need to be set.
+ */
+void spi_nor_setup_op(const struct spi_nor *nor,
+		      struct spi_mem_op *op,
+		      const enum spi_nor_protocol proto);
 
 /**
  * spi_nor_scan() - scan the SPI NOR

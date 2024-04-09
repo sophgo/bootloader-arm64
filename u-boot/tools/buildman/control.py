@@ -3,6 +3,11 @@
 #
 
 import multiprocessing
+try:
+    import importlib.resources
+except ImportError:
+    # for Python 3.6
+    import importlib_resources
 import os
 import shutil
 import subprocess
@@ -13,12 +18,12 @@ from buildman import bsettings
 from buildman import cfgutil
 from buildman import toolchain
 from buildman.builder import Builder
-from patman import command
 from patman import gitutil
 from patman import patchstream
-from patman import terminal
-from patman import tools
-from patman.terminal import tprint
+from u_boot_pylib import command
+from u_boot_pylib import terminal
+from u_boot_pylib import tools
+from u_boot_pylib.terminal import tprint
 
 def GetPlural(count):
     """Returns a plural 's' if count is not 1"""
@@ -111,6 +116,23 @@ def ShowToolchainPrefix(brds, toolchains):
     print(tc.GetEnvArgs(toolchain.VAR_CROSS_COMPILE))
     return None
 
+def get_allow_missing(opt_allow, opt_no_allow, num_selected, has_branch):
+    allow_missing = False
+    am_setting = bsettings.GetGlobalItemValue('allow-missing')
+    if am_setting:
+        if am_setting == 'always':
+            allow_missing = True
+        if 'multiple' in am_setting and num_selected > 1:
+            allow_missing = True
+        if 'branch' in am_setting and has_branch:
+            allow_missing = True
+
+    if opt_allow:
+        allow_missing = True
+    if opt_no_allow:
+        allow_missing = False
+    return allow_missing
+
 def DoBuildman(options, args, toolchains=None, make_func=None, brds=None,
                clean_dir=False, test_thread_exceptions=False):
     """The main control code for buildman
@@ -135,9 +157,8 @@ def DoBuildman(options, args, toolchains=None, make_func=None, brds=None,
     global builder
 
     if options.full_help:
-        tools.print_full_help(
-            os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), 'README')
-        )
+        with importlib.resources.path('buildman', 'README.rst') as readme:
+            tools.print_full_help(str(readme))
         return 0
 
     gitutil.setup()
@@ -244,9 +265,9 @@ def DoBuildman(options, args, toolchains=None, make_func=None, brds=None,
             count += 1   # Build upstream commit also
 
     if not count:
-        str = ("No commits found to process in branch '%s': "
+        msg = ("No commits found to process in branch '%s': "
                "set branch's upstream or use -c flag" % options.branch)
-        sys.exit(col.build(col.RED, str))
+        sys.exit(col.build(col.RED, msg))
     if options.work_in_output:
         if len(selected) != 1:
             sys.exit(col.build(col.RED,
@@ -305,6 +326,10 @@ def DoBuildman(options, args, toolchains=None, make_func=None, brds=None,
     if not gnu_make:
         sys.exit('GNU Make not found')
 
+    allow_missing = get_allow_missing(options.allow_missing,
+                                      options.no_allow_missing, len(selected),
+                                      options.branch)
+
     # Create a new builder with the selected options.
     output_dir = options.output_dir
     if options.branch:
@@ -316,6 +341,14 @@ def DoBuildman(options, args, toolchains=None, make_func=None, brds=None,
         if clean_dir and os.path.exists(output_dir):
             shutil.rmtree(output_dir)
     adjust_cfg = cfgutil.convert_list_to_dict(options.adjust_cfg)
+
+    # Drop LOCALVERSION_AUTO since it changes the version string on every commit
+    if options.reproducible_builds:
+        # If these are mentioned, leave the local version alone
+        if 'LOCALVERSION' in adjust_cfg or 'LOCALVERSION_AUTO' in adjust_cfg:
+            print('Not dropping LOCALVERSION_AUTO for reproducible build')
+        else:
+            adjust_cfg['LOCALVERSION_AUTO'] = '~'
 
     builder = Builder(toolchains, output_dir, options.git_dir,
             options.threads, options.jobs, gnu_make=gnu_make, checkout=True,
@@ -329,7 +362,9 @@ def DoBuildman(options, args, toolchains=None, make_func=None, brds=None,
             warnings_as_errors=options.warnings_as_errors,
             work_in_output=options.work_in_output,
             test_thread_exceptions=test_thread_exceptions,
-            adjust_cfg=adjust_cfg)
+            adjust_cfg=adjust_cfg,
+            allow_missing=allow_missing, no_lto=options.no_lto,
+            reproducible_builds=options.reproducible_builds)
     builder.force_config_on_failure = not options.quick
     if make_func:
         builder.do_make = make_func

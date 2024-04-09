@@ -14,14 +14,15 @@ from buildman import bsettings
 from buildman import cmdline
 from buildman import control
 from buildman import toolchain
-from patman import command
 from patman import gitutil
-from patman import terminal
-from patman import test_util
-from patman import tools
+from u_boot_pylib import command
+from u_boot_pylib import terminal
+from u_boot_pylib import test_util
+from u_boot_pylib import tools
 
 settings_data = '''
 # Buildman settings file
+[global]
 
 [toolchain]
 
@@ -205,13 +206,16 @@ class TestFunctional(unittest.TestCase):
 
         self._test_branch = TEST_BRANCH
 
+        # Set to True to report missing blobs
+        self._missing = False
+
         # Avoid sending any output and clear all terminal output
         terminal.set_print_test_mode()
         terminal.get_print_test_lines()
 
     def tearDown(self):
         shutil.rmtree(self._base_dir)
-        #shutil.rmtree(self._output_dir)
+        shutil.rmtree(self._output_dir)
 
     def setupToolchains(self):
         self._toolchains = toolchain.Toolchains()
@@ -249,7 +253,7 @@ class TestFunctional(unittest.TestCase):
     def testFullHelp(self):
         command.test_result = None
         result = self._RunBuildman('-H')
-        help_file = os.path.join(self._buildman_dir, 'README')
+        help_file = os.path.join(self._buildman_dir, 'README.rst')
         # Remove possible extraneous strings
         extra = '::::::::::::::\n' + help_file + '\n::::::::::::::\n'
         gothelp = result.stdout.replace(extra, '')
@@ -260,7 +264,7 @@ class TestFunctional(unittest.TestCase):
     def testHelp(self):
         command.test_result = None
         result = self._RunBuildman('-h')
-        help_file = os.path.join(self._buildman_dir, 'README')
+        help_file = os.path.join(self._buildman_dir, 'README.rst')
         self.assertTrue(len(result.stdout) > 1000)
         self.assertEqual(0, len(result.stderr))
         self.assertEqual(0, result.return_code)
@@ -411,23 +415,36 @@ class TestFunctional(unittest.TestCase):
             kwargs: Arguments to pass to command.run_pipe()
         """
         self._make_calls += 1
+        out_dir = ''
+        for arg in args:
+            if arg.startswith('O='):
+                out_dir = arg[2:]
         if stage == 'mrproper':
             return command.CommandResult(return_code=0)
         elif stage == 'config':
+            fname = os.path.join(cwd or '', out_dir, '.config')
+            tools.write_file(fname, b'CONFIG_SOMETHING=1')
             return command.CommandResult(return_code=0,
                     combined='Test configuration complete')
         elif stage == 'build':
             stderr = ''
-            out_dir = ''
-            for arg in args:
-                if arg.startswith('O='):
-                    out_dir = arg[2:]
             fname = os.path.join(cwd or '', out_dir, 'u-boot')
             tools.write_file(fname, b'U-Boot')
-            if type(commit) is not str:
+
+            # Handle missing blobs
+            if self._missing:
+                if 'BINMAN_ALLOW_MISSING=1' in args:
+                    stderr = '''+Image 'main-section' is missing external blobs and is non-functional: intel-descriptor intel-ifwi intel-fsp-m intel-fsp-s intel-vbt
+Image 'main-section' has faked external blobs and is non-functional: descriptor.bin fsp_m.bin fsp_s.bin vbt.bin
+
+Some images are invalid'''
+                else:
+                    stderr = "binman: Filename 'fsp.bin' not found in input path"
+            elif type(commit) is not str:
                 stderr = self._error.get((brd.target, commit.sequence))
+
             if stderr:
-                return command.CommandResult(return_code=1, stderr=stderr)
+                return command.CommandResult(return_code=2, stderr=stderr)
             return command.CommandResult(return_code=0)
 
         # Not handled, so abort
@@ -621,3 +638,144 @@ class TestFunctional(unittest.TestCase):
         self.assertIn(
             'Thread exception (use -T0 to run without threads): test exception',
             stdout.getvalue())
+
+    def testBlobs(self):
+        """Test handling of missing blobs"""
+        self._missing = True
+
+        board0_dir = os.path.join(self._output_dir, 'current', 'board0')
+        errfile = os.path.join(board0_dir, 'err')
+        logfile = os.path.join(board0_dir, 'log')
+
+        # We expect failure when there are missing blobs
+        result = self._RunControl('board0', '-o', self._output_dir)
+        self.assertEqual(100, result)
+        self.assertTrue(os.path.exists(os.path.join(board0_dir, 'done')))
+        self.assertTrue(os.path.exists(errfile))
+        self.assertIn(b"Filename 'fsp.bin' not found in input path",
+                      tools.read_file(errfile))
+
+    def testBlobsAllowMissing(self):
+        """Allow missing blobs - still failure but a different exit code"""
+        self._missing = True
+        result = self._RunControl('board0', '-o', self._output_dir, '-M',
+                                  clean_dir=True)
+        self.assertEqual(101, result)
+        board0_dir = os.path.join(self._output_dir, 'current', 'board0')
+        errfile = os.path.join(board0_dir, 'err')
+        self.assertTrue(os.path.exists(errfile))
+        self.assertIn(b'Some images are invalid', tools.read_file(errfile))
+
+    def testBlobsWarning(self):
+        """Allow missing blobs and ignore warnings"""
+        self._missing = True
+        result = self._RunControl('board0', '-o', self._output_dir, '-MW')
+        self.assertEqual(0, result)
+        board0_dir = os.path.join(self._output_dir, 'current', 'board0')
+        errfile = os.path.join(board0_dir, 'err')
+        self.assertIn(b'Some images are invalid', tools.read_file(errfile))
+
+    def testBlobSettings(self):
+        """Test with no settings"""
+        self.assertEqual(False,
+                         control.get_allow_missing(False, False, 1, False))
+        self.assertEqual(True,
+                         control.get_allow_missing(True, False, 1, False))
+        self.assertEqual(False,
+                         control.get_allow_missing(True, True, 1, False))
+
+    def testBlobSettingsAlways(self):
+        """Test the 'always' policy"""
+        bsettings.SetItem('global', 'allow-missing', 'always')
+        self.assertEqual(True,
+                         control.get_allow_missing(False, False, 1, False))
+        self.assertEqual(False,
+                         control.get_allow_missing(False, True, 1, False))
+
+    def testBlobSettingsBranch(self):
+        """Test the 'branch' policy"""
+        bsettings.SetItem('global', 'allow-missing', 'branch')
+        self.assertEqual(False,
+                         control.get_allow_missing(False, False, 1, False))
+        self.assertEqual(True,
+                         control.get_allow_missing(False, False, 1, True))
+        self.assertEqual(False,
+                         control.get_allow_missing(False, True, 1, True))
+
+    def testBlobSettingsMultiple(self):
+        """Test the 'multiple' policy"""
+        bsettings.SetItem('global', 'allow-missing', 'multiple')
+        self.assertEqual(False,
+                         control.get_allow_missing(False, False, 1, False))
+        self.assertEqual(True,
+                         control.get_allow_missing(False, False, 2, False))
+        self.assertEqual(False,
+                         control.get_allow_missing(False, True, 2, False))
+
+    def testBlobSettingsBranchMultiple(self):
+        """Test the 'branch multiple' policy"""
+        bsettings.SetItem('global', 'allow-missing', 'branch multiple')
+        self.assertEqual(False,
+                         control.get_allow_missing(False, False, 1, False))
+        self.assertEqual(True,
+                         control.get_allow_missing(False, False, 1, True))
+        self.assertEqual(True,
+                         control.get_allow_missing(False, False, 2, False))
+        self.assertEqual(True,
+                         control.get_allow_missing(False, False, 2, True))
+        self.assertEqual(False,
+                         control.get_allow_missing(False, True, 2, True))
+
+    def check_command(self, *extra_args):
+        """Run a command with the extra arguments and return the commands used
+
+        Args:
+            extra_args (list of str): List of extra arguments
+
+        Returns:
+            list of str: Lines returned in the out-cmd file
+        """
+        self._RunControl('-o', self._output_dir, *extra_args)
+        board0_dir = os.path.join(self._output_dir, 'current', 'board0')
+        self.assertTrue(os.path.exists(os.path.join(board0_dir, 'done')))
+        cmd_fname = os.path.join(board0_dir, 'out-cmd')
+        self.assertTrue(os.path.exists(cmd_fname))
+        data = tools.read_file(cmd_fname)
+
+        config_fname = os.path.join(board0_dir, '.config')
+        self.assertTrue(os.path.exists(config_fname))
+        cfg_data = tools.read_file(config_fname)
+
+        return data.splitlines(), cfg_data
+
+    def testCmdFile(self):
+        """Test that the -cmd-out file is produced"""
+        lines = self.check_command()[0]
+        self.assertEqual(2, len(lines))
+        self.assertRegex(lines[0], b'make O=/.*board0_defconfig')
+        self.assertRegex(lines[0], b'make O=/.*-s.*')
+
+    def testNoLto(self):
+        """Test that the --no-lto flag works"""
+        lines = self.check_command('-L')[0]
+        self.assertIn(b'NO_LTO=1', lines[0])
+
+    def testReproducible(self):
+        """Test that the -r flag works"""
+        lines, cfg_data = self.check_command('-r')
+        self.assertIn(b'SOURCE_DATE_EPOCH=0', lines[0])
+
+        # We should see CONFIG_LOCALVERSION_AUTO unset
+        self.assertEqual(b'''CONFIG_SOMETHING=1
+# CONFIG_LOCALVERSION_AUTO is not set
+''', cfg_data)
+
+        with test_util.capture_sys_output() as (stdout, stderr):
+            lines, cfg_data = self.check_command('-r', '-a', 'LOCALVERSION')
+        self.assertIn(b'SOURCE_DATE_EPOCH=0', lines[0])
+
+        # We should see CONFIG_LOCALVERSION_AUTO unset
+        self.assertEqual(b'''CONFIG_SOMETHING=1
+CONFIG_LOCALVERSION=y
+''', cfg_data)
+        self.assertIn('Not dropping LOCALVERSION_AUTO', stdout.getvalue())

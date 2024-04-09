@@ -81,10 +81,9 @@
 
 			vtt_ddr: ldo3 {
 				regulator-name = "vtt_ddr";
-				regulator-min-microvolt = <500000>;
-				regulator-max-microvolt = <750000>;
 				regulator-always-on;
 				regulator-over-current-protection;
+				st,regulator-sink-source;
 			};
 
 			vdd_usb: ldo4 {
@@ -110,7 +109,6 @@
 			vref_ddr: vref_ddr {
 				regulator-name = "vref_ddr";
 				regulator-always-on;
-				regulator-over-current-protection;
 			};
 
 			bst_out: boost {
@@ -169,11 +167,11 @@
 	st,digbypass;
 };
 
-&cpu0{
+&cpu0 {
 	cpu-supply = <&vddcore>;
 };
 
-&cpu1{
+&cpu1 {
 	cpu-supply = <&vddcore>;
 };
 
@@ -183,7 +181,6 @@
 
 /* CLOCK init */
 &rcc {
-	secure-status = "disabled";
 	st,clksrc = <
 		CLK_MPU_PLL1P
 		CLK_AXI_PLL2P

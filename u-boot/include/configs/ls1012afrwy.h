@@ -17,7 +17,7 @@
 #define SYS_SDRAM_SIZE_1024		0x40000000
 
 /* ENV */
-#define CONFIG_SYS_FSL_QSPI_BASE	0x40000000
+#define CFG_SYS_FSL_QSPI_BASE	0x40000000
 
 #undef BOOT_TARGET_DEVICES
 #define BOOT_TARGET_DEVICES(func) \
@@ -25,8 +25,8 @@
 	func(USB, usb, 0) \
 	func(DHCP, dhcp, na)
 
-#undef CONFIG_EXTRA_ENV_SETTINGS
-#define CONFIG_EXTRA_ENV_SETTINGS		\
+#undef CFG_EXTRA_ENV_SETTINGS
+#define CFG_EXTRA_ENV_SETTINGS		\
 	"verify=no\0"				\
 	"initrd_high=0xffffffffffffffff\0"	\
 	"kernel_addr=0x01000000\0"		\

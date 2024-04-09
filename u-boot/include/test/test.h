@@ -13,6 +13,7 @@
  * struct unit_test_state - Entire state of test system
  *
  * @fail_count: Number of tests that failed
+ * @skip_count: Number of tests that were skipped
  * @start: Store the starting mallinfo when doing leak test
  * @of_live: true to use livetree if available, false to use flattree
  * @of_root: Record of the livetree root node (used for setting up tests)
@@ -20,11 +21,20 @@
  * @testdev: Test device
  * @force_fail_alloc: Force all memory allocs to fail
  * @skip_post_probe: Skip uclass post-probe processing
+ * @fdt_chksum: crc8 of the device tree contents
+ * @fdt_copy: Copy of the device tree
+ * @fdt_size: Size of the device-tree copy
+ * @other_fdt: Buffer for the other FDT (UT_TESTF_OTHER_FDT)
+ * @other_fdt_size: Size of the other FDT (UT_TESTF_OTHER_FDT)
+ * @of_other: Live tree for the other FDT
+ * @runs_per_test: Number of times to run each test (typically 1)
+ * @force_run: true to run tests marked with the UT_TESTF_MANUAL flag
  * @expect_str: Temporary string used to hold expected string value
  * @actual_str: Temporary string used to hold actual string value
  */
 struct unit_test_state {
 	int fail_count;
+	int skip_count;
 	struct mallinfo start;
 	struct device_node *of_root;
 	bool of_live;
@@ -32,6 +42,14 @@ struct unit_test_state {
 	struct udevice *testdev;
 	int force_fail_alloc;
 	int skip_post_probe;
+	uint fdt_chksum;
+	void *fdt_copy;
+	uint fdt_size;
+	void *other_fdt;
+	int other_fdt_size;
+	struct device_node *of_other;
+	int runs_per_test;
+	bool force_run;
 	char expect_str[512];
 	char actual_str[512];
 };
@@ -46,8 +64,15 @@ enum {
 	UT_TESTF_CONSOLE_REC	= BIT(5),	/* needs console recording */
 	/* do extra driver model init and uninit */
 	UT_TESTF_DM		= BIT(6),
-	/* live or flat device tree, but not both in the same executable */
-	UT_TESTF_LIVE_OR_FLAT	= BIT(4),
+	UT_TESTF_OTHER_FDT	= BIT(7),	/* read in other device tree */
+	/*
+	 * Only run if explicitly requested with 'ut -f <suite> <test>'. The
+	 * test name must end in "_norun" so that pytest detects this also,
+	 * since it cannot access the flags.
+	 */
+	UT_TESTF_MANUAL		= BIT(8),
+	UT_TESTF_ETH_BOOTDEV	= BIT(9),	/* enable Ethernet bootdevs */
+	UT_TESTF_SF_BOOTDEV	= BIT(10),	/* enable SPI flash bootdevs */
 };
 
 /**
@@ -126,12 +151,93 @@ enum {
  */
 struct udevice *testbus_get_clear_removed(void);
 
+#ifdef CONFIG_SANDBOX
+#include <asm/state.h>
+#include <asm/test.h>
+#endif
+
 static inline void arch_reset_for_test(void)
 {
 #ifdef CONFIG_SANDBOX
-#include <asm/state.h>
-
 	state_reset_for_test(state_get_current());
+#endif
+}
+static inline int test_load_other_fdt(struct unit_test_state *uts)
+{
+	int ret = 0;
+#ifdef CONFIG_SANDBOX
+	ret = sandbox_load_other_fdt(&uts->other_fdt, &uts->other_fdt_size);
+#endif
+	return ret;
+}
+
+/**
+ * Control skipping of time delays
+ *
+ * Some tests have unnecessay time delays (e.g. USB). Allow these to be
+ * skipped to speed up testing
+ *
+ * @param skip_delays	true to skip delays from now on, false to honour delay
+ *			requests
+ */
+static inline void test_set_skip_delays(bool skip_delays)
+{
+#ifdef CONFIG_SANDBOX
+	state_set_skip_delays(skip_delays);
+#endif
+}
+
+/**
+ * test_set_eth_enable() - Enable / disable Ethernet
+ *
+ * Allows control of whether Ethernet packets are actually send/received
+ *
+ * @enable: true to enable Ethernet, false to disable
+ */
+static inline void test_set_eth_enable(bool enable)
+{
+#ifdef CONFIG_SANDBOX
+	sandbox_set_eth_enable(enable);
+#endif
+}
+
+/* Allow ethernet to be disabled for testing purposes */
+static inline bool test_eth_enabled(void)
+{
+	bool enabled = true;
+
+#ifdef CONFIG_SANDBOX
+	enabled = sandbox_eth_enabled();
+#endif
+	return enabled;
+}
+
+/* Allow ethernet bootdev to be ignored for testing purposes */
+static inline bool test_eth_bootdev_enabled(void)
+{
+	bool enabled = true;
+
+#ifdef CONFIG_SANDBOX
+	enabled = sandbox_eth_enabled();
+#endif
+	return enabled;
+}
+
+/* Allow SPI flash bootdev to be ignored for testing purposes */
+static inline bool test_sf_bootdev_enabled(void)
+{
+	bool enabled = true;
+
+#ifdef CONFIG_SANDBOX
+	enabled = sandbox_sf_bootdev_enabled();
+#endif
+	return enabled;
+}
+
+static inline void test_sf_set_enable_bootdevs(bool enable)
+{
+#ifdef CONFIG_SANDBOX
+	sandbox_sf_set_enable_bootdevs(enable);
 #endif
 }
 

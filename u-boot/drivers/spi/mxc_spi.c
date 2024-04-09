@@ -91,14 +91,6 @@ struct cspi_regs {
 #define MXC_CSPICON_CTL		20 /* inactive state of SCLK */
 #endif
 
-#ifdef CONFIG_MX27
-/* i.MX27 has a completely wrong register layout and register definitions in the
- * datasheet, the correct one is in the Freescale's Linux driver */
-
-#error "i.MX27 CSPI not supported due to drastic differences in register definitions" \
-"See linux mxc_spi driver from Freescale for details."
-#endif
-
 __weak int board_spi_cs_gpio(unsigned bus, unsigned cs)
 {
 	return -1;
@@ -109,8 +101,8 @@ __weak int board_spi_cs_gpio(unsigned bus, unsigned cs)
 #define reg_read readl
 #define reg_write(a, v) writel(v, a)
 
-#if !defined(CONFIG_SYS_SPI_MXC_WAIT)
-#define CONFIG_SYS_SPI_MXC_WAIT		(CONFIG_SYS_HZ/100)	/* 10 ms */
+#if !defined(CFG_SYS_SPI_MXC_WAIT)
+#define CFG_SYS_SPI_MXC_WAIT		(CONFIG_SYS_HZ/100)	/* 10 ms */
 #endif
 
 #define MAX_CS_COUNT	4
@@ -379,7 +371,7 @@ int spi_xchg_single(struct mxc_spi_slave *mxcs, unsigned int bitlen,
 	status = reg_read(&regs->stat);
 	/* Wait until the TC (Transfer completed) bit is set */
 	while ((status & MXC_CSPICTRL_TC) == 0) {
-		if (get_timer(ts) > CONFIG_SYS_SPI_MXC_WAIT) {
+		if (get_timer(ts) > CFG_SYS_SPI_MXC_WAIT) {
 			printf("spi_xchg_single: Timeout!\n");
 			return -1;
 		}

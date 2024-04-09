@@ -23,9 +23,8 @@
  */
 
 	.section	.text.relocate_vectors,"ax",%progbits
-	.weak		relocate_vectors
 
-ENTRY(relocate_vectors)
+WEAK(relocate_vectors)
 
 #ifdef CONFIG_CPU_V7M
 	/*
@@ -61,7 +60,7 @@ ENTRY(relocate_vectors)
 	stmia	r1!, {r2-r8,r10}
 #endif
 #endif
-	bx	lr
+	ret	lr
 
 ENDPROC(relocate_vectors)
 
@@ -127,13 +126,7 @@ relocate_done:
 	mcr	p15, 0, r0, c7, c10, 4	/* drain write buffer */
 #endif
 
-	/* ARMv4- don't know bx lr but the assembler fails to see that */
-
-#ifdef __ARM_ARCH_4__
-	mov	pc, lr
-#else
-	bx	lr
-#endif
+	ret	lr
 
 ENDPROC(relocate_code)
 

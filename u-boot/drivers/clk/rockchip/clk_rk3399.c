@@ -856,7 +856,7 @@ static ulong rk3399_ddr_set_clk(struct rockchip_cru *cru,
 	switch (set_rate) {
 	case 50 * MHz:
 		dpll_cfg = (struct pll_div)
-		{.refdiv = 1, .fbdiv = 12, .postdiv1 = 3, .postdiv2 = 2};
+		{.refdiv = 2, .fbdiv = 75, .postdiv1 = 3, .postdiv2 = 6};
 		break;
 	case 200 * MHz:
 		dpll_cfg = (struct pll_div)
@@ -1455,7 +1455,7 @@ static int rk3399_clk_bind(struct udevice *dev)
 	ret = offsetof(struct rockchip_cru, softrst_con[0]);
 	ret = rockchip_reset_bind(dev, ret, 21);
 	if (ret)
-		debug("Warning: software reset driver bind faile\n");
+		debug("Warning: software reset driver bind failed\n");
 #endif
 
 	return 0;
@@ -1652,7 +1652,7 @@ static int rk3399_pmuclk_bind(struct udevice *dev)
 	ret = offsetof(struct rk3399_pmucru, pmucru_softrst_con[0]);
 	ret = rockchip_reset_bind(dev, ret, 2);
 	if (ret)
-		debug("Warning: software reset driver bind faile\n");
+		debug("Warning: software reset driver bind failed\n");
 #endif
 	return 0;
 }

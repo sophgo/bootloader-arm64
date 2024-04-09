@@ -90,7 +90,7 @@ def get_sp_pkg(sp, args :dict):
 def is_line_in_sp_gen(line, args :dict):
     with open(args["sp_gen_mk"], "r") as f:
         sppkg_rule = [l for l in f if line in l]
-    return len(sppkg_rule) is not 0
+    return len(sppkg_rule) != 0
 
 def get_file_from_layout(node):
     ''' Helper to fetch a file path from sp_layout.json. '''
@@ -132,20 +132,21 @@ def gen_sptool_args(sp_layout, sp, args :dict):
     sp_pkg = get_sp_pkg(sp, args)
     sp_dtb_name = os.path.basename(get_file_from_layout(sp_layout[sp]["pm"]))[:-1] + "b"
     sp_dtb = os.path.join(args["out_dir"], f"fdts/{sp_dtb_name}")
+    sp_img = get_sp_img_full_path(sp_layout[sp], args)
 
     # Do not generate rule if already there.
     if is_line_in_sp_gen(f'{sp_pkg}:', args):
         return args
     write_to_sp_mk_gen(f"SP_PKGS += {sp_pkg}\n", args)
 
-    sptool_args = f" -i {get_sp_img_full_path(sp_layout[sp], args)}:{sp_dtb}"
+    sptool_args = f" -i {sp_img}:{sp_dtb}"
     pm_offset = get_pm_offset(sp_layout[sp])
     sptool_args += f" --pm-offset {pm_offset}" if pm_offset is not None else ""
     image_offset = get_image_offset(sp_layout[sp])
     sptool_args += f" --img-offset {image_offset}" if image_offset is not None else ""
     sptool_args += f" -o {sp_pkg}"
     sppkg_rule = f'''
-{sp_pkg}:
+{sp_pkg}: {sp_dtb} {sp_img}
 \t$(Q)echo Generating {sp_pkg}
 \t$(Q)$(PYTHON) $(SPTOOL) {sptool_args}
 '''
@@ -196,11 +197,11 @@ def gen_fiptool_args(sp_layout, sp, args :dict):
     ''' Generate arguments for the FIP Tool. '''
     if "uuid" in sp_layout[sp]:
         # Extract the UUID from the JSON file if the SP entry has a 'uuid' field
-        uuid_std = uuid.UUID(data[key]['uuid'])
+        uuid_std = uuid.UUID(sp_layout[sp]['uuid'])
     else:
         with open(get_sp_manifest_full_path(sp_layout[sp], args), "r") as pm_f:
             uuid_lines = [l for l in pm_f if 'uuid' in l]
-        assert(len(uuid_lines) is 1)
+        assert(len(uuid_lines) == 1)
         # The uuid field in SP manifest is the little endian representation
         # mapped to arguments as described in SMCCC section 5.3.
         # Convert each unsigned integer value to a big endian representation

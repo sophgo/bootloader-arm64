@@ -59,7 +59,7 @@ int checkcpu (void)
 #if defined(CONFIG_DYNAMIC_DDR_CLK_FREQ) || \
 	defined(CONFIG_STATIC_DDR_CLK_FREQ) || defined(CONFIG_FSL_CORENET)
 	ccsr_gur_t __iomem *gur =
-		(void __iomem *)(CONFIG_SYS_MPC85xx_GUTS_ADDR);
+		(void __iomem *)(CFG_SYS_MPC85xx_GUTS_ADDR);
 #endif
 
 	/*
@@ -98,7 +98,7 @@ int checkcpu (void)
 #if defined(CONFIG_SYS_FSL_QORIQ_CHASSIS2) && defined(CONFIG_E6500)
 	if (SVR_SOC_VER(svr) == SVR_T4080) {
 		ccsr_rcpm_t *rcpm =
-			(void __iomem *)(CONFIG_SYS_FSL_CORENET_RCPM_ADDR);
+			(void __iomem *)(CFG_SYS_FSL_CORENET_RCPM_ADDR);
 
 		setbits_be32(&gur->devdisr2, FSL_CORENET_DEVDISR2_DTSEC1_6 ||
 			     FSL_CORENET_DEVDISR2_DTSEC1_9);
@@ -124,7 +124,7 @@ int checkcpu (void)
 		puts("Unicore software on multiprocessor system!!\n"
 		     "To enable mutlticore build define CONFIG_MP\n");
 #endif
-		volatile ccsr_pic_t *pic = (void *)(CONFIG_SYS_MPC8xxx_PIC_ADDR);
+		volatile ccsr_pic_t *pic = (void *)(CFG_SYS_MPC8xxx_PIC_ADDR);
 		printf("CPU%d:  ", pic->whoami);
 	} else {
 		puts("CPU:   ");
@@ -264,7 +264,7 @@ int checkcpu (void)
 #endif
 
 #ifdef CONFIG_SYS_DPAA_FMAN
-	for (i = 0; i < CONFIG_SYS_NUM_FMAN; i++) {
+	for (i = 0; i < CFG_SYS_NUM_FMAN; i++) {
 		printf("       FMAN%d: %s MHz\n", i + 1,
 			strmhz(buf1, sysinfo.freq_fman[i]));
 	}
@@ -319,7 +319,7 @@ int do_reset(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 	val |= 0x70000000;
 	mtspr(DBCR0,val);
 #else
-	volatile ccsr_gur_t *gur = (void *)(CONFIG_SYS_MPC85xx_GUTS_ADDR);
+	volatile ccsr_gur_t *gur = (void *)(CFG_SYS_MPC85xx_GUTS_ADDR);
 
 	/* Call board-specific preparation for reset */
 	board_reset_prepare();
@@ -357,7 +357,7 @@ void
 init_85xx_watchdog(void)
 {
 	mtspr(SPRN_TCR, (mfspr(SPRN_TCR) & ~WATCHDOG_MASK) |
-	      TCR_WP(CONFIG_WATCHDOG_PRESC) | TCR_WRC(CONFIG_WATCHDOG_RC));
+	      TCR_WP(CFG_WATCHDOG_PRESC) | TCR_WRC(CFG_WATCHDOG_RC));
 }
 
 void
@@ -417,14 +417,14 @@ void print_reginfo(void)
 /* Common ddr init for non-corenet fsl 85xx platforms */
 #ifndef CONFIG_FSL_CORENET
 #if (defined(CONFIG_SYS_RAMBOOT) || defined(CONFIG_SPL)) && \
-	!defined(CONFIG_SYS_INIT_L2_ADDR)
+	!defined(CFG_SYS_INIT_L2_ADDR)
 int dram_init(void)
 {
 #if defined(CONFIG_SPD_EEPROM) || defined(CONFIG_DDR_SPD) || \
 	defined(CONFIG_ARCH_QEMU_E500)
 	gd->ram_size = fsl_ddr_sdram_size();
 #else
-	gd->ram_size = (phys_size_t)CONFIG_SYS_SDRAM_SIZE * 1024 * 1024;
+	gd->ram_size = (phys_size_t)CFG_SYS_SDRAM_SIZE * 1024 * 1024;
 #endif
 
 	return 0;
@@ -436,7 +436,7 @@ int dram_init(void)
 
 #if defined(CONFIG_SYS_FSL_ERRATUM_DDR_MSYNC_IN)
 	{
-		ccsr_gur_t *gur = (void *)(CONFIG_SYS_MPC85xx_GUTS_ADDR);
+		ccsr_gur_t *gur = (void *)(CFG_SYS_MPC85xx_GUTS_ADDR);
 		unsigned int x = 10;
 		unsigned int i;
 
@@ -486,7 +486,7 @@ int dram_init(void)
 #endif /* CONFIG_SYS_RAMBOOT */
 #endif
 
-#if CONFIG_POST & CONFIG_SYS_POST_MEMORY
+#if CFG_POST & CFG_SYS_POST_MEMORY
 
 /* Board-specific functions defined in each board's ddr.c */
 void fsl_ddr_get_spd(generic_spd_eeprom_t *ctrl_dimms_spd,
@@ -540,16 +540,16 @@ static void dump_spd_ddr_reg(void)
 	for (i = 0; i < CONFIG_SYS_NUM_DDR_CTLRS; i++) {
 		switch (i) {
 		case 0:
-			ddr[i] = (void *)CONFIG_SYS_FSL_DDR_ADDR;
+			ddr[i] = (void *)CFG_SYS_FSL_DDR_ADDR;
 			break;
-#if defined(CONFIG_SYS_FSL_DDR2_ADDR) && (CONFIG_SYS_NUM_DDR_CTLRS > 1)
+#if defined(CFG_SYS_FSL_DDR2_ADDR) && (CONFIG_SYS_NUM_DDR_CTLRS > 1)
 		case 1:
-			ddr[i] = (void *)CONFIG_SYS_FSL_DDR2_ADDR;
+			ddr[i] = (void *)CFG_SYS_FSL_DDR2_ADDR;
 			break;
 #endif
-#if defined(CONFIG_SYS_FSL_DDR3_ADDR) && (CONFIG_SYS_NUM_DDR_CTLRS > 2)
+#if defined(CFG_SYS_FSL_DDR3_ADDR) && (CONFIG_SYS_NUM_DDR_CTLRS > 2)
 		case 2:
-			ddr[i] = (void *)CONFIG_SYS_FSL_DDR3_ADDR;
+			ddr[i] = (void *)CFG_SYS_FSL_DDR3_ADDR;
 			break;
 #endif
 #if defined(CONFIG_SYS_FSL_DDR4_ADDR) && (CONFIG_SYS_NUM_DDR_CTLRS > 3)
@@ -591,7 +591,7 @@ static void dump_spd_ddr_reg(void)
 /* invalid the TLBs for DDR and setup new ones to cover p_addr */
 static int reset_tlb(phys_addr_t p_addr, u32 size, phys_addr_t *phys_offset)
 {
-	u32 vstart = CONFIG_SYS_DDR_SDRAM_BASE;
+	u32 vstart = CFG_SYS_DDR_SDRAM_BASE;
 	unsigned long epn;
 	u32 tsize, valid, ptr;
 	int ddr_esel;
@@ -616,26 +616,26 @@ static int reset_tlb(phys_addr_t p_addr, u32 size, phys_addr_t *phys_offset)
 /*
  * slide the testing window up to test another area
  * for 32_bit system, the maximum testable memory is limited to
- * CONFIG_MAX_MEM_MAPPED
+ * CFG_MAX_MEM_MAPPED
  */
 int arch_memory_test_advance(u32 *vstart, u32 *size, phys_addr_t *phys_offset)
 {
 	phys_addr_t test_cap, p_addr;
-	phys_size_t p_size = min(gd->ram_size, CONFIG_MAX_MEM_MAPPED);
+	phys_size_t p_size = min(gd->ram_size, CFG_MAX_MEM_MAPPED);
 
 #if !defined(CONFIG_PHYS_64BIT) || \
-    !defined(CONFIG_SYS_INIT_RAM_ADDR_PHYS) || \
-	(CONFIG_SYS_INIT_RAM_ADDR_PHYS < 0x100000000ull)
+    !defined(CFG_SYS_INIT_RAM_ADDR_PHYS) || \
+	(CFG_SYS_INIT_RAM_ADDR_PHYS < 0x100000000ull)
 		test_cap = p_size;
 #else
 		test_cap = gd->ram_size;
 #endif
 	p_addr = (*vstart) + (*size) + (*phys_offset);
 	if (p_addr < test_cap - 1) {
-		p_size = min(test_cap - p_addr, CONFIG_MAX_MEM_MAPPED);
+		p_size = min(test_cap - p_addr, CFG_MAX_MEM_MAPPED);
 		if (reset_tlb(p_addr, p_size, phys_offset) == -1)
 			return -1;
-		*vstart = CONFIG_SYS_DDR_SDRAM_BASE;
+		*vstart = CFG_SYS_DDR_SDRAM_BASE;
 		*size = (u32) p_size;
 		printf("Testing 0x%08llx - 0x%08llx\n",
 			(u64)(*vstart) + (*phys_offset),
@@ -649,18 +649,18 @@ int arch_memory_test_advance(u32 *vstart, u32 *size, phys_addr_t *phys_offset)
 /* initialization for testing area */
 int arch_memory_test_prepare(u32 *vstart, u32 *size, phys_addr_t *phys_offset)
 {
-	phys_size_t p_size = min(gd->ram_size, CONFIG_MAX_MEM_MAPPED);
+	phys_size_t p_size = min(gd->ram_size, CFG_MAX_MEM_MAPPED);
 
-	*vstart = CONFIG_SYS_DDR_SDRAM_BASE;
-	*size = (u32) p_size;	/* CONFIG_MAX_MEM_MAPPED < 4G */
+	*vstart = CFG_SYS_DDR_SDRAM_BASE;
+	*size = (u32) p_size;	/* CFG_MAX_MEM_MAPPED < 4G */
 	*phys_offset = 0;
 
 #if !defined(CONFIG_PHYS_64BIT) || \
-    !defined(CONFIG_SYS_INIT_RAM_ADDR_PHYS) || \
-	(CONFIG_SYS_INIT_RAM_ADDR_PHYS < 0x100000000ull)
-		if (gd->ram_size > CONFIG_MAX_MEM_MAPPED) {
+    !defined(CFG_SYS_INIT_RAM_ADDR_PHYS) || \
+	(CFG_SYS_INIT_RAM_ADDR_PHYS < 0x100000000ull)
+		if (gd->ram_size > CFG_MAX_MEM_MAPPED) {
 			puts("Cannot test more than ");
-			print_size(CONFIG_MAX_MEM_MAPPED,
+			print_size(CFG_MAX_MEM_MAPPED,
 				" without proper 36BIT support.\n");
 		}
 #endif

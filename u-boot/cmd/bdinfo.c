@@ -11,13 +11,26 @@
 #include <dm.h>
 #include <env.h>
 #include <lmb.h>
+#include <mapmem.h>
 #include <net.h>
 #include <video.h>
 #include <vsprintf.h>
 #include <asm/cache.h>
 #include <asm/global_data.h>
+#include <display_options.h>
 
 DECLARE_GLOBAL_DATA_PTR;
+
+void bdinfo_print_size(const char *name, uint64_t size)
+{
+	printf("%-12s= ", name);
+	print_size(size, "\n");
+}
+
+void bdinfo_print_str(const char *name, const char *str)
+{
+	printf("%-12s= %s\n", name, str);
+}
 
 void bdinfo_print_num_l(const char *name, ulong value)
 {
@@ -29,17 +42,26 @@ void bdinfo_print_num_ll(const char *name, unsigned long long value)
 	printf("%-12s= 0x%.*llx\n", name, 2 * (int)sizeof(ulong), value);
 }
 
-static void print_eth(int idx)
+static void print_eth(void)
 {
-	char name[10], *val;
+	const int idx = eth_get_dev_index();
+	uchar enetaddr[6];
+	char name[10];
+	int ret;
+
 	if (idx)
 		sprintf(name, "eth%iaddr", idx);
 	else
 		strcpy(name, "ethaddr");
-	val = env_get(name);
-	if (!val)
-		val = "(not set)";
-	printf("%-12s= %s\n", name, val);
+
+	ret = eth_env_get_enetaddr_by_index("eth", idx, enetaddr);
+
+	printf("current eth = %s\n", eth_get_name());
+	if (!ret)
+		printf("%-12s= (not set)\n", name);
+	else
+		printf("%-12s= %pM\n", name, enetaddr);
+	printf("IP addr     = %s\n", env_get("ipaddr"));
 }
 
 void bdinfo_print_mhz(const char *name, unsigned long hz)
@@ -76,11 +98,15 @@ static void show_video_info(void)
 		       device_active(dev) ? "" : "in");
 		if (device_active(dev)) {
 			struct video_priv *upriv = dev_get_uclass_priv(dev);
+			struct video_uc_plat *plat = dev_get_uclass_plat(dev);
 
 			bdinfo_print_num_ll("FB base", (ulong)upriv->fb);
-			if (upriv->copy_fb)
+			if (upriv->copy_fb) {
 				bdinfo_print_num_ll("FB copy",
 						    (ulong)upriv->copy_fb);
+				bdinfo_print_num_l(" copy size",
+						   plat->copy_size);
+			}
 			printf("%-12s= %dx%dx%d\n", "FB size", upriv->xsize,
 			       upriv->ysize, 1 << upriv->bpix);
 		}
@@ -107,23 +133,17 @@ int do_bdinfo(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 	bdinfo_print_num_l("relocaddr", gd->relocaddr);
 	bdinfo_print_num_l("reloc off", gd->reloc_off);
 	printf("%-12s= %u-bit\n", "Build", (uint)sizeof(void *) * 8);
-	if (IS_ENABLED(CONFIG_CMD_NET)) {
-		printf("current eth = %s\n", eth_get_name());
-		print_eth(0);
-		printf("IP addr     = %s\n", env_get("ipaddr"));
-	}
-	bdinfo_print_num_l("fdt_blob", (ulong)gd->fdt_blob);
-	bdinfo_print_num_l("new_fdt", (ulong)gd->new_fdt);
+	if (IS_ENABLED(CONFIG_CMD_NET))
+		print_eth();
+	bdinfo_print_num_l("fdt_blob", (ulong)map_to_sysmem(gd->fdt_blob));
+	bdinfo_print_num_l("new_fdt", (ulong)map_to_sysmem(gd->new_fdt));
 	bdinfo_print_num_l("fdt_size", (ulong)gd->fdt_size);
-	if (IS_ENABLED(CONFIG_DM_VIDEO))
+	if (IS_ENABLED(CONFIG_VIDEO))
 		show_video_info();
-#if defined(CONFIG_LCD)
-	bdinfo_print_num_l("FB base  ", gd->fb_base);
-#endif
 #if CONFIG_IS_ENABLED(MULTI_DTB_FIT)
 	bdinfo_print_num_l("multi_dtb_fit", (ulong)gd->multi_dtb_fit);
 #endif
-	if (gd->fdt_blob) {
+	if (IS_ENABLED(CONFIG_LMB) && gd->fdt_blob) {
 		struct lmb lmb;
 
 		lmb_init_and_reserve(&lmb, gd->bd, (void *)gd->fdt_blob);

@@ -370,14 +370,14 @@ struct ks2_serdes ks2_serdes_sgmii_156p25mhz = {
 #ifndef CONFIG_SOC_K2G
 static void keystone2_net_serdes_setup(void)
 {
-	ks2_serdes_init(CONFIG_KSNET_SERDES_SGMII_BASE,
+	ks2_serdes_init(CFG_KSNET_SERDES_SGMII_BASE,
 			&ks2_serdes_sgmii_156p25mhz,
-			CONFIG_KSNET_SERDES_LANES_PER_SGMII);
+			CFG_KSNET_SERDES_LANES_PER_SGMII);
 
 #if defined(CONFIG_SOC_K2E) || defined(CONFIG_SOC_K2L)
-	ks2_serdes_init(CONFIG_KSNET_SERDES_SGMII2_BASE,
+	ks2_serdes_init(CFG_KSNET_SERDES_SGMII2_BASE,
 			&ks2_serdes_sgmii_156p25mhz,
-			CONFIG_KSNET_SERDES_LANES_PER_SGMII);
+			CFG_KSNET_SERDES_LANES_PER_SGMII);
 #endif
 
 	/* wait till setup */
@@ -571,7 +571,8 @@ static int ks2_eth_probe(struct udevice *dev)
 		mdio_bus = cpsw_mdio_init("ethernet-mdio",
 					  priv->mdio_base,
 					  EMAC_MDIO_CLOCK_FREQ,
-					  EMAC_MDIO_BUS_FREQ);
+					  EMAC_MDIO_BUS_FREQ,
+					  false);
 		if (!mdio_bus) {
 			pr_err("MDIO alloc failed\n");
 			return -ENOMEM;
@@ -591,10 +592,8 @@ static int ks2_eth_probe(struct udevice *dev)
 	if (priv->has_mdio) {
 		priv->phydev = phy_connect(priv->mdio_bus, priv->phy_addr,
 					   dev, priv->phy_if);
-#ifdef CONFIG_DM_ETH
-	if (ofnode_valid(priv->phy_ofnode))
-		priv->phydev->node = priv->phy_ofnode;
-#endif
+		if (ofnode_valid(priv->phy_ofnode))
+			priv->phydev->node = priv->phy_ofnode;
 		phy_config(priv->phydev);
 	}
 

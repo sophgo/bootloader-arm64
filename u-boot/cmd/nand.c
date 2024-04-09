@@ -417,12 +417,14 @@ static void nand_print_and_set_info(int idx)
 		printf("%dx ", chip->numchips);
 	printf("%s, sector size %u KiB\n",
 	       mtd->name, mtd->erasesize >> 10);
-	printf("  Page size   %8d b\n", mtd->writesize);
-	printf("  OOB size    %8d b\n", mtd->oobsize);
-	printf("  Erase size  %8d b\n", mtd->erasesize);
-	printf("  subpagesize %8d b\n", chip->subpagesize);
-	printf("  options     0x%08x\n", chip->options);
-	printf("  bbt options 0x%08x\n", chip->bbt_options);
+	printf("  Page size     %8d b\n", mtd->writesize);
+	printf("  OOB size      %8d b\n", mtd->oobsize);
+	printf("  Erase size    %8d b\n", mtd->erasesize);
+	printf("  ecc strength  %8d bits\n", mtd->ecc_strength);
+	printf("  ecc step size %8d b\n", mtd->ecc_step_size);
+	printf("  subpagesize   %8d b\n", chip->subpagesize);
+	printf("  options       0x%08x\n", chip->options);
+	printf("  bbt options   0x%08x\n", chip->bbt_options);
 
 	/* Set geometry info */
 	env_set_hex("nand_writesize", mtd->writesize);
@@ -565,9 +567,12 @@ static int do_nand(struct cmd_tbl *cmdtp, int flag, int argc,
 
 	if (strcmp(cmd, "bad") == 0) {
 		printf("\nDevice %d bad blocks:\n", dev);
-		for (off = 0; off < mtd->size; off += mtd->erasesize)
-			if (nand_block_isbad(mtd, off))
-				printf("  %08llx\n", (unsigned long long)off);
+		for (off = 0; off < mtd->size; off += mtd->erasesize) {
+			ret = nand_block_isbad(mtd, off);
+			if (ret)
+				printf("  0x%08llx%s\n", (unsigned long long)off,
+				       ret == 2 ? "\t (bbt reserved)" : "");
+		}
 		return 0;
 	}
 
@@ -975,7 +980,7 @@ static int nand_load_image(struct cmd_tbl *cmdtp, struct mtd_info *mtd,
 	char *s;
 	size_t cnt;
 #if defined(CONFIG_LEGACY_IMAGE_FORMAT)
-	image_header_t *hdr;
+	struct legacy_img_hdr *hdr;
 #endif
 #if defined(CONFIG_FIT)
 	const void *fit_hdr = NULL;
@@ -1004,7 +1009,7 @@ static int nand_load_image(struct cmd_tbl *cmdtp, struct mtd_info *mtd,
 	switch (genimg_get_format ((void *)addr)) {
 #if defined(CONFIG_LEGACY_IMAGE_FORMAT)
 	case IMAGE_FORMAT_LEGACY:
-		hdr = (image_header_t *)addr;
+		hdr = (struct legacy_img_hdr *)addr;
 
 		bootstage_mark(BOOTSTAGE_ID_NAND_TYPE);
 		image_print_contents (hdr);

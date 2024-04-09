@@ -11,6 +11,7 @@
 #include <clk.h>
 #include <config.h>
 #include <dm.h>
+#include <efi_loader.h>
 #include <env.h>
 #include <env_internal.h>
 #include <fdt_simplefb.h>
@@ -87,6 +88,16 @@
 #define USB_START_LOW_THRESHOLD_UV	1230000
 #define USB_START_HIGH_THRESHOLD_UV	2150000
 
+#if IS_ENABLED(CONFIG_EFI_HAVE_CAPSULE_SUPPORT)
+struct efi_fw_image fw_images[1];
+
+struct efi_capsule_update_info update_info = {
+	.images = fw_images,
+};
+
+u8 num_image_type_guids = ARRAY_SIZE(fw_images);
+#endif /* EFI_HAVE_CAPSULE_SUPPORT */
+
 int board_early_init_f(void)
 {
 	/* nothing to do, only used in SPL */
@@ -118,7 +129,7 @@ int checkboard(void)
 		 fdt_compat && fdt_compat_len ? fdt_compat : "");
 
 	/* display the STMicroelectronics board identification */
-	if (CONFIG_IS_ENABLED(CMD_STBOARD)) {
+	if (IS_ENABLED(CONFIG_CMD_STBOARD)) {
 		ret = uclass_get_device_by_driver(UCLASS_MISC,
 						  DM_DRIVER_GET(stm32mp_bsec),
 						  &dev);
@@ -289,7 +300,7 @@ static void __maybe_unused led_error_blink(u32 nb_blink)
 			for (i = 0; i < 2 * nb_blink; i++) {
 				led_set_state(led, LEDST_TOGGLE);
 				mdelay(125);
-				WATCHDOG_RESET();
+				schedule();
 			}
 			led_set_state(led, LEDST_ON);
 		}
@@ -666,6 +677,13 @@ int board_init(void)
 
 	setup_led(LEDST_ON);
 
+#if IS_ENABLED(CONFIG_EFI_HAVE_CAPSULE_SUPPORT)
+	efi_guid_t image_type_guid = STM32MP_FIP_IMAGE_GUID;
+
+	guidcpy(&fw_images[0].image_type_id, &image_type_guid);
+	fw_images[0].fw_name = u"STM32MP-FIP";
+	fw_images[0].image_index = 1;
+#endif
 	return 0;
 }
 
@@ -813,7 +831,7 @@ enum env_location env_get_location(enum env_operation op, int prio)
 
 	case BOOT_FLASH_NAND:
 	case BOOT_FLASH_SPINAND:
-		if (CONFIG_IS_ENABLED(ENV_IS_IN_UBI))
+		if (IS_ENABLED(CONFIG_ENV_IS_IN_UBI))
 			return ENVL_UBI;
 		else
 			return ENVL_NOWHERE;
@@ -854,7 +872,7 @@ int mmc_get_boot(void)
 		STM32_SDMMC3_BASE
 	};
 
-	if (instance > ARRAY_SIZE(sdmmc_addr))
+	if (instance >= ARRAY_SIZE(sdmmc_addr))
 		return 0;
 
 	/* search associated sdmmc node in devicetree */
@@ -898,8 +916,8 @@ int mmc_get_env_dev(void)
 int ft_board_setup(void *blob, struct bd_info *bd)
 {
 	static const struct node_info nodes[] = {
-		{ "st,stm32f469-qspi",		MTD_DEV_TYPE_NOR,  },
-		{ "st,stm32f469-qspi",		MTD_DEV_TYPE_SPINAND},
+		{ "jedec,spi-nor",		MTD_DEV_TYPE_NOR,  },
+		{ "spi-nand",			MTD_DEV_TYPE_SPINAND},
 		{ "st,stm32mp15-fmc2",		MTD_DEV_TYPE_NAND, },
 		{ "st,stm32mp1-fmc2-nfc",	MTD_DEV_TYPE_NAND, },
 	};
@@ -912,7 +930,7 @@ int ft_board_setup(void *blob, struct bd_info *bd)
 		if (IS_ENABLED(CONFIG_FDT_FIXUP_PARTITIONS))
 			fdt_fixup_mtdparts(blob, nodes, ARRAY_SIZE(nodes));
 
-	if (CONFIG_IS_ENABLED(FDT_SIMPLEFB))
+	if (IS_ENABLED(CONFIG_FDT_SIMPLEFB))
 		fdt_simplefb_enable_and_mem_rsv(blob);
 
 	return 0;
@@ -939,3 +957,24 @@ static void board_copro_image_process(ulong fw_image, size_t fw_size)
 }
 
 U_BOOT_FIT_LOADABLE_HANDLER(IH_TYPE_COPRO, board_copro_image_process);
+
+#if defined(CONFIG_FWU_MULTI_BANK_UPDATE)
+
+#include <fwu.h>
+
+/**
+ * fwu_plat_get_bootidx() - Get the value of the boot index
+ * @boot_idx: Boot index value
+ *
+ * Get the value of the bank(partition) from which the platform
+ * has booted. This value is passed to U-Boot from the earlier
+ * stage bootloader which loads and boots all the relevant
+ * firmware images
+ *
+ */
+void fwu_plat_get_bootidx(uint *boot_idx)
+{
+	*boot_idx = (readl(TAMP_FWU_BOOT_INFO_REG) >>
+		    TAMP_FWU_BOOT_IDX_OFFSET) & TAMP_FWU_BOOT_IDX_MASK;
+}
+#endif /* CONFIG_FWU_MULTI_BANK_UPDATE */

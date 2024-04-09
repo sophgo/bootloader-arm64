@@ -79,22 +79,26 @@ func bl2_entrypoint
 	 * when BL2 re-enables MMU, we will get the data in dcache.
 	 * as A53's invalidate is actrually flush, so we do it
 	 * before relocate BL2.
-	 * BL2 image end address was stored in x21 (from x1) by boot ROM.
-	 * use it to calculate image length.
+	 * BL2 image end address was not explicitly passed in by
+	 * boot ROM, so we use the biggest possible number provided
+	 * by BM1684 boot ROM, then use it to calculate image length.
 	 */
 	mov_imm	x0, BL2_BASE
 	mov_imm x2, BL2_BASE_OLD
-	sub	x1, x21, x2
+	mov_imm x3, BL1_RW_BASE_OLD
+	sub	x1, x3, x2
 	bl	inv_dcache_range
 
 	/*
 	 * copy BL2 from old position (by boot ROM) to new (link address)
-	 * calculate BL2 image length from x21 again.
+	 * calculate BL2 image length using the same way as former section.
 	 */
 	mov_imm	x0, BL2_BASE
 	mov_imm x1, BL2_BASE_OLD
-	sub	x2, x21, x1
+	mov_imm x3, BL1_RW_BASE_OLD
+	sub	x2, x3, x1
 	bl	memcpy16_safe
+
 	/* restore x0-x3, although our new BL2 does not use these */
 	mov	x0, x20
 	mov	x1, x21

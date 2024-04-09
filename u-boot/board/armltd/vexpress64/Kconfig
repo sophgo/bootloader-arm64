@@ -12,9 +12,13 @@ config SYS_CONFIG_NAME
 config VEXPRESS64_BASE_MODEL
 	bool
 	select SEMIHOSTING
+	imply VIRTIO_MMIO
 	select VIRTIO_BLK if VIRTIO_MMIO
 	select VIRTIO_NET if VIRTIO_MMIO
 	select DM_ETH if VIRTIO_NET
+	imply RTC_PL031
+	select DM_RTC if RTC_PL031
+	imply EFI_SET_TIME if DM_RTC
 	select LINUX_KERNEL_IMAGE_HEADER
 	select POSITION_INDEPENDENT
 
@@ -24,7 +28,7 @@ choice
 config TARGET_VEXPRESS64_BASE_FVP
 	bool "Support Versatile Express ARMv8a FVP BASE model"
 	select VEXPRESS64_BASE_MODEL
-	select OF_BOARD
+	imply OF_HAS_PRIOR_STAGE
 
 config TARGET_VEXPRESS64_BASER_FVP
 	bool "Support Versatile Express ARMv8r64 FVP BASE model"
@@ -54,9 +58,9 @@ config JUNO_DTB_PART
 	  device tree blob to configure U-Boot.
 
 config LNX_KRNL_IMG_TEXT_OFFSET_BASE
-	default SYS_TEXT_BASE
+	default TEXT_BASE
 
-config SYS_TEXT_BASE
+config TEXT_BASE
 	default 0x88000000 if TARGET_VEXPRESS64_BASE_FVP
 	default 0xe0000000 if TARGET_VEXPRESS64_JUNO
 	default 0x00001000 if TARGET_VEXPRESS64_BASER_FVP

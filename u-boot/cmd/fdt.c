@@ -36,13 +36,19 @@ static int is_printable_string(const void *data, int len);
  */
 struct fdt_header *working_fdt;
 
-void set_working_fdt_addr(ulong addr)
+static void set_working_fdt_addr_quiet(ulong addr)
 {
 	void *buf;
 
 	buf = map_sysmem(addr, 0);
 	working_fdt = buf;
 	env_set_hex("fdtaddr", addr);
+}
+
+void set_working_fdt_addr(ulong addr)
+{
+	printf("Working FDT set to %lx\n", addr);
+	set_working_fdt_addr_quiet(addr);
 }
 
 /*
@@ -59,11 +65,14 @@ static int fdt_value_env_set(const void *nodep, int len,
 		 * Iterate over all members in stringlist and find the one at
 		 * offset $index. If no such index exists, indicate failure.
 		 */
-		for (i = 0; i < len; i += strlen(nodec) + 1) {
-			if (index-- > 0)
+		for (i = 0; i < len; ) {
+			if (index-- > 0) {
+				i += strlen(nodec) + 1;
+				nodec += strlen(nodec) + 1;
 				continue;
+			}
 
-			env_set(var, nodec + i);
+			env_set(var, nodec);
 			return 0;
 		}
 
@@ -73,7 +82,17 @@ static int fdt_value_env_set(const void *nodep, int len,
 
 		sprintf(buf, "0x%08X", fdt32_to_cpu(*(fdt32_t *)nodep));
 		env_set(var, buf);
-	} else if (len%4 == 0 && len <= 20) {
+	} else if (len % 4 == 0 && index >= 0) {
+		/* Needed to print integer arrays. */
+		const unsigned int *nodec = (const unsigned int *)nodep;
+		char buf[11];
+
+		if (index * 4 >= len)
+			return 1;
+
+		sprintf(buf, "0x%08X", fdt32_to_cpu(*(nodec + index)));
+		env_set(var, buf);
+	} else if (len % 4 == 0 && len <= 20) {
 		/* Needed to print things like sha1 hashes. */
 		char buf[41];
 		int i;
@@ -178,10 +197,14 @@ static int do_fdt(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 		if ((quiet && fdt_check_header(blob)) ||
 		    (!quiet && !fdt_valid(&blob)))
 			return 1;
-		if (control)
+		if (control) {
 			gd->fdt_blob = blob;
-		else
-			set_working_fdt_addr(addr);
+		} else {
+			if (quiet)
+				set_working_fdt_addr_quiet(addr);
+			else
+				set_working_fdt_addr(addr);
+		}
 
 		if (argc >= 2) {
 			int  len;
@@ -204,19 +227,11 @@ static int do_fdt(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 		}
 
 		return CMD_RET_SUCCESS;
-	}
-
-	if (!working_fdt) {
-		puts("No FDT memory address configured. Please configure\n"
-		     "the FDT address via \"fdt addr <address>\" command.\n"
-		     "Aborting!\n");
-		return CMD_RET_FAILURE;
-	}
 
 	/*
 	 * Move the working_fdt
 	 */
-	if (strncmp(argv[1], "mo", 2) == 0) {
+	} else if (strncmp(argv[1], "mo", 2) == 0) {
 		struct fdt_header *newaddr;
 		int  len;
 		int  err;
@@ -227,11 +242,11 @@ static int do_fdt(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 		/*
 		 * Set the address and length of the fdt.
 		 */
-		working_fdt = (struct fdt_header *)hextoul(argv[2], NULL);
+		working_fdt = map_sysmem(hextoul(argv[2], NULL), 0);
 		if (!fdt_valid(&working_fdt))
 			return 1;
 
-		newaddr = (struct fdt_header *)hextoul(argv[3], NULL);
+		newaddr = map_sysmem(hextoul(argv[3], NULL), 0);
 
 		/*
 		 * If the user specifies a length, use that.  Otherwise use the
@@ -258,10 +273,21 @@ static int do_fdt(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 				fdt_strerror(err));
 			return 1;
 		}
-		set_working_fdt_addr((ulong)newaddr);
+		set_working_fdt_addr(map_to_sysmem(newaddr));
+
+		return CMD_RET_SUCCESS;
+	}
+
+	if (!working_fdt) {
+		puts("No FDT memory address configured. Please configure\n"
+		     "the FDT address via \"fdt addr <address>\" command.\n"
+		     "Aborting!\n");
+		return CMD_RET_FAILURE;
+	}
+
 #ifdef CONFIG_OF_SYSTEM_SETUP
 	/* Call the board-specific fixup routine */
-	} else if (strncmp(argv[1], "sys", 3) == 0) {
+	if (strncmp(argv[1], "sys", 3) == 0) {
 		int err = ft_system_setup(working_fdt, gd->bd);
 
 		if (err) {
@@ -269,11 +295,14 @@ static int do_fdt(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 			       fdt_strerror(err));
 			return CMD_RET_FAILURE;
 		}
+
+		return CMD_RET_SUCCESS;
+	}
 #endif
 	/*
 	 * Make a new node
 	 */
-	} else if (strncmp(argv[1], "mk", 2) == 0) {
+	if (strncmp(argv[1], "mk", 2) == 0) {
 		char *pathp;		/* path */
 		char *nodep;		/* new node to add */
 		int  nodeoffset;	/* node offset from libfdt */
@@ -436,14 +465,16 @@ static int do_fdt(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 		} else {
 			nodep = fdt_getprop(
 				working_fdt, nodeoffset, prop, &len);
-			if (len == 0) {
-				/* no property value */
-				env_set(var, "");
-				return 0;
-			} else if (nodep && len > 0) {
+			if (nodep && len >= 0) {
 				if (subcmd[0] == 'v') {
-					int index = 0;
+					int index = -1;
 					int ret;
+
+					if (len == 0) {
+						/* no property value */
+						env_set(var, "");
+						return 0;
+					}
 
 					if (argc == 7)
 						index = simple_strtoul(argv[6], NULL, 10);
@@ -453,17 +484,9 @@ static int do_fdt(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 					if (ret != 0)
 						return ret;
 				} else if (subcmd[0] == 'a') {
-					/* Get address */
-					char buf[11];
-
-					sprintf(buf, "0x%p", nodep);
-					env_set(var, buf);
+					env_set_hex(var, (ulong)map_to_sysmem(nodep));
 				} else if (subcmd[0] == 's') {
-					/* Get size */
-					char buf[11];
-
-					sprintf(buf, "0x%08X", len);
-					env_set(var, buf);
+					env_set_hex(var, len);
 				} else
 					return CMD_RET_USAGE;
 				return 0;
@@ -535,16 +558,16 @@ static int do_fdt(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 		if (argc > 3) {
 			err = fdt_delprop(working_fdt, nodeoffset, argv[3]);
 			if (err < 0) {
-				printf("libfdt fdt_delprop():  %s\n",
+				printf("libfdt fdt_delprop(): %s\n",
 					fdt_strerror(err));
-				return err;
+				return CMD_RET_FAILURE;
 			}
 		} else {
 			err = fdt_del_node(working_fdt, nodeoffset);
 			if (err < 0) {
-				printf("libfdt fdt_del_node():  %s\n",
+				printf("libfdt fdt_del_node(): %s\n",
 					fdt_strerror(err));
-				return err;
+				return CMD_RET_FAILURE;
 			}
 		}
 
@@ -585,7 +608,12 @@ static int do_fdt(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 	 * Set boot cpu id
 	 */
 	} else if (strncmp(argv[1], "boo", 3) == 0) {
-		unsigned long tmp = hextoul(argv[2], NULL);
+		unsigned long tmp;
+
+		if (argc != 3)
+			return CMD_RET_USAGE;
+
+		tmp = hextoul(argv[2], NULL);
 		fdt_set_boot_cpuid_phys(working_fdt, tmp);
 
 	/*
@@ -594,6 +622,10 @@ static int do_fdt(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 	} else if (strncmp(argv[1], "me", 2) == 0) {
 		uint64_t addr, size;
 		int err;
+
+		if (argc != 4)
+			return CMD_RET_USAGE;
+
 		addr = simple_strtoull(argv[2], NULL, 16);
 		size = simple_strtoull(argv[3], NULL, 16);
 		err = fdt_fixup_memory(working_fdt, addr, size);
@@ -632,18 +664,18 @@ static int do_fdt(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 			err = fdt_add_mem_rsv(working_fdt, addr, size);
 
 			if (err < 0) {
-				printf("libfdt fdt_add_mem_rsv():  %s\n",
+				printf("libfdt fdt_add_mem_rsv(): %s\n",
 					fdt_strerror(err));
-				return err;
+				return CMD_RET_FAILURE;
 			}
 		} else if (argv[2][0] == 'd') {
 			unsigned long idx = hextoul(argv[3], NULL);
 			int err = fdt_del_mem_rsv(working_fdt, idx);
 
 			if (err < 0) {
-				printf("libfdt fdt_del_mem_rsv():  %s\n",
+				printf("libfdt fdt_del_mem_rsv(): %s\n",
 					fdt_strerror(err));
-				return err;
+				return CMD_RET_FAILURE;
 			}
 		} else {
 			/* Unrecognized command */
@@ -868,40 +900,32 @@ static int fdt_parse_prop(char * const *newval, int count, char *data, int *len)
 static int is_printable_string(const void *data, int len)
 {
 	const char *s = data;
+	const char *ss, *se;
 
 	/* zero length is not */
 	if (len == 0)
 		return 0;
 
-	/* must terminate with zero or '\n' */
-	if (s[len - 1] != '\0' && s[len - 1] != '\n')
+	/* must terminate with zero */
+	if (s[len - 1] != '\0')
 		return 0;
 
-	/* printable or a null byte (concatenated strings) */
-	while (((*s == '\0') || isprint(*s) || isspace(*s)) && (len > 0)) {
-		/*
-		 * If we see a null, there are three possibilities:
-		 * 1) If len == 1, it is the end of the string, printable
-		 * 2) Next character also a null, not printable.
-		 * 3) Next character not a null, continue to check.
-		 */
-		if (s[0] == '\0') {
-			if (len == 1)
-				return 1;
-			if (s[1] == '\0')
-				return 0;
-		}
+	se = s + len;
+
+	while (s < se) {
+		ss = s;
+		while (s < se && *s && isprint((unsigned char)*s))
+			s++;
+
+		/* not zero, or not done yet */
+		if (*s != '\0' || s == ss)
+			return 0;
+
 		s++;
-		len--;
 	}
-
-	/* Not the null termination, or not done yet: not printable */
-	if (*s != '\0' || (len != 0))
-		return 0;
 
 	return 1;
 }
-
 
 /*
  * Print the property in the best format, a heuristic guess.  Print as
@@ -1125,8 +1149,8 @@ static char fdt_help_text[] =
 	"                                        <start>/<size> - initrd start addr/size\n"
 #if defined(CONFIG_FIT_SIGNATURE)
 	"fdt checksign [<addr>]              - check FIT signature\n"
-	"                                        <start> - addr of key blob\n"
-	"                                                  default gd->fdt_blob\n"
+	"                                      <addr> - address of key blob\n"
+	"                                               default gd->fdt_blob\n"
 #endif
 	"NOTE: Dereference aliases by omitting the leading '/', "
 		"e.g. fdt print ethernet0.";

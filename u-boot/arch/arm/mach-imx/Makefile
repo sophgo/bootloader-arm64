@@ -77,6 +77,10 @@ ifeq ($(CONFIG_SPL_BUILD),y)
 obj-$(CONFIG_SPL_LOAD_IMX_CONTAINER) += image-container.o parse-container.o
 endif
 
+ifeq ($(SOC),$(filter $(SOC),imx8ulp imx9))
+obj-$(CONFIG_AHAB_BOOT) += ele_ahab.o
+endif
+
 PLUGIN = board/$(BOARDDIR)/plugin
 
 ifeq ($(CONFIG_USE_IMXIMG_PLUGIN),y)
@@ -126,15 +130,21 @@ DEPFILE_EXISTS := 0
 endif
 
 MKIMAGEFLAGS_u-boot.imx = -n $(filter-out $(PLUGIN).bin $< $(PHONY),$^) \
-	-T $(IMAGE_TYPE) -e $(CONFIG_SYS_TEXT_BASE)
+	-T $(IMAGE_TYPE) -e $(CONFIG_TEXT_BASE)
 u-boot.imx: MKIMAGEOUTPUT = u-boot.imx.log
 
 u-boot.imx: u-boot.bin u-boot.cfgout $(PLUGIN).bin FORCE
 	$(call if_changed,mkimage)
 
+quiet_cmd_u-boot-nand_imx = GEN     $@
+cmd_u-boot-nand_imx = (dd bs=1024 count=1 if=/dev/zero 2>/dev/null) | cat - $< > $@
+
+u-boot-nand.imx: u-boot.imx FORCE
+	$(call if_changed,u-boot-nand_imx)
+
 ifeq ($(CONFIG_MULTI_DTB_FIT),y)
 MKIMAGEFLAGS_u-boot-dtb.imx = -n $(filter-out $(PLUGIN).bin $< $(PHONY),$^) \
-	-T $(IMAGE_TYPE) -e $(CONFIG_SYS_TEXT_BASE)
+	-T $(IMAGE_TYPE) -e $(CONFIG_TEXT_BASE)
 u-boot-dtb.imx: MKIMAGEOUTPUT = u-boot-dtb.imx.log
 
 u-boot-dtb.imx: u-boot-fit-dtb.bin u-boot-dtb.cfgout $(PLUGIN).bin FORCE
@@ -143,7 +153,7 @@ ifeq ($(DEPFILE_EXISTS),0)
 endif
 else ifeq ($(CONFIG_OF_SEPARATE),y)
 MKIMAGEFLAGS_u-boot-dtb.imx = -n $(filter-out $(PLUGIN).bin $< $(PHONY),$^) \
-	-T $(IMAGE_TYPE) -e $(CONFIG_SYS_TEXT_BASE)
+	-T $(IMAGE_TYPE) -e $(CONFIG_TEXT_BASE)
 u-boot-dtb.imx: MKIMAGEOUTPUT = u-boot-dtb.imx.log
 
 u-boot-dtb.imx: u-boot-dtb.bin u-boot-dtb.cfgout $(PLUGIN).bin FORCE
@@ -207,8 +217,8 @@ SPL: MKIMAGEOUTPUT = SPL.log
 SPL: spl/u-boot-spl.bin spl/u-boot-spl.cfgout $(PLUGIN).bin FORCE
 	$(call if_changed,mkimage)
 
-MKIMAGEFLAGS_u-boot.uim = -A arm -O U-Boot -a $(CONFIG_SYS_TEXT_BASE) \
-		-e $(CONFIG_SYS_TEXT_BASE) -C none -T firmware
+MKIMAGEFLAGS_u-boot.uim = -A arm -O U-Boot -a $(CONFIG_TEXT_BASE) \
+		-e $(CONFIG_TEXT_BASE) -C none -T firmware
 
 u-boot.uim: u-boot.bin FORCE
 	$(call if_changed,mkimage)
@@ -234,8 +244,6 @@ spl/u-boot-nand-spl.imx: SPL FORCE
 endif
 
 targets += $(addprefix ../../../,SPL spl/u-boot-spl.cfgout u-boot-dtb.cfgout u-boot.cfgout u-boot.uim spl/u-boot-nand-spl.imx)
-
-obj-$(CONFIG_ARM64) += lowlevel.o
 
 obj-$(CONFIG_MX5) += mx5/
 obj-$(CONFIG_MX6) += mx6/

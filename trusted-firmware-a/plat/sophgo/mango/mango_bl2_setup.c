@@ -57,7 +57,7 @@ static void security_setup(void)
 static int bm_get_board_info(void)
 {
 	int type = 0;
-	unsigned char mcu_type = 0, hw_ver = 0;
+	unsigned char mcu_type = MCU_MANGO_EVB, hw_ver = 0;
 
 #if defined(CONFIG_ARCH_MANGO_PLD)
 	type = MANGO_PLD;
@@ -68,13 +68,11 @@ static int bm_get_board_info(void)
 				  HW_TYPE_REG, &mcu_type);
 	if (err) {
 		ERROR("read board type failed with error %d\n", err);
-		assert(0);
 	}
 	err = i2c_smbus_read_byte(MCU_I2C_DEV, MCU_DEV_ADDR,
 				  HW_VERSION_REG, &hw_ver);
 	if (err) {
 		ERROR("read hardware version failed with error %d\n", err);
-		assert(0);
 	}
 
 	switch (mcu_type) {
@@ -114,6 +112,7 @@ void bl2_platform_setup(void)
 
 	i2c_init(i2c_info, ARRAY_SIZE(i2c_info));
 	bm_get_board_info();
+	bm_locate_next_image();
 
 #ifndef CONFIG_ARCH_MANGO_FPGA
 	mango_ddr_init();
@@ -123,10 +122,8 @@ void bl2_platform_setup(void)
 #ifdef MANGO_HAS_PCIE
 	mango_pcie_init(PCIE_ID_0, PCIE_OP_MODE_RC, PCIE_LINK0_X16, PCIE_LINK_SPEED_16G);
 #endif
-
 #endif
 
-	bm_locate_next_image();
 #ifdef MANGO_ENABLE_BL2_TEST
 	cli_loop(0);
 #endif

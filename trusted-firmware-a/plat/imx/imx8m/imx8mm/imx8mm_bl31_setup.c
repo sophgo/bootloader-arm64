@@ -21,6 +21,7 @@
 #include <lib/xlat_tables/xlat_tables_v2.h>
 #include <plat/common/platform.h>
 
+#include <dram.h>
 #include <gpc.h>
 #include <imx_aipstz.h>
 #include <imx_uart.h>
@@ -31,9 +32,22 @@
 
 #define TRUSTY_PARAMS_LEN_BYTES      (4096*2)
 
+/*
+ * Note: DRAM region is mapped with entire size available and uses MT_RW
+ * attributes.
+ * See details in docs/plat/imx8m.rst "High Assurance Boot (HABv4)" section
+ * for explanation of this mapping scheme.
+ */
 static const mmap_region_t imx_mmap[] = {
 	MAP_REGION_FLAT(IMX_GIC_BASE, IMX_GIC_SIZE, MT_DEVICE | MT_RW),
 	MAP_REGION_FLAT(IMX_AIPS_BASE, IMX_AIPS_SIZE, MT_DEVICE | MT_RW), /* AIPS map */
+	MAP_REGION_FLAT(OCRAM_S_BASE, OCRAM_S_SIZE, MT_DEVICE | MT_RW), /* OCRAM_S */
+	MAP_REGION_FLAT(IMX_DDRPHY_BASE, IMX_DDR_IPS_SIZE, MT_DEVICE | MT_RW), /* DDRMIX */
+	MAP_REGION_FLAT(IMX_VPUMIX_BASE, IMX_VPUMIX_SIZE, MT_DEVICE | MT_RW), /* VPUMIX */
+	MAP_REGION_FLAT(IMX_CAAM_RAM_BASE, IMX_CAAM_RAM_SIZE, MT_MEMORY | MT_RW), /* CAMM RAM */
+	MAP_REGION_FLAT(IMX_NS_OCRAM_BASE, IMX_NS_OCRAM_SIZE, MT_MEMORY | MT_RW), /* NS OCRAM */
+	MAP_REGION_FLAT(IMX_ROM_BASE, IMX_ROM_SIZE, MT_MEMORY | MT_RO), /* ROM code */
+	MAP_REGION_FLAT(IMX_DRAM_BASE, IMX_DRAM_SIZE, MT_MEMORY | MT_RW | MT_NS), /* DRAM */
 	{0},
 };
 
@@ -130,12 +144,12 @@ void bl31_early_platform_setup2(u_register_t arg0, u_register_t arg1,
 
 	imx_csu_init(csu_cfg);
 
-	imx8m_caam_init();
-
 	console_imx_uart_register(IMX_BOOT_UART_BASE, IMX_BOOT_UART_CLK_IN_HZ,
 		IMX_CONSOLE_BAUDRATE, &console);
 	/* This console is only used for boot stage */
 	console_set_scope(&console, CONSOLE_FLAG_BOOT);
+
+	imx8m_caam_init();
 
 	/*
 	 * tell BL3-1 where the non-secure software image is located
@@ -170,24 +184,30 @@ void bl31_early_platform_setup2(u_register_t arg0, u_register_t arg1,
 	bl31_tzc380_setup();
 }
 
+#define MAP_BL31_TOTAL										   \
+	MAP_REGION_FLAT(BL31_START, BL31_SIZE, MT_MEMORY | MT_RW | MT_SECURE)
+#define MAP_BL31_RO										   \
+	MAP_REGION_FLAT(BL_CODE_BASE, BL_CODE_END - BL_CODE_BASE, MT_MEMORY | MT_RO | MT_SECURE)
+#define MAP_COHERENT_MEM									   \
+	MAP_REGION_FLAT(BL_COHERENT_RAM_BASE, BL_COHERENT_RAM_END - BL_COHERENT_RAM_BASE,	   \
+			MT_DEVICE | MT_RW | MT_SECURE)
+#define MAP_BL32_TOTAL										   \
+	MAP_REGION_FLAT(BL32_BASE, BL32_SIZE, MT_MEMORY | MT_RW)
+
 void bl31_plat_arch_setup(void)
 {
-	mmap_add_region(BL31_BASE, BL31_BASE, (BL31_LIMIT - BL31_BASE),
-		MT_MEMORY | MT_RW | MT_SECURE);
-	mmap_add_region(BL_CODE_BASE, BL_CODE_BASE, (BL_CODE_END - BL_CODE_BASE),
-		MT_MEMORY | MT_RO | MT_SECURE);
+	const mmap_region_t bl_regions[] = {
+		MAP_BL31_TOTAL,
+		MAP_BL31_RO,
 #if USE_COHERENT_MEM
-	mmap_add_region(BL_COHERENT_RAM_BASE, BL_COHERENT_RAM_BASE,
-		(BL_COHERENT_RAM_END - BL_COHERENT_RAM_BASE),
-		MT_DEVICE | MT_RW | MT_SECURE);
+		MAP_COHERENT_MEM,
 #endif
-	/* Map TEE memory */
-	mmap_add_region(BL32_BASE, BL32_BASE, BL32_SIZE, MT_MEMORY | MT_RW);
+		/* Map TEE memory */
+		MAP_BL32_TOTAL,
+		{0}
+	};
 
-	mmap_add(imx_mmap);
-
-	init_xlat_tables();
-
+	setup_page_tables(bl_regions, imx_mmap);
 	enable_mmu_el3(0);
 }
 
@@ -197,6 +217,9 @@ void bl31_platform_setup(void)
 
 	/* select the CKIL source to 32K OSC */
 	mmio_write_32(IMX_ANAMIX_BASE + ANAMIX_MISC_CTL, 0x1);
+
+	/* Init the dram info */
+	dram_info_init(SAVED_DRAM_TIMING_BASE);
 
 	plat_gic_driver_init();
 	plat_gic_init();

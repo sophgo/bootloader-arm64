@@ -7,12 +7,18 @@
 #ifndef __ASM_ARCH_AM64_HARDWARE_H
 #define __ASM_ARCH_AM64_HARDWARE_H
 
-#define CTRL_MMR0_BASE					0x43000000
-#define CTRLMMR_MAIN_DEVSTAT				(CTRL_MMR0_BASE + 0x30)
+#include <config.h>
+#ifndef __ASSEMBLY__
+#include <linux/bitops.h>
+#endif
 
-#define PADCFG_MMR1_BASE				0xf0000
-
+#define PADCFG_MMR1_BASE				0x000f0000
 #define MCU_PADCFG_MMR1_BASE				0x04080000
+#define WKUP_CTRL_MMR0_BASE				0x43000000
+#define MCU_CTRL_MMR0_BASE				0x04500000
+#define CTRL_MMR0_BASE					0x43000000
+
+#define CTRLMMR_MAIN_DEVSTAT				(CTRL_MMR0_BASE + 0x30)
 
 #define MAIN_DEVSTAT_PRIMARY_BOOTMODE_MASK		0x00000078
 #define MAIN_DEVSTAT_PRIMARY_BOOTMODE_SHIFT		3
@@ -35,26 +41,28 @@
 
 #define MAIN_DEVSTAT_BACKUP_USB_MODE_MASK		0x01
 
-/*
- * The CTRL_MMR and PADCFG_MMR memory space is divided into several
- * equally-spaced partitions, so defining the partition size allows us to
- * determine register addresses common to those partitions.
- */
-#define CTRL_MMR0_PARTITION_SIZE			0x4000
-
-/*
- * CTRL_MMR and PADCFG_MMR lock/kick-mechanism shared register definitions.
- */
-#define CTRLMMR_LOCK_KICK0				0x01008
-#define CTRLMMR_LOCK_KICK0_UNLOCK_VAL			0x68ef3490
-#define CTRLMMR_LOCK_KICK0_UNLOCKED_MASK		BIT(0)
-#define CTRLMMR_LOCK_KICK0_UNLOCKED_SHIFT		0
-#define CTRLMMR_LOCK_KICK1				0x0100c
-#define CTRLMMR_LOCK_KICK1_UNLOCK_VAL			0xd172bc5a
-
-#define ROM_ENTENDED_BOOT_DATA_INFO			0x701beb00
+#define ROM_EXTENDED_BOOT_DATA_INFO			0x701beb00
 
 /* Use Last 2K as Scratch pad */
 #define TI_SRAM_SCRATCH_BOARD_EEPROM_START		0x7019f800
+
+#if defined(CONFIG_SYS_K3_SPL_ATF) && !defined(__ASSEMBLY__)
+
+#define AM64X_DEV_RTI8			127
+#define AM64X_DEV_RTI9			128
+#define AM64X_DEV_R5FSS0_CORE0		121
+#define AM64X_DEV_R5FSS0_CORE1		122
+
+static const u32 put_device_ids[] = {
+	AM64X_DEV_RTI9,
+	AM64X_DEV_RTI8,
+};
+
+static const u32 put_core_ids[] = {
+	AM64X_DEV_R5FSS0_CORE1,
+	AM64X_DEV_R5FSS0_CORE0, /* Handle CPU0 after CPU1 */
+};
+
+#endif
 
 #endif /* __ASM_ARCH_DRA8_HARDWARE_H */

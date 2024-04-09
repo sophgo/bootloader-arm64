@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2022, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2022, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -13,10 +13,16 @@
 #if defined(SPD_spmd)
  #include <services/spm_core_manifest.h>
 #endif
-#if TRNG_SUPPORT
-#include "plat_trng.h"
+#if ENABLE_RME
+#include <services/rmm_core_manifest.h>
 #endif
 #include <drivers/fwu/fwu_metadata.h>
+#if TRNG_SUPPORT
+#include "plat_trng.h"
+#endif /* TRNG_SUPPORT */
+#if DRTM_SUPPORT
+#include "plat_drtm.h"
+#endif /* DRTM_SUPPORT */
 
 /*******************************************************************************
  * Forward declarations
@@ -101,6 +107,8 @@ int plat_ic_has_interrupt_type(unsigned int type);
 void plat_ic_set_interrupt_type(unsigned int id, unsigned int type);
 void plat_ic_set_interrupt_priority(unsigned int id, unsigned int priority);
 void plat_ic_raise_el3_sgi(int sgi_num, u_register_t target);
+void plat_ic_raise_ns_sgi(int sgi_num, u_register_t target);
+void plat_ic_raise_s_el1_sgi(int sgi_num, u_register_t target);
 void plat_ic_set_spi_routing(unsigned int id, unsigned int routing_mode,
 		u_register_t mpidr);
 void plat_ic_set_interrupt_pending(unsigned int id);
@@ -113,11 +121,14 @@ unsigned int plat_ic_get_interrupt_id(unsigned int raw);
  ******************************************************************************/
 uintptr_t plat_get_my_stack(void);
 void plat_report_exception(unsigned int exception_type);
+void plat_report_prefetch_abort(unsigned int fault_address);
+void plat_report_data_abort(unsigned int fault_address);
 int plat_crash_console_init(void);
 int plat_crash_console_putc(int c);
 void plat_crash_console_flush(void);
 void plat_error_handler(int err) __dead2;
 void plat_panic_handler(void) __dead2;
+void plat_system_reset(void) __dead2;
 const char *plat_log_get_prefix(unsigned int log_level);
 void bl2_plat_preload_setup(void);
 int plat_try_next_boot_source(void);
@@ -305,10 +316,14 @@ plat_local_state_t plat_get_target_pwr_state(unsigned int lvl,
 /*******************************************************************************
  * Mandatory BL31 functions when ENABLE_RME=1
  ******************************************************************************/
-int plat_get_cca_attest_token(uintptr_t buf, size_t *len,
-			       uintptr_t hash, size_t hash_size);
-int plat_get_cca_realm_attest_key(uintptr_t buf, size_t *len,
-				   unsigned int type);
+#if ENABLE_RME
+int plat_rmmd_get_cca_attest_token(uintptr_t buf, size_t *len,
+				   uintptr_t hash, size_t hash_size);
+int plat_rmmd_get_cca_realm_attest_key(uintptr_t buf, size_t *len,
+				       unsigned int type);
+size_t plat_rmmd_get_el3_rmm_shared_mem(uintptr_t *shared);
+int plat_rmmd_load_manifest(rmm_manifest_t *manifest);
+#endif
 
 /*******************************************************************************
  * Optional BL31 functions (may be overridden)
@@ -329,6 +344,8 @@ int plat_get_nv_ctr(void *cookie, unsigned int *nv_ctr);
 int plat_set_nv_ctr(void *cookie, unsigned int nv_ctr);
 int plat_set_nv_ctr2(void *cookie, const struct auth_img_desc_s *img_desc,
 		unsigned int nv_ctr);
+int plat_convert_pk(void *full_pk_ptr, unsigned int full_pk_len,
+		    void **hashed_pk_ptr, unsigned int *hash_pk_len);
 int get_mbedtls_heap_helper(void **heap_addr, size_t *heap_size);
 int plat_get_enc_key_info(enum fw_enc_status_t fw_enc_status, uint8_t *key,
 			  size_t *key_len, unsigned int *flags,

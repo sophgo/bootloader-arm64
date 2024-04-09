@@ -26,7 +26,6 @@ else
     echo ">>>>>backup user information..."
     rm -rf ${rootpath}/public_ota/backup
     mkdir -p ${rootpath}/public_ota/backup
-
     # update boot-loader
     #sudo flash_update -i spi_flash.bin -b 0x06000000 -f 0x0
     #sudo flash_update -i fip.bin -b 0x6000000 -f 0x40000

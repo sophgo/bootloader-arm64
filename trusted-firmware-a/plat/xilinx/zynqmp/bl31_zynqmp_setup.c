@@ -82,7 +82,7 @@ void bl31_early_platform_setup2(u_register_t arg0, u_register_t arg1,
 				  CONSOLE_FLAG_RUNTIME | CONSOLE_FLAG_BOOT);
 	} else if (ZYNQMP_CONSOLE_IS(dcc)) {
 		/* Initialize the dcc console for debug */
-		int rc = console_dcc_register();
+		int32_t rc = console_dcc_register();
 		if (rc == 0) {
 			panic();
 		}
@@ -176,7 +176,7 @@ static void prepare_dtb(void)
 
 	/* Return if no device tree is detected */
 	if (fdt_check_header(dtb) != 0) {
-		NOTICE("Can't read DT at 0x%p\n", dtb);
+		NOTICE("Can't read DT at %p\n", dtb);
 		return;
 	}
 

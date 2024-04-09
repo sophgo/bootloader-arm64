@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2021-2022, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -37,6 +37,8 @@ void sme_enable(cpu_context_t *context)
 
 	/* Make sure SME is implemented in hardware before continuing. */
 	if (!feat_sme_supported()) {
+		/* Perhaps the hardware supports SVE only */
+		sve_enable(context);
 		return;
 	}
 
@@ -56,6 +58,7 @@ void sme_enable(cpu_context_t *context)
 	/* Set CPTR_EL3.ESM bit so we can write SMCR_EL3 without trapping. */
 	cptr_el3 = read_cptr_el3();
 	write_cptr_el3(cptr_el3 | ESM_BIT);
+	isb();
 
 	/*
 	 * Set the max LEN value and FA64 bit. This register is set up globally
@@ -71,6 +74,7 @@ void sme_enable(cpu_context_t *context)
 
 	/* Reset CPTR_EL3 value. */
 	write_cptr_el3(cptr_el3);
+	isb();
 
 	/* Enable SVE/FPU in addition to SME. */
 	sve_enable(context);
@@ -83,6 +87,8 @@ void sme_disable(cpu_context_t *context)
 
 	/* Make sure SME is implemented in hardware before continuing. */
 	if (!feat_sme_supported()) {
+		/* Perhaps the hardware supports SVE only */
+		sve_disable(context);
 		return;
 	}
 

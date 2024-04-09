@@ -1,5 +1,7 @@
 /*
  * Copyright (c) 2018-2022, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2019-2022, Xilinx, Inc. All rights reserved.
+ * Copyright (c) 2022, Advanced Micro Devices, Inc. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -10,6 +12,8 @@
 #include <plat/arm/common/smccc_def.h>
 #include <plat/common/common_def.h>
 
+/* number of interrupt handlers. increase as required */
+#define MAX_INTR_EL3			2
 /* List all consoles */
 #define VERSAL_CONSOLE_ID_pl011	1
 #define VERSAL_CONSOLE_ID_pl011_0	1
@@ -36,20 +40,6 @@
 #define DEVICE0_SIZE		0x00E00000
 #define DEVICE1_BASE		0xF9000000
 #define DEVICE1_SIZE		0x00800000
-
-/* CRL */
-#define VERSAL_CRL				0xFF5E0000
-#define VERSAL_CRL_TIMESTAMP_REF_CTRL		(VERSAL_CRL + 0x14C)
-#define VERSAL_CRL_RST_TIMESTAMP_OFFSET	(VERSAL_CRL + 0x348)
-
-#define VERSAL_CRL_APB_TIMESTAMP_REF_CTRL_CLKACT_BIT	(1 << 25)
-
-/* IOU SCNTRS */
-#define VERSAL_IOU_SCNTRS			 0xFF140000
-#define VERSAL_IOU_SCNTRS_COUNTER_CONTROL_REG	(VERSAL_IOU_SCNTRS + 0x0)
-#define VERSAL_IOU_SCNTRS_BASE_FREQ		(VERSAL_IOU_SCNTRS + 0x20)
-
-#define VERSAL_IOU_SCNTRS_CONTROL_EN	1
 
 /*******************************************************************************
  * IRQ constants
@@ -95,15 +85,15 @@
 # define VERSAL_UART_BAUDRATE	115200
 # define VERSAL_CPU_CLOCK	100000000
 #elif VERSAL_PLATFORM_IS(spp_itr6)
-# define PLATFORM_NAME          "SPP ITR6"
-# define VERSAL_UART_CLOCK      25000000
-# define VERSAL_UART_BAUDRATE   115200
-# define VERSAL_CPU_CLOCK       2720000
+# define PLATFORM_NAME		"SPP ITR6"
+# define VERSAL_UART_CLOCK	25000000
+# define VERSAL_UART_BAUDRATE	115200
+# define VERSAL_CPU_CLOCK	2720000
 #elif VERSAL_PLATFORM_IS(emu_itr6)
-# define PLATFORM_NAME          "EMU ITR6"
-# define VERSAL_UART_CLOCK      212000
-# define VERSAL_UART_BAUDRATE   9600
-# define VERSAL_CPU_CLOCK       212000
+# define PLATFORM_NAME		"EMU ITR6"
+# define VERSAL_UART_CLOCK	212000
+# define VERSAL_UART_BAUDRATE	9600
+# define VERSAL_CPU_CLOCK	212000
 #endif
 
 /* Access control register defines */

@@ -2053,7 +2053,7 @@ tcg2_measure_gpt_data(struct udevice *dev,
 {
 	efi_status_t ret;
 	efi_handle_t handle;
-	struct efi_handler *dp_handler;
+	struct efi_handler *dp_handler, *io_handler;
 	struct efi_device_path *orig_device_path;
 	struct efi_device_path *device_path;
 	struct efi_device_path *dp;
@@ -2098,10 +2098,10 @@ tcg2_measure_gpt_data(struct udevice *dev,
 	if (ret != EFI_SUCCESS)
 		goto out1;
 
-	ret = EFI_CALL(efi_handle_protocol(handle,
-					   &efi_block_io_guid, (void **)&block_io));
+	ret = efi_search_protocol(handle, &efi_block_io_guid, &io_handler);
 	if (ret != EFI_SUCCESS)
 		goto out1;
+	block_io = io_handler->protocol_interface;
 
 	gpt_h = memalign(block_io->media->io_align, block_io->media->block_size);
 	if (!gpt_h) {
@@ -2164,18 +2164,87 @@ tcg2_measure_gpt_data(struct udevice *dev,
 	}
 
 	ret = tcg2_measure_event(dev, 5, EV_EFI_GPT_EVENT, event_size, (u8 *)event);
-	if (ret != EFI_SUCCESS)
-		goto out2;
 
 out2:
-	EFI_CALL(efi_close_protocol((efi_handle_t)block_io, &efi_block_io_guid,
-				    NULL, NULL));
 	free(gpt_h);
 	free(entry);
 	free(event);
 out1:
 	efi_free_pool(device_path);
 
+	return ret;
+}
+
+/* Return the byte size of reserved map area in DTB or -1 upon error */
+static ssize_t size_of_rsvmap(void *dtb)
+{
+	struct fdt_reserve_entry e;
+	ssize_t size_max;
+	ssize_t size;
+	u8 *rsvmap_base;
+
+	rsvmap_base = (u8 *)dtb + fdt_off_mem_rsvmap(dtb);
+	size_max = fdt_totalsize(dtb) - fdt_off_mem_rsvmap(dtb);
+	size = 0;
+
+	do {
+		memcpy(&e, rsvmap_base + size, sizeof(e));
+		size += sizeof(e);
+		if (size > size_max)
+			return -1;
+	} while (e.size);
+
+	return size;
+}
+
+/**
+ * efi_tcg2_measure_dtb() - measure DTB passed to the OS
+ *
+ * @dtb: pointer to the device tree blob
+ *
+ * Return:	status code
+ */
+efi_status_t efi_tcg2_measure_dtb(void *dtb)
+{
+	struct uefi_platform_firmware_blob2 *blob;
+	struct fdt_header *header;
+	sha256_context hash_ctx;
+	struct udevice *dev;
+	ssize_t rsvmap_size;
+	efi_status_t ret;
+	u32 event_size;
+
+	if (!is_tcg2_protocol_installed())
+		return EFI_SUCCESS;
+
+	ret = platform_get_tpm2_device(&dev);
+	if (ret != EFI_SUCCESS)
+		return EFI_SECURITY_VIOLATION;
+
+	rsvmap_size = size_of_rsvmap(dtb);
+	if (rsvmap_size < 0)
+		return EFI_SECURITY_VIOLATION;
+
+	event_size = sizeof(*blob) + sizeof(EFI_DTB_EVENT_STRING) + SHA256_SUM_LEN;
+	blob = calloc(1, event_size);
+	if (!blob)
+		return EFI_OUT_OF_RESOURCES;
+
+	blob->blob_description_size = sizeof(EFI_DTB_EVENT_STRING);
+	memcpy(blob->data, EFI_DTB_EVENT_STRING, blob->blob_description_size);
+
+	/* Measure populated areas of the DTB */
+	header = dtb;
+	sha256_starts(&hash_ctx);
+	sha256_update(&hash_ctx, (u8 *)header, sizeof(struct fdt_header));
+	sha256_update(&hash_ctx, (u8 *)dtb + fdt_off_dt_struct(dtb), fdt_size_dt_strings(dtb));
+	sha256_update(&hash_ctx, (u8 *)dtb + fdt_off_dt_strings(dtb), fdt_size_dt_struct(dtb));
+	sha256_update(&hash_ctx, (u8 *)dtb + fdt_off_mem_rsvmap(dtb), rsvmap_size);
+	sha256_finish(&hash_ctx, blob->data + blob->blob_description_size);
+
+	ret = tcg2_measure_event(dev, 0, EV_POST_CODE, event_size, (u8 *)blob);
+
+	free(blob);
 	return ret;
 }
 
@@ -2421,12 +2490,12 @@ efi_status_t efi_tcg2_register(void)
 
 	ret = platform_get_tpm2_device(&dev);
 	if (ret != EFI_SUCCESS) {
-		log_warning("Unable to find TPMv2 device\n");
+		log_warning("Missing TPMv2 device for EFI_TCG_PROTOCOL\n");
 		return EFI_SUCCESS;
 	}
 
 	/* initialize the TPM as early as possible. */
-	err = tpm_startup(dev, TPM_ST_CLEAR);
+	err = tpm_auto_start(dev);
 	if (err) {
 		log_err("TPM startup failed\n");
 		goto fail;

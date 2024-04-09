@@ -154,7 +154,7 @@ static struct mmc *__init_mmc_device(int dev, bool force_init,
 
 #ifdef CONFIG_BLOCK_CACHE
 	struct blk_desc *bd = mmc_get_blk_desc(mmc);
-	blkcache_invalidate(bd->if_type, bd->devnum);
+	blkcache_invalidate(bd->uclass_id, bd->devnum);
 #endif
 
 	return mmc;
@@ -175,7 +175,7 @@ static int do_mmcinfo(struct cmd_tbl *cmdtp, int flag, int argc,
 			curr_device = 0;
 		else {
 			puts("No MMC device available\n");
-			return 1;
+			return CMD_RET_FAILURE;
 		}
 	}
 
@@ -331,13 +331,13 @@ static int do_mmcrpmb(struct cmd_tbl *cmdtp, int flag,
 #else
 	original_part = mmc_get_blk_desc(mmc)->hwpart;
 #endif
-	if (blk_select_hwpart_devnum(IF_TYPE_MMC, curr_device, MMC_PART_RPMB) !=
+	if (blk_select_hwpart_devnum(UCLASS_MMC, curr_device, MMC_PART_RPMB) !=
 	    0)
 		return CMD_RET_FAILURE;
 	ret = cp->cmd(cmdtp, flag, argc, argv);
 
 	/* Return to original partition */
-	if (blk_select_hwpart_devnum(IF_TYPE_MMC, curr_device, original_part) !=
+	if (blk_select_hwpart_devnum(UCLASS_MMC, curr_device, original_part) !=
 	    0)
 		return CMD_RET_FAILURE;
 	return ret;
@@ -530,7 +530,7 @@ static int do_mmc_part(struct cmd_tbl *cmdtp, int flag,
 	if (!mmc)
 		return CMD_RET_FAILURE;
 
-	mmc_dev = blk_get_devnum_by_type(IF_TYPE_MMC, curr_device);
+	mmc_dev = blk_get_devnum_by_uclass_id(UCLASS_MMC, curr_device);
 	if (mmc_dev != NULL && mmc_dev->type != DEV_TYPE_UNKNOWN) {
 		part_print(mmc_dev);
 		return CMD_RET_SUCCESS;
@@ -580,7 +580,7 @@ static int do_mmc_dev(struct cmd_tbl *cmdtp, int flag,
 	if (!mmc)
 		return CMD_RET_FAILURE;
 
-	ret = blk_select_hwpart_devnum(IF_TYPE_MMC, dev, part);
+	ret = blk_select_hwpart_devnum(UCLASS_MMC, dev, part);
 	printf("switch to partitions #%d, %s\n",
 	       part, (!ret) ? "OK" : "ERROR");
 	if (ret)
@@ -927,7 +927,7 @@ static int mmc_partconf_print(struct mmc *mmc, const char *varname)
 static int do_mmc_partconf(struct cmd_tbl *cmdtp, int flag,
 			   int argc, char *const argv[])
 {
-	int dev;
+	int ret, dev;
 	struct mmc *mmc;
 	u8 ack, part_num, access;
 
@@ -953,13 +953,17 @@ static int do_mmc_partconf(struct cmd_tbl *cmdtp, int flag,
 	access = dectoul(argv[4], NULL);
 
 	/* acknowledge to be sent during boot operation */
-	return mmc_set_part_conf(mmc, ack, part_num, access);
+	ret = mmc_set_part_conf(mmc, ack, part_num, access);
+	if (ret != 0)
+		return CMD_RET_FAILURE;
+
+	return CMD_RET_SUCCESS;
 }
 
 static int do_mmc_rst_func(struct cmd_tbl *cmdtp, int flag,
 			   int argc, char *const argv[])
 {
-	int dev;
+	int ret, dev;
 	struct mmc *mmc;
 	u8 enable;
 
@@ -988,7 +992,11 @@ static int do_mmc_rst_func(struct cmd_tbl *cmdtp, int flag,
 		return CMD_RET_FAILURE;
 	}
 
-	return mmc_set_rst_n_function(mmc, enable);
+	ret = mmc_set_rst_n_function(mmc, enable);
+	if (ret != 0)
+		return CMD_RET_FAILURE;
+
+	return CMD_RET_SUCCESS;
 }
 #endif
 static int do_mmc_setdsr(struct cmd_tbl *cmdtp, int flag,
@@ -1020,16 +1028,12 @@ static int do_mmc_setdsr(struct cmd_tbl *cmdtp, int flag,
 }
 
 #ifdef CONFIG_CMD_BKOPS_ENABLE
-static int do_mmc_bkops_enable(struct cmd_tbl *cmdtp, int flag,
-			       int argc, char *const argv[])
+static int mmc_bkops_common(char *device, bool autobkops, bool enable)
 {
-	int dev;
 	struct mmc *mmc;
+	int dev;
 
-	if (argc != 2)
-		return CMD_RET_USAGE;
-
-	dev = dectoul(argv[1], NULL);
+	dev = dectoul(device, NULL);
 
 	mmc = init_mmc_device(dev, false);
 	if (!mmc)
@@ -1040,7 +1044,41 @@ static int do_mmc_bkops_enable(struct cmd_tbl *cmdtp, int flag,
 		return CMD_RET_FAILURE;
 	}
 
-	return mmc_set_bkops_enable(mmc);
+	return mmc_set_bkops_enable(mmc, autobkops, enable);
+}
+
+static int do_mmc_bkops(struct cmd_tbl *cmdtp, int flag,
+			int argc, char * const argv[])
+{
+	bool autobkops, enable;
+
+	if (argc != 4)
+		return CMD_RET_USAGE;
+
+	if (!strcmp(argv[2], "manual"))
+		autobkops = false;
+	else if (!strcmp(argv[2], "auto"))
+		autobkops = true;
+	else
+		return CMD_RET_FAILURE;
+
+	if (!strcmp(argv[3], "disable"))
+		enable = false;
+	else if (!strcmp(argv[3], "enable"))
+		enable = true;
+	else
+		return CMD_RET_FAILURE;
+
+	return mmc_bkops_common(argv[1], autobkops, enable);
+}
+
+static int do_mmc_bkops_enable(struct cmd_tbl *cmdtp, int flag,
+			       int argc, char * const argv[])
+{
+	if (argc != 2)
+		return CMD_RET_USAGE;
+
+	return mmc_bkops_common(argv[1], false, true);
 }
 #endif
 
@@ -1102,6 +1140,7 @@ static struct cmd_tbl cmd_mmc[] = {
 	U_BOOT_CMD_MKENT(setdsr, 2, 0, do_mmc_setdsr, "", ""),
 #ifdef CONFIG_CMD_BKOPS_ENABLE
 	U_BOOT_CMD_MKENT(bkops-enable, 2, 0, do_mmc_bkops_enable, "", ""),
+	U_BOOT_CMD_MKENT(bkops, 4, 0, do_mmc_bkops, "", ""),
 #endif
 };
 
@@ -1188,6 +1227,8 @@ U_BOOT_CMD(
 #ifdef CONFIG_CMD_BKOPS_ENABLE
 	"mmc bkops-enable <dev> - enable background operations handshake on device\n"
 	"   WARNING: This is a write-once setting.\n"
+	"mmc bkops <dev> [auto|manual] [enable|disable]\n"
+	" - configure background operations handshake on device\n"
 #endif
 	);
 

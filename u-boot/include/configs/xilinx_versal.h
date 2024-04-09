@@ -15,7 +15,7 @@
 #define GICR_BASE	0xF9080000
 
 /* Serial setup */
-#define CONFIG_SYS_BAUDRATE_TABLE \
+#define CFG_SYS_BAUDRATE_TABLE \
 	{ 4800, 9600, 19200, 38400, 57600, 115200 }
 
 /* GUID for capsule updatable firmware image */
@@ -23,13 +23,8 @@
 	EFI_GUID(0x20c5fba5, 0x0171, 0x457f, 0xb9, 0xcd, \
 		 0xf5, 0x12, 0x9c, 0xd0, 0x72, 0x28)
 
-/* Miscellaneous configurable options */
-
-/* Console I/O Buffer Size */
-
 #if defined(CONFIG_CMD_DFU)
 #define DFU_DEFAULT_POLL_TIMEOUT	300
-#define CONFIG_THOR_RESET_OFF
 #endif
 
 /* Ethernet driver */
@@ -131,8 +126,8 @@
 #include <config_distro_bootcmd.h>
 
 /* Initial environment variables */
-#ifndef CONFIG_EXTRA_ENV_SETTINGS
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#ifndef CFG_EXTRA_ENV_SETTINGS
+#define CFG_EXTRA_ENV_SETTINGS \
 	ENV_MEM_LAYOUT_SETTINGS \
 	BOOTENV
 #endif

@@ -52,9 +52,9 @@ DECLARE_GLOBAL_DATA_PTR;
 #endif
 #endif
 
-#ifndef CONFIG_SYS_NS16550_IER
-#define CONFIG_SYS_NS16550_IER  0x00
-#endif /* CONFIG_SYS_NS16550_IER */
+#ifndef CFG_SYS_NS16550_IER
+#define CFG_SYS_NS16550_IER  0x00
+#endif /* CFG_SYS_NS16550_IER */
 
 static inline void serial_out_shift(void *addr, int shift, int value)
 {
@@ -92,8 +92,8 @@ static inline int serial_in_shift(void *addr, int shift)
 
 #if CONFIG_IS_ENABLED(DM_SERIAL)
 
-#ifndef CONFIG_SYS_NS16550_CLK
-#define CONFIG_SYS_NS16550_CLK  0
+#ifndef CFG_SYS_NS16550_CLK
+#define CFG_SYS_NS16550_CLK  0
 #endif
 
 /*
@@ -251,7 +251,7 @@ void ns16550_init(struct ns16550 *com_port, int baud_divisor)
 	while (!(serial_in(&com_port->lsr) & UART_LSR_TEMT))
 		;
 
-	serial_out(CONFIG_SYS_NS16550_IER, &com_port->ier);
+	serial_out(CFG_SYS_NS16550_IER, &com_port->ier);
 #if defined(CONFIG_ARCH_OMAP2PLUS) || defined(CONFIG_OMAP_SERIAL)
 	serial_out(0x7, &com_port->mdr1);	/* mode select reset TL16C750*/
 #endif
@@ -272,16 +272,16 @@ void ns16550_init(struct ns16550 *com_port, int baud_divisor)
 #endif
 }
 
-#ifndef CONFIG_NS16550_MIN_FUNCTIONS
+#if !CONFIG_IS_ENABLED(NS16550_MIN_FUNCTIONS)
 void ns16550_reinit(struct ns16550 *com_port, int baud_divisor)
 {
-	serial_out(CONFIG_SYS_NS16550_IER, &com_port->ier);
+	serial_out(CFG_SYS_NS16550_IER, &com_port->ier);
 	ns16550_setbrg(com_port, 0);
 	serial_out(UART_MCRVAL, &com_port->mcr);
 	serial_out(ns16550_getfcr(com_port), &com_port->fcr);
 	ns16550_setbrg(com_port, baud_divisor);
 }
-#endif /* CONFIG_NS16550_MIN_FUNCTIONS */
+#endif /* !CONFIG_IS_ENABLED(NS16550_MIN_FUNCTIONS) */
 
 void ns16550_putc(struct ns16550 *com_port, char c)
 {
@@ -296,10 +296,10 @@ void ns16550_putc(struct ns16550 *com_port, char c)
 	 * in puts().
 	 */
 	if (c == '\n')
-		WATCHDOG_RESET();
+		schedule();
 }
 
-#ifndef CONFIG_NS16550_MIN_FUNCTIONS
+#if !CONFIG_IS_ENABLED(NS16550_MIN_FUNCTIONS)
 char ns16550_getc(struct ns16550 *com_port)
 {
 	while ((serial_in(&com_port->lsr) & UART_LSR_DR) == 0) {
@@ -307,7 +307,7 @@ char ns16550_getc(struct ns16550 *com_port)
 		extern void usbtty_poll(void);
 		usbtty_poll();
 #endif
-		WATCHDOG_RESET();
+		schedule();
 	}
 	return serial_in(&com_port->rbr);
 }
@@ -317,7 +317,7 @@ int ns16550_tstc(struct ns16550 *com_port)
 	return (serial_in(&com_port->lsr) & UART_LSR_DR) != 0;
 }
 
-#endif /* CONFIG_NS16550_MIN_FUNCTIONS */
+#endif /* !CONFIG_IS_ENABLED(NS16550_MIN_FUNCTIONS) */
 
 #ifdef CONFIG_DEBUG_UART_NS16550
 
@@ -340,7 +340,7 @@ static inline void _debug_uart_init(void)
 	 */
 	baud_divisor = ns16550_calc_divisor(com_port, CONFIG_DEBUG_UART_CLOCK,
 					    CONFIG_BAUDRATE);
-	serial_dout(&com_port->ier, CONFIG_SYS_NS16550_IER);
+	serial_dout(&com_port->ier, CFG_SYS_NS16550_IER);
 	serial_dout(&com_port->mcr, UART_MCRVAL);
 	serial_dout(&com_port->fcr, UART_FCR_DEFVAL);
 
@@ -395,7 +395,7 @@ static int ns16550_serial_putc(struct udevice *dev, const char ch)
 	 * in puts().
 	 */
 	if (ch == '\n')
-		WATCHDOG_RESET();
+		schedule();
 
 	return 0;
 }
@@ -567,9 +567,9 @@ int ns16550_serial_of_to_plat(struct udevice *dev)
 
 	if (!plat->clock)
 		plat->clock = dev_read_u32_default(dev, "clock-frequency",
-						   CONFIG_SYS_NS16550_CLK);
+						   CFG_SYS_NS16550_CLK);
 	if (!plat->clock)
-		plat->clock = CONFIG_SYS_NS16550_CLK;
+		plat->clock = CFG_SYS_NS16550_CLK;
 	if (!plat->clock) {
 		debug("ns16550 clock not defined\n");
 		return -EINVAL;

@@ -10,6 +10,8 @@
 #include <dm.h>
 #include <errno.h>
 #include <asm/io.h>
+#include <dm/device_compat.h>
+#include <dm/lists.h>
 #include <dm/pinctrl.h>
 #include <linux/bitops.h>
 #include "pinctrl-snapdragon.h"
@@ -26,8 +28,9 @@ struct msm_pinctrl_priv {
 #define TLMM_GPIO_DISABLE BIT(9)
 
 static const struct pinconf_param msm_conf_params[] = {
-	{ "drive-strength", PIN_CONFIG_DRIVE_STRENGTH, 3 },
+	{ "drive-strength", PIN_CONFIG_DRIVE_STRENGTH, 2 },
 	{ "bias-disable", PIN_CONFIG_BIAS_DISABLE, 0 },
+	{ "bias-pull-up", PIN_CONFIG_BIAS_PULL_UP, 3 },
 };
 
 static int msm_get_functions_count(struct udevice *dev)
@@ -87,12 +90,17 @@ static int msm_pinconf_set(struct udevice *dev, unsigned int pin_selector,
 
 	switch (param) {
 	case PIN_CONFIG_DRIVE_STRENGTH:
+		argument = (argument / 2) - 1;
 		clrsetbits_le32(priv->base + GPIO_CONFIG_OFFSET(pin_selector),
 				TLMM_DRV_STRENGTH_MASK, argument << 6);
 		break;
 	case PIN_CONFIG_BIAS_DISABLE:
 		clrbits_le32(priv->base + GPIO_CONFIG_OFFSET(pin_selector),
 			     TLMM_GPIO_PULL_MASK);
+		break;
+	case PIN_CONFIG_BIAS_PULL_UP:
+		clrsetbits_le32(priv->base + GPIO_CONFIG_OFFSET(pin_selector),
+				TLMM_GPIO_PULL_MASK, argument);
 		break;
 	default:
 		return 0;
@@ -113,13 +121,37 @@ static struct pinctrl_ops msm_pinctrl_ops = {
 	.get_function_name = msm_get_function_name,
 };
 
+static int msm_pinctrl_bind(struct udevice *dev)
+{
+	ofnode node = dev_ofnode(dev);
+	const char *name;
+	int ret;
+
+	ofnode_get_property(node, "gpio-controller", &ret);
+	if (ret < 0)
+		return 0;
+
+	/* Get the name of gpio node */
+	name = ofnode_get_name(node);
+	if (!name)
+		return -EINVAL;
+
+	/* Bind gpio node */
+	ret = device_bind_driver_to_node(dev, "gpio_msm",
+					 name, node, NULL);
+	if (ret)
+		return ret;
+
+	dev_dbg(dev, "bind %s\n", name);
+
+	return 0;
+}
+
 static const struct udevice_id msm_pinctrl_ids[] = {
-	{ .compatible = "qcom,tlmm-apq8016", .data = (ulong)&apq8016_data },
-	{ .compatible = "qcom,tlmm-apq8096", .data = (ulong)&apq8096_data },
-#ifdef CONFIG_SDM845
-	{ .compatible = "qcom,tlmm-sdm845", .data = (ulong)&sdm845_data },
-#endif
-	{ .compatible = "qcom,tlmm-qcs404", .data = (ulong)&qcs404_data },
+	{ .compatible = "qcom,msm8916-pinctrl", .data = (ulong)&apq8016_data },
+	{ .compatible = "qcom,msm8996-pinctrl", .data = (ulong)&apq8096_data },
+	{ .compatible = "qcom,sdm845-pinctrl", .data = (ulong)&sdm845_data },
+	{ .compatible = "qcom,qcs404-pinctrl", .data = (ulong)&qcs404_data },
 	{ }
 };
 
@@ -130,4 +162,5 @@ U_BOOT_DRIVER(pinctrl_snapdraon) = {
 	.priv_auto	= sizeof(struct msm_pinctrl_priv),
 	.ops		= &msm_pinctrl_ops,
 	.probe		= msm_pinctrl_probe,
+	.bind		= msm_pinctrl_bind,
 };

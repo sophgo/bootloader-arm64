@@ -119,7 +119,7 @@ config ROCKCHIP_RK322X
 config ROCKCHIP_RK3288
 	bool "Support Rockchip RK3288"
 	select CPU_V7A
-	select OF_BOARD_SETUP
+	select OF_SYSTEM_SETUP
 	select SKIP_LOWLEVEL_INIT_ONLY
 	select SUPPORT_SPL
 	select SPL
@@ -246,6 +246,7 @@ config ROCKCHIP_RK3399
 	select DM_PMIC
 	select DM_REGULATOR_FIXED
 	select BOARD_LATE_INIT
+	imply PARTITION_TYPE_GUID
 	imply PRE_CONSOLE_BUFFER
 	imply ROCKCHIP_COMMON_BOARD
 	imply ROCKCHIP_SDRAM_COMMON
@@ -285,13 +286,46 @@ config ROCKCHIP_RK3568
 	select REGMAP
 	select SYSCON
 	select BOARD_LATE_INIT
+	select DM_REGULATOR_FIXED
+	select DM_RESET
+	imply SPL_ATF_NO_PLATFORM_PARAM if SPL_ATF
 	imply ROCKCHIP_COMMON_BOARD
+	imply OF_LIBFDT_OVERLAY
+	imply ROCKCHIP_OTP
+	imply MISC_INIT_R
 	help
 	  The Rockchip RK3568 is a ARM-based SoC with quad-core Cortex-A55,
 	  including NEON and GPU, 512K L3 cache, Mali-G52 based graphics,
 	  two video interfaces supporting HDMI and eDP, several DDR3 options
 	  and video codec support. Peripherals include Gigabit Ethernet,
 	  USB2 host and OTG, SDIO, I2S, UARTs, SPI, I2C and PWMs.
+
+config ROCKCHIP_RK3588
+	bool "Support Rockchip RK3588"
+	select ARM64
+	select SUPPORT_SPL
+	select SPL
+	select CLK
+	select PINCTRL
+	select RAM
+	select REGMAP
+	select SYSCON
+	select BOARD_LATE_INIT
+	select DM_REGULATOR_FIXED
+	select DM_RESET
+	imply SPL_ATF_NO_PLATFORM_PARAM if SPL_ATF
+	imply ROCKCHIP_COMMON_BOARD
+	imply OF_LIBFDT_OVERLAY
+	imply ROCKCHIP_OTP
+	imply MISC_INIT_R
+	imply CLK_SCMI
+	imply SCMI_FIRMWARE
+	help
+	  The Rockchip RK3588 is a ARM-based SoC with quad-core Cortex-A76 and
+	  quad-core Cortex-A55 including NEON and GPU, 6TOPS NPU, Mali-G610 MP4,
+	  HDMI Out, HDMI In, DP, eDP, MIPI DSI, MIPI CSI2, LPDDR4/4X/5, eMMC5.1,
+	  SD3.0/MMC4.5, USB OTG 3.0, Type-C, USB 2.0, PCIe 3.0, SATA 3, Ethernet,
+	  SDIO3.0 I2C, UART, SPI, GPIO and PWM.
 
 config ROCKCHIP_RV1108
 	bool "Support Rockchip RV1108"
@@ -300,6 +334,51 @@ config ROCKCHIP_RV1108
 	help
 	  The Rockchip RV1108 is a ARM-based SoC with a single-core Cortex-A7
 	  and a DSP.
+
+config ROCKCHIP_RV1126
+	bool "Support Rockchip RV1126"
+	select CPU_V7A
+	select SKIP_LOWLEVEL_INIT_ONLY
+	select TPL
+	select SUPPORT_TPL
+	select TPL_NEEDS_SEPARATE_STACK
+	select TPL_ROCKCHIP_BACK_TO_BROM
+	select SPL
+	select SUPPORT_SPL
+	select SPL_STACK_R
+	select CLK
+	select FIT
+	select PINCTRL
+	select RAM
+	select ROCKCHIP_SDRAM_COMMON
+	select REGMAP
+	select SYSCON
+	select DM_PMIC
+	select DM_REGULATOR_FIXED
+	select DM_RESET
+	select REGULATOR_RK8XX
+	select PMIC_RK8XX
+	select BOARD_LATE_INIT
+	imply ROCKCHIP_COMMON_BOARD
+	imply TPL_DM
+	imply TPL_LIBCOMMON_SUPPORT
+	imply TPL_LIBGENERIC_SUPPORT
+	imply TPL_OF_CONTROL
+	imply TPL_OF_PLATDATA
+	imply TPL_RAM
+	imply TPL_ROCKCHIP_COMMON_BOARD
+	imply TPL_SERIAL
+	imply SPL_CLK
+	imply SPL_DM
+	imply SPL_DRIVERS_MISC
+	imply SPL_LIBCOMMON_SUPPORT
+	imply SPL_LIBGENERIC_SUPPORT
+	imply SPL_OF_CONTROL
+	imply SPL_RAM
+	imply SPL_REGMAP
+	imply SPL_ROCKCHIP_COMMON_BOARD
+	imply SPL_SERIAL
+	imply SPL_SYSCON
 
 config ROCKCHIP_USB_UART
 	bool "Route uart output to usb pins"
@@ -354,6 +433,14 @@ config TPL_ROCKCHIP_COMMON_BOARD
 	  init and back to bootrom, and SPL as Trust ATF/U-Boot loader. TPL
 	  common board is a basic TPL board init which can be shared for most
 	  of SoCs to avoid copy-paste for different SoCs.
+
+config ROCKCHIP_EXTERNAL_TPL
+	bool "Use external TPL binary"
+	default y if ROCKCHIP_RK3568 || ROCKCHIP_RK3588
+	help
+	  Some Rockchip SoCs require an external TPL to initialize DRAM.
+	  Enable this option and build with ROCKCHIP_TPL=/path/to/ddr.bin to
+	  include the external TPL in the image built by binman.
 
 config ROCKCHIP_BOOT_MODE_REG
 	hex "Rockchip boot mode flag register address"
@@ -431,7 +518,7 @@ config ROCKCHIP_SPI_IMAGE
 	  is built by binman. U-Boot sits near the start of the image.
 
 config LNX_KRNL_IMG_TEXT_OFFSET_BASE
-	default SYS_TEXT_BASE
+	default TEXT_BASE
 
 source "arch/arm/mach-rockchip/px30/Kconfig"
 source "arch/arm/mach-rockchip/rk3036/Kconfig"
@@ -445,5 +532,7 @@ source "arch/arm/mach-rockchip/rk3328/Kconfig"
 source "arch/arm/mach-rockchip/rk3368/Kconfig"
 source "arch/arm/mach-rockchip/rk3399/Kconfig"
 source "arch/arm/mach-rockchip/rk3568/Kconfig"
+source "arch/arm/mach-rockchip/rk3588/Kconfig"
 source "arch/arm/mach-rockchip/rv1108/Kconfig"
+source "arch/arm/mach-rockchip/rv1126/Kconfig"
 endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2022, ARM Limited. All rights reserved.
+ * Copyright (c) 2019-2023, ARM Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -20,8 +20,8 @@
 #define CORTEX_A78_CPUECTLR_EL1				S3_0_C15_C1_4
 #define CORTEX_A78_CPUECTLR_EL1_BIT_8			(ULL(1) << 8)
 #define CORTEX_A78_CPUECTLR_EL1_PF_MODE_CNSRV		ULL(3)
-#define CPUECTLR_EL1_PF_MODE_LSB				U(6)
-#define CPUECTLR_EL1_PF_MODE_WIDTH				U(2)
+#define CPUECTLR_EL1_PF_MODE_LSB			U(6)
+#define CPUECTLR_EL1_PF_MODE_WIDTH			U(2)
 
 /*******************************************************************************
  * CPU Power Control register specific definitions
@@ -39,6 +39,10 @@
 #define CORTEX_A78_ACTLR2_EL1_BIT_1			(ULL(1) << 1)
 #define CORTEX_A78_ACTLR2_EL1_BIT_2			(ULL(1) << 2)
 #define CORTEX_A78_ACTLR2_EL1_BIT_40			(ULL(1) << 40)
+
+#define CORTEX_A78_ACTLR3_EL1				S3_0_C15_C1_2
+
+#define CORTEX_A78_ACTLR5_EL1				S3_0_C15_C9_0
 
 /*******************************************************************************
  * CPU Activity Monitor Unit register specific definitions.

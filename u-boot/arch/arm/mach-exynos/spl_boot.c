@@ -141,7 +141,7 @@ static void exynos_spi_copy(unsigned int uboot_size, unsigned int uboot_addr)
 {
 	int upto, todo;
 	int i, timeout = 100;
-	struct exynos_spi *regs = (struct exynos_spi *)CONFIG_SYS_SPI_BASE;
+	struct exynos_spi *regs = (struct exynos_spi *)CFG_SYS_SPI_BASE;
 
 	set_spi_clk(PERIPH_ID_SPI1, 50000000); /* set spi clock to 50Mhz */
 	/* set the spi1 GPIO */
@@ -251,7 +251,7 @@ void copy_uboot_to_ram(void)
 #ifdef CONFIG_SPI_BOOTING
 	case BOOT_MODE_SERIAL:
 		/* Customised function to copy u-boot from SF */
-		exynos_spi_copy(param->uboot_size, CONFIG_SYS_TEXT_BASE);
+		exynos_spi_copy(param->uboot_size, CONFIG_TEXT_BASE);
 		break;
 #endif
 	case BOOT_MODE_SD:
@@ -267,7 +267,7 @@ void copy_uboot_to_ram(void)
 		copy_bl2_from_emmc = get_irom_func(EMMC44_INDEX);
 		end_bootop_from_emmc = get_irom_func(EMMC44_END_INDEX);
 
-		copy_bl2_from_emmc(BL2_SIZE_BLOC_COUNT, CONFIG_SYS_TEXT_BASE);
+		copy_bl2_from_emmc(BL2_SIZE_BLOC_COUNT, CONFIG_TEXT_BASE);
 		end_bootop_from_emmc();
 		break;
 #endif
@@ -279,7 +279,7 @@ void copy_uboot_to_ram(void)
 		 */
 		is_cr_z_set = config_branch_prediction(0);
 		usb_copy = get_irom_func(USB_INDEX);
-		usb_copy(0, (u32 *)CONFIG_SYS_TEXT_BASE);
+		usb_copy(0, (u32 *)CONFIG_TEXT_BASE);
 		config_branch_prediction(is_cr_z_set);
 		break;
 #endif
@@ -288,7 +288,7 @@ void copy_uboot_to_ram(void)
 	}
 
 	if (copy_bl2)
-		copy_bl2(offset, size, CONFIG_SYS_TEXT_BASE);
+		copy_bl2(offset, size, CONFIG_TEXT_BASE);
 }
 
 void memzero(void *s, size_t n)
@@ -329,7 +329,7 @@ void board_init_f(unsigned long bootflag)
 	copy_uboot_to_ram();
 
 	/* Jump to U-Boot image */
-	uboot = (void *)CONFIG_SYS_TEXT_BASE;
+	uboot = (void *)CONFIG_TEXT_BASE;
 	(*uboot)();
 	/* Never returns Here */
 }

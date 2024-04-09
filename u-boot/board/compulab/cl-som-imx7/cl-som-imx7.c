@@ -90,7 +90,7 @@ int board_mmc_init(struct bd_info *bis)
 	 * mmc0                    USDHC1
 	 * mmc2                    USDHC3 (eMMC)
 	 */
-	for (i = 0; i < CONFIG_SYS_FSL_USDHC_NUM; i++) {
+	for (i = 0; i < CFG_SYS_FSL_USDHC_NUM; i++) {
 		switch (i) {
 		case 0:
 			cl_som_imx7_usdhc1_pads_set();
@@ -214,7 +214,7 @@ int board_eth_init(struct bd_info *bis)
 	gpio_set_value(CL_SOM_IMX7_ETH1_PHY_NRST, 1);
 	/* MAC initialization */
 	return fecmxc_initialize_multi(bis, CL_SOM_IMX7_FEC_DEV_ID_PRI,
-				       CONFIG_FEC_MXC_PHYADDR, IMX_FEC_BASE);
+				       CFG_FEC_MXC_PHYADDR, IMX_FEC_BASE);
 }
 
 /*

@@ -29,7 +29,6 @@ ifdef CONFIG_SPL_BUILD
 obj-$(CONFIG_SANDBOX) += spltest_sandbox.o
 endif
 endif
-obj-$(CONFIG_ALI152X) += ali512x.o
 obj-$(CONFIG_ALTERA_SYSID) += altera_sysid.o
 obj-$(CONFIG_ATSHA204A) += atsha204a-i2c.o
 obj-$(CONFIG_CBMEM_CONSOLE) += cbmem_console.o
@@ -37,7 +36,6 @@ obj-$(CONFIG_DS4510)  += ds4510.o
 obj-$(CONFIG_FSL_DEVICE_DISABLE) += fsl_devdis.o
 obj-$(CONFIG_FSL_IFC) += fsl_ifc.o
 obj-$(CONFIG_FSL_IIM) += fsl_iim.o
-obj-$(CONFIG_FSL_MC9SDZ60) += mc9sdz60.o
 obj-$(CONFIG_FSL_SEC_MON) += fsl_sec_mon.o
 obj-$(CONFIG_$(SPL_)FS_LOADER) += fs_loader.o
 obj-$(CONFIG_GATEWORKS_SC) += gsc.o
@@ -62,6 +60,7 @@ obj-$(CONFIG_NUVOTON_NCT6102D) += nuvoton_nct6102d.o
 obj-$(CONFIG_P2SB) += p2sb-uclass.o
 obj-$(CONFIG_PCA9551_LED) += pca9551_led.o
 obj-$(CONFIG_$(SPL_)PWRSEQ) += pwrseq-uclass.o
+obj-$(CONFIG_QCOM_GENI_SE) += qcom-geni-se.o
 ifdef CONFIG_QFW
 obj-y += qfw.o
 obj-$(CONFIG_QFW_PIO) += qfw_pio.o

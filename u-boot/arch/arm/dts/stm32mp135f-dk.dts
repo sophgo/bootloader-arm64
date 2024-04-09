@@ -31,8 +31,8 @@
 		#size-cells = <1>;
 		ranges;
 
-		optee@de000000 {
-			reg = <0xde000000 0x2000000>;
+		optee@dd000000 {
+			reg = <0xdd000000 0x3000000>;
 			no-map;
 		};
 	};
@@ -82,7 +82,7 @@
 	pinctrl-0 = <&sdmmc1_b4_pins_a &sdmmc1_clk_pins_a>;
 	pinctrl-1 = <&sdmmc1_b4_od_pins_a &sdmmc1_clk_pins_a>;
 	pinctrl-2 = <&sdmmc1_b4_sleep_pins_a>;
-	broken-cd;
+	cd-gpios = <&gpioh 4 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
 	disable-wp;
 	st,neg-edge;
 	bus-width = <4>;

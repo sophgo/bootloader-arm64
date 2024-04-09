@@ -25,13 +25,14 @@ int qti_mmap_remove_dynamic_region(uintptr_t base_va, size_t size);
 /*
  * Utility functions common to ARM standard platforms
  */
-void qti_setup_page_tables(uintptr_t total_base,
+void qti_setup_page_tables(
+			   uintptr_t total_base,
 			   size_t total_size,
 			   uintptr_t code_start,
 			   uintptr_t code_limit,
 			   uintptr_t rodata_start,
-			   uintptr_t rodata_limit,
-			   uintptr_t coh_start, uintptr_t coh_limit);
+			   uintptr_t rodata_limit
+			  );
 
 /*
  * Mandatory functions required in ARM standard platforms
@@ -52,5 +53,10 @@ void gic_set_spi_routing(unsigned int id, unsigned int irm, u_register_t mpidr);
 
 void qti_pmic_prepare_reset(void);
 void qti_pmic_prepare_shutdown(void);
+
+typedef struct chip_id_info {
+	uint16_t jtag_id;
+	uint16_t chipinfo_id;
+} chip_id_info_t;
 
 #endif /* QTI_PLAT_H */

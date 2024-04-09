@@ -234,6 +234,36 @@ static void read_feat_rme(void)
 #endif
 }
 
+/******************************************************
+ * Feature : FEAT_BRBE (Branch Record Buffer Extension)
+ *****************************************************/
+static void read_feat_brbe(void)
+{
+#if (ENABLE_BRBE_FOR_NS == FEAT_STATE_1)
+	feat_detect_panic(is_feat_brbe_present(), "BRBE");
+#endif
+}
+
+/******************************************************
+ * Feature : FEAT_TRBE (Trace Buffer Extension)
+ *****************************************************/
+static void read_feat_trbe(void)
+{
+#if (ENABLE_TRBE_FOR_NS == FEAT_STATE_1)
+	feat_detect_panic(is_feat_trbe_present(), "TRBE");
+#endif
+}
+
+/******************************************************************
+ * Feature : FEAT_RNG_TRAP (Trapping support for RNDR/RNDRRS)
+ *****************************************************************/
+static void read_feat_rng_trap(void)
+{
+#if (ENABLE_FEAT_RNG_TRAP == FEAT_STATE_1)
+	feat_detect_panic(is_feat_rng_trap_present(), "RNG_TRAP");
+#endif
+}
+
 /***********************************************************************************
  * TF-A supports many Arm architectural features starting from arch version
  * (8.0 till 8.7+). These features are mostly enabled through build flags. This
@@ -284,6 +314,7 @@ void detect_arch_features(void)
 	read_feat_mte();
 	read_feat_rng();
 	read_feat_bti();
+	read_feat_rng_trap();
 
 	/* v8.6 features */
 	read_feat_amuv1p1();
@@ -293,6 +324,10 @@ void detect_arch_features(void)
 
 	/* v8.7 features */
 	read_feat_hcx();
+
+	/* v9.0 features */
+	read_feat_brbe();
+	read_feat_trbe();
 
 	/* v9.2 features */
 	read_feat_rme();

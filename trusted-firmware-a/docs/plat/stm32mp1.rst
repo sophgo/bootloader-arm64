@@ -63,15 +63,6 @@ Only BL2 (with STM32 header) is loaded by ROM code. The other binaries are
 inside the FIP binary: BL32 (SP_min or OP-TEE), U-Boot and their respective
 device tree blobs.
 
-STM32IMAGE bootchain
-~~~~~~~~~~~~~~~~~~~~
-Although still supported, this way of booting is not recommended.
-Pease use FIP instead.
-At compilation step, BL2, BL32 and DTB file are linked together in a single
-binary. The stm32image tool is also generated and the header is added to TF-A
-binary. This binary file with header is named tf-a-stm32mp157c-ev1.stm32.
-It can then be copied in the first partition of the boot device.
-
 
 Memory mapping
 ~~~~~~~~~~~~~~
@@ -144,7 +135,11 @@ Other configuration flags:
 
 - | ``DTB_FILE_NAME``: to precise board device-tree blob to be used.
   | Default: stm32mp157c-ev1.dtb
+- | ``DWL_BUFFER_BASE``: the 'serial boot' load address of FIP,
+  | default location (end of the first 128MB) is used when absent
 - | ``STM32MP_EARLY_CONSOLE``: to enable early traces before clock driver is setup.
+  | Default: 0 (disabled)
+- | ``STM32MP_RECONFIGURE_CONSOLE``: to re-configure crash console (especially after BL2).
   | Default: 0 (disabled)
 - | ``STM32MP_UART_BAUDRATE``: to select UART baud rate.
   | Default: 115200
@@ -231,44 +226,40 @@ With OP-TEE:
         BL32_EXTRA2=<optee_directory>/tee-pageable_v2.bin
         fip
 
+Trusted Boot Board
+__________________
 
-STM32IMAGE bootchain
-~~~~~~~~~~~~~~~~~~~~
-You need to add the following flag to the make command:
-``STM32MP_USE_STM32IMAGE=1``
+.. code:: shell
 
-To build with SP_min and support for SD-card boot:
+    tools/cert_create/cert_create -n --rot-key "build/stm32mp1/debug/rot_key.pem" \
+        --tfw-nvctr 0 \
+        --ntfw-nvctr 0 \
+        --key-alg ecdsa --hash-alg sha256 \
+        --trusted-key-cert build/stm32mp1/cert_images/trusted-key-cert.key-crt \
+        --tos-fw <optee_directory>/tee-header_v2.bin \
+        --tos-fw-extra1 <optee_directory>/tee-pager_v2.bin \
+        --tos-fw-extra2 <optee_directory>/tee-pageable_v2.bin \
+        --tos-fw-cert build/stm32mp1/cert_images/tee-header_v2.bin.crt \
+        --tos-fw-key-cert build/stm32mp1/cert_images/tee-header_v2.bin.key-crt \
+        --nt-fw <u-boot_directory>/u-boot-nodtb.bin \
+        --nt-fw-cert build/stm32mp1/cert_images/u-boot.bin.crt \
+        --nt-fw-key-cert build/stm32mp1/cert_images/u-boot.bin.key-crt \
+        --hw-config <u-boot_directory>/u-boot.dtb \
+        --fw-config build/stm32mp1/debug/fdts/fw-config.dtb \
+        --stm32mp-cfg-cert build/stm32mp1/cert_images/stm32mp_cfg_cert.crt
 
-.. code:: bash
+    tools/fiptool/fiptool create --tos-fw <optee_directory>/tee-header_v2.bin \
+        --tos-fw-extra1 <optee_directory>/tee-pager_v2.bin \
+        --tos-fw-extra2 <optee_directory>/tee-pageable_v2.bin \
+        --nt-fw <u-boot_directory>/u-boot-nodtb.bin \
+        --hw-config <u-boot_directory>/u-boot.dtb \
+        --fw-config build/stm32mp1/debug/fdts/fw-config.dtb \
+        --tos-fw-cert build/stm32mp1/cert_images/tee-header_v2.bin.crt \
+        --tos-fw-key-cert build/stm32mp1/cert_images/tee-header_v2.bin.key-crt \
+        --nt-fw-cert build/stm32mp1/cert_images/u-boot.bin.crt \
+        --nt-fw-key-cert build/stm32mp1/cert_images/u-boot.bin.key-crt \
+        --stm32mp-cfg-cert build/stm32mp1/cert_images/stm32mp_cfg_cert.crt stm32mp1.fip
 
-    make CROSS_COMPILE=arm-linux-gnueabihf- PLAT=stm32mp1 ARCH=aarch32 ARM_ARCH_MAJOR=7 \
-        AARCH32_SP=sp_min STM32MP_SDMMC=1 DTB_FILE_NAME=stm32mp157c-ev1.dtb \
-        STM32MP_USE_STM32IMAGE=1
-
-    cd <u-boot_directory>
-    make stm32mp15_trusted_defconfig
-    make DEVICE_TREE=stm32mp157c-ev1 all
-
-To build TF-A with OP-TEE support for SD-card boot:
-
-.. code:: bash
-
-    make CROSS_COMPILE=arm-linux-gnueabihf- PLAT=stm32mp1 ARCH=aarch32 ARM_ARCH_MAJOR=7 \
-        AARCH32_SP=optee STM32MP_SDMMC=1 DTB_FILE_NAME=stm32mp157c-ev1.dtb \
-        STM32MP_USE_STM32IMAGE=1
-
-    cd <optee_directory>
-    make CROSS_COMPILE=arm-linux-gnueabihf- ARCH=arm PLATFORM=stm32mp1 \
-        CFG_EMBED_DTB_SOURCE_FILE=stm32mp157c-ev1.dts
-
-    cd <u-boot_directory>
-    make stm32mp15_trusted_defconfig
-    make DEVICE_TREE=stm32mp157c-ev1 all
-
-
-The following build options are supported:
-
-- ``ENABLE_STACK_PROTECTOR``: To enable the stack protection.
 
 
 Populate SD-card
@@ -283,22 +274,6 @@ It should contain at least those partitions:
 - fip: which contains the FIP binary
 
 Usually, two copies of fsbl are used (fsbl1 and fsbl2) instead of one partition fsbl.
-
-STM32IMAGE bootchain
-~~~~~~~~~~~~~~~~~~~~
-The SD-card has to be formatted with GPT.
-It should contain at least those partitions:
-
-- fsbl: to copy the tf-a-stm32mp157c-ev1.stm32 binary
-- ssbl: to copy the u-boot.stm32 binary
-
-Usually, two copies of fsbl are used (fsbl1 and fsbl2) instead of one partition fsbl.
-
-OP-TEE artifacts go into separate partitions as follows:
-
-- teeh: tee-header_v2.stm32
-- teed: tee-pageable_v2.stm32
-- teex: tee-pager_v2.stm32
 
 
 .. _STM32MP1 Series: https://www.st.com/en/microcontrollers-microprocessors/stm32mp1-series.html

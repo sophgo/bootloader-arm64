@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2022, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -114,10 +114,10 @@ static int get_ext(const char *oid, void **ext, unsigned int *ext_len)
 		oid_len = mbedtls_oid_get_numeric_string(oid_str,
 							 MAX_OID_STR_LEN,
 							 &extn_oid);
-		if (oid_len == MBEDTLS_ERR_OID_BUF_TOO_SMALL) {
+		if ((oid_len == MBEDTLS_ERR_OID_BUF_TOO_SMALL) || (oid_len < 0)) {
 			return IMG_PARSER_ERR;
 		}
-		if ((oid_len == strlen(oid_str)) && !strcmp(oid, oid_str)) {
+		if (((size_t)oid_len == strlen(oid_str)) && !strcmp(oid, oid_str)) {
 			*ext = (void *)p;
 			*ext_len = (unsigned int)len;
 			return IMG_PARSER_OK;
@@ -290,57 +290,79 @@ static int cert_parse(void *img, unsigned int img_len)
 
 	/*
 	 * extensions      [3]  EXPLICIT Extensions OPTIONAL
+	 * }
+	 *
+	 * X.509 and RFC5280 allow omitting the extensions entirely.
+	 * However, in TF-A, a certificate with no extensions would
+	 * always fail later on, as the extensions contain the
+	 * information needed to authenticate the next stage in the
+	 * boot chain.  Furthermore, get_ext() assumes that the
+	 * extensions have been parsed into v3_ext, and allowing
+	 * there to be no extensions would pointlessly complicate
+	 * the code.  Therefore, just reject certificates without
+	 * extensions.  This is also why version 1 and 2 certificates
+	 * are rejected above.
 	 */
 	ret = mbedtls_asn1_get_tag(&p, end, &len,
 				   MBEDTLS_ASN1_CONTEXT_SPECIFIC |
 				   MBEDTLS_ASN1_CONSTRUCTED | 3);
-	if (ret != 0) {
+	if ((ret != 0) || (len != (size_t)(end - p))) {
 		return IMG_PARSER_ERR_FORMAT;
 	}
 
 	/*
 	 * Extensions  ::=  SEQUENCE SIZE (1..MAX) OF Extension
+	 * -- must use all remaining bytes in TBSCertificate
 	 */
 	v3_ext.p = p;
 	ret = mbedtls_asn1_get_tag(&p, end, &len, MBEDTLS_ASN1_CONSTRUCTED |
 				   MBEDTLS_ASN1_SEQUENCE);
-	if (ret != 0) {
+	if ((ret != 0) || (len != (size_t)(end - p))) {
 		return IMG_PARSER_ERR_FORMAT;
 	}
-	v3_ext.len = (p + len) - v3_ext.p;
+	v3_ext.len = end - v3_ext.p;
 
 	/*
-	 * Check extensions integrity
+	 * Check extensions integrity.  At least one extension is
+	 * required: the ASN.1 specifies a minimum size of 1, and at
+	 * least one extension is needed to authenticate the next stage
+	 * in the boot chain.
 	 */
-	while (p < end) {
+	do {
+		unsigned char *end_ext_data;
+
 		ret = mbedtls_asn1_get_tag(&p, end, &len,
 					   MBEDTLS_ASN1_CONSTRUCTED |
 					   MBEDTLS_ASN1_SEQUENCE);
 		if (ret != 0) {
 			return IMG_PARSER_ERR_FORMAT;
 		}
+		end_ext_data = p + len;
 
 		/* Get extension ID */
-		ret = mbedtls_asn1_get_tag(&p, end, &len, MBEDTLS_ASN1_OID);
+		ret = mbedtls_asn1_get_tag(&p, end_ext_data, &len, MBEDTLS_ASN1_OID);
 		if (ret != 0) {
 			return IMG_PARSER_ERR_FORMAT;
 		}
 		p += len;
 
 		/* Get optional critical */
-		ret = mbedtls_asn1_get_bool(&p, end, &is_critical);
+		ret = mbedtls_asn1_get_bool(&p, end_ext_data, &is_critical);
 		if ((ret != 0) && (ret != MBEDTLS_ERR_ASN1_UNEXPECTED_TAG)) {
 			return IMG_PARSER_ERR_FORMAT;
 		}
 
-		/* Data should be octet string type */
-		ret = mbedtls_asn1_get_tag(&p, end, &len,
+		/*
+		 * Data should be octet string type and must use all bytes in
+		 * the Extension.
+		 */
+		ret = mbedtls_asn1_get_tag(&p, end_ext_data, &len,
 					   MBEDTLS_ASN1_OCTET_STRING);
-		if (ret != 0) {
+		if ((ret != 0) || ((p + len) != end_ext_data)) {
 			return IMG_PARSER_ERR_FORMAT;
 		}
-		p += len;
-	}
+		p = end_ext_data;
+	} while (p < end);
 
 	if (p != end) {
 		return IMG_PARSER_ERR_FORMAT;

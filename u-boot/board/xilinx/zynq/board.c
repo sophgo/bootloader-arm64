@@ -37,6 +37,9 @@ int board_init(void)
 	if (IS_ENABLED(CONFIG_SPL_BUILD))
 		printf("Silicon version:\t%d\n", zynq_get_silicon_version());
 
+	if (CONFIG_IS_ENABLED(DM_I2C) && CONFIG_IS_ENABLED(I2C_EEPROM))
+		xilinx_read_eeprom();
+
 	return 0;
 }
 
@@ -52,7 +55,7 @@ int board_late_init(void)
 		return 0;
 	}
 
-	if (!CONFIG_IS_ENABLED(ENV_VARS_UBOOT_RUNTIME_CONFIG))
+	if (!IS_ENABLED(CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG))
 		return 0;
 
 	switch ((zynq_slcr_get_boot_mode()) & ZYNQ_BM_MASK) {
@@ -102,7 +105,7 @@ int board_late_init(void)
 	return board_late_init_xilinx();
 }
 
-#if !defined(CONFIG_SYS_SDRAM_BASE) && !defined(CONFIG_SYS_SDRAM_SIZE)
+#if !defined(CFG_SYS_SDRAM_BASE) && !defined(CFG_SYS_SDRAM_SIZE)
 int dram_init_banksize(void)
 {
 	return fdtdec_setup_memory_banksize();
@@ -120,8 +123,8 @@ int dram_init(void)
 #else
 int dram_init(void)
 {
-	gd->ram_size = get_ram_size((void *)CONFIG_SYS_SDRAM_BASE,
-				    CONFIG_SYS_SDRAM_SIZE);
+	gd->ram_size = get_ram_size((void *)CFG_SYS_SDRAM_BASE,
+				    CFG_SYS_SDRAM_SIZE);
 
 	zynq_ddrc_init();
 
@@ -168,8 +171,7 @@ void set_dfu_alt_info(char *interface, char *devstr)
 {
 	ALLOC_CACHE_ALIGN_BUFFER(char, buf, DFU_ALT_BUF_LEN);
 
-	if (!CONFIG_IS_ENABLED(EFI_HAVE_CAPSULE_SUPPORT) &&
-	    env_get("dfu_alt_info"))
+	if (env_get("dfu_alt_info"))
 		return;
 
 	memset(buf, 0, sizeof(buf));
@@ -177,13 +179,14 @@ void set_dfu_alt_info(char *interface, char *devstr)
 	switch ((zynq_slcr_get_boot_mode()) & ZYNQ_BM_MASK) {
 	case ZYNQ_BM_SD:
 		snprintf(buf, DFU_ALT_BUF_LEN,
-			 "mmc 0:1=boot.bin fat 0 1;"
-			 "u-boot.img fat 0 1");
+			 "mmc 0=boot.bin fat 0 1;"
+			 "%s fat 0 1", CONFIG_SPL_FS_LOAD_PAYLOAD_NAME);
 		break;
 	case ZYNQ_BM_QSPI:
 		snprintf(buf, DFU_ALT_BUF_LEN,
 			 "sf 0:0=boot.bin raw 0 0x1500000;"
-			 "u-boot.img raw 0x%x 0x500000",
+			 "%s raw 0x%x 0x500000",
+			 CONFIG_SPL_FS_LOAD_PAYLOAD_NAME,
 			 CONFIG_SYS_SPI_U_BOOT_OFFS);
 		break;
 	default:

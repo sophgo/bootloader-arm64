@@ -57,19 +57,37 @@ revisions of Cortex-A73 and Cortex-A75 that implements FEAT_CSV2).
 +----------------------+
 | Cortex-A76           |
 +----------------------+
+| Cortex-A76AE         |
++----------------------+
 | Cortex-A77           |
 +----------------------+
 | Cortex-A78           |
 +----------------------+
+| Cortex-A78AE         |
++----------------------+
+| Cortex-A78C          |
++----------------------+
+| Cortex-X1            |
++----------------------+
 | Cortex-X2            |
 +----------------------+
+| Cortex-X3            |
++----------------------+
 | Cortex-A710          |
++----------------------+
+| Cortex-A715          |
++----------------------+
+| Cortex-Hunter        |
 +----------------------+
 | Neoverse-N1          |
 +----------------------+
 | Neoverse-N2          |
 +----------------------+
 | Neoverse-V1          |
++----------------------+
+| Neoverse-V2          |
++----------------------+
+| Neoverse-Poseidon    |
 +----------------------+
 
 For all other cores impacted by Spectre-BHB, some of which that do not implement
@@ -81,7 +99,9 @@ In case local workaround is not feasible, the Rich OS can invoke the SMC
 Convention specification`_ for more details.
 
 `Gerrit topic #spectre_bhb`_ This patchset implements the Spectre-BHB loop
-workaround for CPUs mentioned in the above table. It also mitigates against
+workaround for CPUs mentioned in the above table. For CPUs supporting
+speculative barrier instruction, the loop workaround is optimised by using SB
+in place of the common DSB and ISB sequence. It also mitigates against
 this vulnerability for Cortex-A72 CPU versions that support the CSV2 feature
 (from r1p0). The patch stack also includes an implementation for a specified
 `CVE-2022-23960`_ workaround SMC(``SMCCC_ARCH_WORKAROUND_3``) for use by normal
@@ -90,7 +110,7 @@ in the `SMCCC Calling Convention specification`_. The specification and
 implementation also enables the normal world to discover the presence of this
 firmware service. This patch also implements ``SMCCC_ARCH_WORKAROUND_3`` for
 Cortex-A57, Coxtex-A72, Cortex-A73 and Cortex-A75 using the existing workaround.
-for CVE-2017-5715.
+for CVE-2017-5715. Cortex-A15 patch extends Spectre V2 mitigation to Spectre-BHB.
 
 The above workaround is enabled by default (on vulnerable CPUs only). Platforms
 can choose to disable them at compile time if they do not require them.

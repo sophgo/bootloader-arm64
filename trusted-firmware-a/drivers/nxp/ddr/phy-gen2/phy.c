@@ -241,12 +241,6 @@ static void get_cdd_val(uint16_t **phy_ptr, uint32_t rank, uint32_t freq,
 				rwmax = tmp;
 			}
 
-			tmp = wrmax;
-			wrmax = cdd[56];
-			if (tmp > wrmax) {
-				wrmax = tmp;
-			}
-
 			break;
 
 		case 2U:
@@ -276,15 +270,7 @@ static void get_cdd_val(uint16_t **phy_ptr, uint32_t rank, uint32_t freq,
 				rwmax = tmp;
 			}
 
-			buf[0] = cdd[56];
-			buf[1] = cdd[55];
-			buf[2] = cdd[52];
-			buf[3] = cdd[51];
-			tmp = wrmax;
-			wrmax = findmax(buf, 4U);
-			if (tmp > wrmax) {
-				wrmax = tmp;
-			}
+			wrmax = wwmax;
 
 			break;
 
@@ -310,12 +296,7 @@ static void get_cdd_val(uint16_t **phy_ptr, uint32_t rank, uint32_t freq,
 				rwmax = tmp;
 			}
 
-			tmp = wrmax;
-			c = &cdd[41];
-			wrmax = findmax(c, 16U);
-			if (tmp > wrmax) {
-				wrmax = tmp;
-			}
+			wrmax = wwmax;
 
 			break;
 
@@ -390,7 +371,12 @@ static void get_cdd_val(uint16_t **phy_ptr, uint32_t rank, uint32_t freq,
 
 #ifdef NXP_WARM_BOOT
 int save_phy_training_values(uint16_t **phy_ptr, uint32_t address_to_store,
-		uint32_t num_of_phy, int train2d)
+		uint32_t num_of_phy, int train2d
+#ifdef NXP_APPLY_MAX_CDD
+			, struct ddr_ctrl_reg_values *ddrctrl_regs
+#endif
+		)
+
 {
 	uint16_t *phy = NULL, value = 0x0;
 	uint32_t size = 1U, num_of_regs = 1U, phy_store = 0U;
@@ -457,6 +443,15 @@ int save_phy_training_values(uint16_t **phy_ptr, uint32_t address_to_store,
 			ret = xspi_write(phy_store, training_2D_values,
 					size);
 		}
+
+#ifdef NXP_APPLY_MAX_CDD
+		/* Save DDR control register Timing CFG 0 and 4 */
+		phy_store  += size;
+		size = sizeof(ddrctrl_regs);
+		if (ret != 0) {
+			ret = xspi_write(phy_store, ddrctrl_regs, size);
+		}
+#endif
 		/* Disable clocks in case they were disabled. */
 		phy_io_write16(phy, t_drtub |
 				csr_ucclk_hclk_enables_addr, 0x0);
@@ -472,7 +467,11 @@ int save_phy_training_values(uint16_t **phy_ptr, uint32_t address_to_store,
 }
 
 int restore_phy_training_values(uint16_t **phy_ptr, uint32_t address_to_restore,
-		uint32_t num_of_phy, int train2d)
+		uint32_t num_of_phy, int train2d
+#ifdef NXP_APPLY_MAX_CDD
+		, struct ddr_ctrl_reg_values *ddrctrl_regs
+#endif
+		)
 {
 	uint16_t *phy = NULL;
 	uint32_t size = 1U, num_of_regs = 1U, phy_store = 0U;
@@ -537,6 +536,11 @@ int restore_phy_training_values(uint16_t **phy_ptr, uint32_t address_to_restore,
 #endif
 			}
 		}
+#ifdef NXP_APPLY_MAX_CDD
+		phy_store = phy_store + size;
+		size = sizeof(ddrctrl_regs);
+		ret = xspi_read(phy_store, (uint32_t *)ddrctrl_regs, size);
+#endif
 		/* Disable clocks in case they were disabled. */
 		phy_io_write16(phy, t_drtub |
 				csr_ucclk_hclk_enables_addr, 0x0);
@@ -2216,14 +2220,6 @@ static int load_fw(uint16_t **phy_ptr,
 
 	size = PHY_GEN2_MAX_IMAGE_SIZE;
 	image_buf = (uintptr_t)phy_gen2_fw_img_buf;
-	ret = mmap_add_dynamic_region(phy_gen2_fw_img_buf,
-			phy_gen2_fw_img_buf,
-			PHY_GEN2_MAX_IMAGE_SIZE,
-			MT_MEMORY | MT_RW | MT_SECURE);
-	if (ret != 0) {
-		ERROR("Failed to add dynamic memory region.\n");
-		return ret;
-	}
 	ret = img_loadr(imem_id, &image_buf, &size);
 	if (ret != 0) {
 		ERROR("Failed to load %d firmware.\n", imem_id);
@@ -2481,6 +2477,9 @@ int compute_ddr_phy(struct ddr_info *priv)
 	__unused const soc_info_t *soc_info;
 #ifdef NXP_APPLY_MAX_CDD
 	unsigned int tcfg0, tcfg4, rank;
+#ifdef NXP_WARM_BOOT
+	struct ddr_ctrl_reg_values ddrctrl_regs;
+#endif
 #endif
 
 	if (dimm_param == NULL) {
@@ -2585,13 +2584,30 @@ int compute_ddr_phy(struct ddr_info *priv)
 		ret = restore_phy_training_values(priv->phy,
 						  PHY_TRAINING_REGS_ON_FLASH,
 						  priv->num_ctlrs,
-						  input.basic.train2d);
+						  input.basic.train2d
+#ifdef NXP_APPLY_MAX_CDD
+						, &ddrctrl_regs
+#endif
+						);
 		if (ret != 0) {
 			ERROR("Restoring of training data failed %d\n", ret);
 			return ret;
 		}
+#ifdef NXP_APPLY_MAX_CDD
+		regs->timing_cfg[0] = ddrctrl_regs.timing_cfg0;
+		regs->timing_cfg[4] = ddrctrl_regs.timing_cfg4;
+#endif
 	} else {
 #endif
+		/* Mapping IMG buffer firstly */
+		ret = mmap_add_dynamic_region(priv->phy_gen2_fw_img_buf,
+			priv->phy_gen2_fw_img_buf,
+			PHY_GEN2_MAX_IMAGE_SIZE,
+			MT_MEMORY | MT_RW | MT_SECURE);
+		if (ret != 0) {
+			ERROR("Failed to add dynamic memory region.\n");
+			return ret;
+		}
 
 		debug("Load 1D firmware\n");
 		ret = load_fw(priv->phy, &input, 0, &msg_1d,
@@ -2643,12 +2659,20 @@ int compute_ddr_phy(struct ddr_info *priv)
 #ifdef NXP_WARM_BOOT
 		if (priv->warm_boot_flag != DDR_WRM_BOOT_NT_SUPPORTED &&
 		    ret == 0) {
+#ifdef NXP_APPLY_MAX_CDD
+			ddrctrl_regs.timing_cfg0 = regs->timing_cfg[0];
+			ddrctrl_regs.timing_cfg4 = regs->timing_cfg[4];
+#endif
 			debug("save the phy training data\n");
 			//Save training data TBD
 			ret = save_phy_training_values(priv->phy,
 						PHY_TRAINING_REGS_ON_FLASH,
 						priv->num_ctlrs,
-						input.basic.train2d);
+						input.basic.train2d
+#ifdef NXP_APPLY_MAX_CDD
+						, &ddrctrl_regs
+#endif
+						);
 			if (ret != 0) {
 				ERROR("Saving training data failed.");
 				ERROR("Warm boot will fail. Error=%d.\n", ret);

@@ -263,6 +263,17 @@ class KconfigScanner:
         if params['arch'] == 'arm' and params['cpu'] == 'armv8':
             params['arch'] = 'aarch64'
 
+        # fix-up for riscv
+        if params['arch'] == 'riscv':
+            try:
+                value = self._conf.syms.get('ARCH_RV32I').str_value
+            except:
+                value = ''
+            if value == 'y':
+                params['arch'] = 'riscv32'
+            else:
+                params['arch'] = 'riscv64'
+
         return params
 
 
@@ -357,6 +368,17 @@ class MaintainersDatabase:
                                 targets.append(front)
                 elif tag == 'S:':
                     status = rest
+                elif tag == 'N:':
+                    # Just scan the configs directory since that's all we care
+                    # about
+                    for dirpath, _, fnames in os.walk('configs'):
+                        for fname in fnames:
+                            path = os.path.join(dirpath, fname)
+                            front, match, rear = path.partition('configs/')
+                            if not front and match:
+                                front, match, rear = rear.rpartition('_defconfig')
+                                if match and not rear:
+                                    targets.append(front)
                 elif line == '\n':
                     for target in targets:
                         self.database[target] = (status, maintainers)

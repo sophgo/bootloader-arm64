@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013-2020, Arm Limited and Contributors. All rights reserved.
+# Copyright (c) 2013-2022, Arm Limited and Contributors. All rights reserved.
 # Copyright (c) 2021, NVIDIA Corporation. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
@@ -12,6 +12,7 @@ GICV3_IMPL_GIC600_MULTICHIP	?=	0
 GICV3_OVERRIDE_DISTIF_PWR_OPS	?=	0
 GIC_ENABLE_V4_EXTN		?=	0
 GIC_EXT_INTID			?=	0
+GIC600_ERRATA_WA_2384374	?=	${GICV3_SUPPORT_GIC600}
 
 GICV3_SOURCES	+=	drivers/arm/gic/v3/gicv3_main.c		\
 			drivers/arm/gic/v3/gicv3_helpers.c	\
@@ -40,6 +41,10 @@ $(eval $(call add_define,GICV3_SUPPORT_GIC600))
 $(eval $(call assert_boolean,GICV3_SUPPORT_GIC600AE_FMU))
 $(eval $(call add_define,GICV3_SUPPORT_GIC600AE_FMU))
 
+# Set GIC-600 multichip support
+$(eval $(call assert_boolean,GICV3_IMPL_GIC600_MULTICHIP))
+$(eval $(call add_define,GICV3_IMPL_GIC600_MULTICHIP))
+
 # Set GICv4 extension
 $(eval $(call assert_boolean,GIC_ENABLE_V4_EXTN))
 $(eval $(call add_define,GIC_ENABLE_V4_EXTN))
@@ -47,3 +52,7 @@ $(eval $(call add_define,GIC_ENABLE_V4_EXTN))
 # Set support for extended PPI and SPI range
 $(eval $(call assert_boolean,GIC_EXT_INTID))
 $(eval $(call add_define,GIC_EXT_INTID))
+
+# Set errata workaround for GIC600/GIC600AE
+$(eval $(call assert_boolean,GIC600_ERRATA_WA_2384374))
+$(eval $(call add_define,GIC600_ERRATA_WA_2384374))

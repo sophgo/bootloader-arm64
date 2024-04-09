@@ -319,7 +319,7 @@ function create_spif_script()
 	CURRENT_SCRIPT=${RECOVERY_DIR}/${SPIFCMD_SCRIPT}.cmd
 	cp /dev/null ${CURRENT_SCRIPT}
 
-	cp ${SOURCE_FILES_PATH}/fip*.bin ${RECOVERY_DIR}
+	cp ${SOURCE_FILES_PATH}/fip.bin ${RECOVERY_DIR}
 	touch ${RECOVERY_DIR}/BOOT
 
 
@@ -427,7 +427,8 @@ function do_gen_partition_subimg()
 	local part_image_exists=0
 
 
-	dd if=/dev/zero of=$RECOVERY_DIR/$1 bs=${SECTOR_BYTES} count=${PART_SIZE_IN_SECTOR[$2]}
+	fallocate -l ${PART_SIZE_IN_BYTE[$2]} $RECOVERY_DIR/$1
+	# dd if=/dev/zero of=$RECOVERY_DIR/$1 bs=${SECTOR_BYTES} count=${PART_SIZE_IN_SECTOR[$2]}
 
 	if [ $3 -eq 1 ]; then
 		mkfs.fat $RECOVERY_DIR/$1

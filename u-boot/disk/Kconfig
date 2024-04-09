@@ -24,7 +24,7 @@ config SPL_PARTITIONS
 	select SPL_STRTO
 	help
 	  Enable this for base partition support in SPL. The required
-	  partition table types shold be enabled separately. This add a
+	  partition table types shold be enabled separately. This adds a
 	  small amount of size to SPL, typically 500 bytes.
 
 config TPL_PARTITIONS
@@ -32,9 +32,9 @@ config TPL_PARTITIONS
 	select TPL_SPRINTF
 	select TPL_STRTO
 	help
-	  Enable this for base partition support in SPL. The required
-	  partition table types shold be enabled separately. This add a
-	  small amount of size to SPL, typically 500 bytes.
+	  Enable this for base partition support in TPL. The required
+	  partition table types shold be enabled separately. This adds a
+	  small amount of size to TPL, typically 500 bytes.
 
 config MAC_PARTITION
 	bool "Enable Apple's MacOS partition table"
@@ -149,10 +149,18 @@ config SPL_PARTITION_UUIDS
 	bool "Enable support of UUID for partition in SPL"
 	depends on SPL_PARTITIONS
 	default y if SPL_EFI_PARTITION
+	select SPL_LIB_UUID
 
 config PARTITION_TYPE_GUID
 	bool "Enable support of GUID for partition type"
 	depends on EFI_PARTITION
+	help
+	  Activate the configuration of GUID type
+	  for EFI partition
+
+config SPL_PARTITION_TYPE_GUID
+	bool "Enable support of GUID for partition type (SPL)"
+	depends on SPL_EFI_PARTITION
 	help
 	  Activate the configuration of GUID type
 	  for EFI partition

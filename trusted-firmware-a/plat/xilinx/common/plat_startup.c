@@ -24,49 +24,34 @@
  * CPU#			5:6		00 -> A53_0, 01 -> A53_1, 10 -> A53_2, 11 -> A53_3
  */
 
-#define FSBL_FLAGS_ESTATE_SHIFT		0
-#define FSBL_FLAGS_ESTATE_MASK		(1 << FSBL_FLAGS_ESTATE_SHIFT)
-#define FSBL_FLAGS_ESTATE_A64		0
-#define FSBL_FLAGS_ESTATE_A32		1
+#define FSBL_FLAGS_ESTATE_SHIFT		0U
+#define FSBL_FLAGS_ESTATE_MASK		(1U << FSBL_FLAGS_ESTATE_SHIFT)
+#define FSBL_FLAGS_ESTATE_A64		0U
+#define FSBL_FLAGS_ESTATE_A32		1U
 
-#define FSBL_FLAGS_ENDIAN_SHIFT		1
-#define FSBL_FLAGS_ENDIAN_MASK		(1 << FSBL_FLAGS_ENDIAN_SHIFT)
-#define FSBL_FLAGS_ENDIAN_LE		0
-#define FSBL_FLAGS_ENDIAN_BE		1
+#define FSBL_FLAGS_ENDIAN_SHIFT		1U
+#define FSBL_FLAGS_ENDIAN_MASK		(1U << FSBL_FLAGS_ENDIAN_SHIFT)
+#define FSBL_FLAGS_ENDIAN_LE		0U
+#define FSBL_FLAGS_ENDIAN_BE		1U
 
-#define FSBL_FLAGS_TZ_SHIFT		2
-#define FSBL_FLAGS_TZ_MASK		(1 << FSBL_FLAGS_TZ_SHIFT)
-#define FSBL_FLAGS_NON_SECURE		0
-#define FSBL_FLAGS_SECURE		1
+#define FSBL_FLAGS_TZ_SHIFT		2U
+#define FSBL_FLAGS_TZ_MASK		(1U << FSBL_FLAGS_TZ_SHIFT)
+#define FSBL_FLAGS_NON_SECURE		0U
+#define FSBL_FLAGS_SECURE		1U
 
-#define FSBL_FLAGS_EL_SHIFT		3
-#define FSBL_FLAGS_EL_MASK		(3 << FSBL_FLAGS_EL_SHIFT)
-#define FSBL_FLAGS_EL0			0
-#define FSBL_FLAGS_EL1			1
-#define FSBL_FLAGS_EL2			2
-#define FSBL_FLAGS_EL3			3
+#define FSBL_FLAGS_EL_SHIFT		3U
+#define FSBL_FLAGS_EL_MASK		(3U << FSBL_FLAGS_EL_SHIFT)
+#define FSBL_FLAGS_EL0			0U
+#define FSBL_FLAGS_EL1			1U
+#define FSBL_FLAGS_EL2			2U
+#define FSBL_FLAGS_EL3			3U
 
-#define FSBL_FLAGS_CPU_SHIFT		5
-#define FSBL_FLAGS_CPU_MASK		(3 << FSBL_FLAGS_CPU_SHIFT)
-#define FSBL_FLAGS_A53_0		0
-#define FSBL_FLAGS_A53_1		1
-#define FSBL_FLAGS_A53_2		2
-#define FSBL_FLAGS_A53_3		3
-
-#define FSBL_MAX_PARTITIONS		8
-
-/* Structure corresponding to each partition entry */
-struct xfsbl_partition {
-	uint64_t entry_point;
-	uint64_t flags;
-};
-
-/* Structure for handoff parameters to ARM Trusted Firmware (ATF) */
-struct xfsbl_atf_handoff_params {
-	uint8_t magic[4];
-	uint32_t num_entries;
-	struct xfsbl_partition partition[FSBL_MAX_PARTITIONS];
-};
+#define FSBL_FLAGS_CPU_SHIFT		5U
+#define FSBL_FLAGS_CPU_MASK		(3U << FSBL_FLAGS_CPU_SHIFT)
+#define FSBL_FLAGS_A53_0		0U
+#define FSBL_FLAGS_A53_1		1U
+#define FSBL_FLAGS_A53_2		2U
+#define FSBL_FLAGS_A53_3		3U
 
 /**
  * @partition: Pointer to partition struct
@@ -75,7 +60,7 @@ struct xfsbl_atf_handoff_params {
  *
  * Return: FSBL_FLAGS_A53_0, FSBL_FLAGS_A53_1, FSBL_FLAGS_A53_2 or FSBL_FLAGS_A53_3
  */
-static int get_fsbl_cpu(const struct xfsbl_partition *partition)
+static int32_t get_fsbl_cpu(const struct xfsbl_partition *partition)
 {
 	uint64_t flags = partition->flags & FSBL_FLAGS_CPU_MASK;
 
@@ -89,7 +74,7 @@ static int get_fsbl_cpu(const struct xfsbl_partition *partition)
  *
  * Return: FSBL_FLAGS_EL0, FSBL_FLAGS_EL1, FSBL_FLAGS_EL2 or FSBL_FLAGS_EL3
  */
-static int get_fsbl_el(const struct xfsbl_partition *partition)
+static int32_t get_fsbl_el(const struct xfsbl_partition *partition)
 {
 	uint64_t flags = partition->flags & FSBL_FLAGS_EL_MASK;
 
@@ -103,7 +88,7 @@ static int get_fsbl_el(const struct xfsbl_partition *partition)
  *
  * Return: FSBL_FLAGS_NON_SECURE or FSBL_FLAGS_SECURE
  */
-static int get_fsbl_ss(const struct xfsbl_partition *partition)
+static int32_t get_fsbl_ss(const struct xfsbl_partition *partition)
 {
 	uint64_t flags = partition->flags & FSBL_FLAGS_TZ_MASK;
 
@@ -117,7 +102,7 @@ static int get_fsbl_ss(const struct xfsbl_partition *partition)
  *
  * Return: SPSR_E_LITTLE or SPSR_E_BIG
  */
-static int get_fsbl_endian(const struct xfsbl_partition *partition)
+static int32_t get_fsbl_endian(const struct xfsbl_partition *partition)
 {
 	uint64_t flags = partition->flags & FSBL_FLAGS_ENDIAN_MASK;
 
@@ -137,7 +122,7 @@ static int get_fsbl_endian(const struct xfsbl_partition *partition)
  *
  * Return: FSBL_FLAGS_ESTATE_A32 or FSBL_FLAGS_ESTATE_A64
  */
-static int get_fsbl_estate(const struct xfsbl_partition *partition)
+static int32_t get_fsbl_estate(const struct xfsbl_partition *partition)
 {
 	uint64_t flags = partition->flags & FSBL_FLAGS_ESTATE_MASK;
 
@@ -161,8 +146,6 @@ enum fsbl_handoff fsbl_atf_handover(entry_point_info_t *bl32,
 					uint64_t atf_handoff_addr)
 {
 	const struct xfsbl_atf_handoff_params *ATFHandoffParams;
-	assert((atf_handoff_addr < BL31_BASE) ||
-	       (atf_handoff_addr > (uint64_t)&__BL31_END__));
 	if (!atf_handoff_addr) {
 		WARN("BL31: No ATF handoff structure passed\n");
 		return FSBL_HANDOFF_NO_STRUCT;
@@ -193,8 +176,8 @@ enum fsbl_handoff fsbl_atf_handover(entry_point_info_t *bl32,
 	 */
 	for (size_t i = 0; i < ATFHandoffParams->num_entries; i++) {
 		entry_point_info_t *image;
-		int target_estate, target_secure;
-		int target_cpu, target_endianness, target_el;
+		int32_t target_estate, target_secure, target_cpu;
+		uint32_t target_endianness, target_el;
 
 		VERBOSE("BL31: %zd: entry:0x%" PRIx64 ", flags:0x%" PRIx64 "\n", i,
 			ATFHandoffParams->partition[i].entry_point,

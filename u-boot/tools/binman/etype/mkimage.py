@@ -9,7 +9,7 @@ from collections import OrderedDict
 
 from binman.entry import Entry
 from dtoc import fdt_util
-from patman import tools
+from u_boot_pylib import tools
 
 class Entry_mkimage(Entry):
     """Binary produced by mkimage
@@ -57,24 +57,24 @@ class Entry_mkimage(Entry):
     Note that binman places the contents (here SPL and TPL) into a single file
     and passes that to mkimage using the -d option.
 
-	To pass all datafiles untouched to mkimage::
+    To pass all datafiles untouched to mkimage::
 
-		mkimage {
-			args = "-n rk3399 -T rkspi";
-			multiple-data-files;
+        mkimage {
+                args = "-n rk3399 -T rkspi";
+                multiple-data-files;
 
-			u-boot-tpl {
-			};
+                u-boot-tpl {
+                };
 
-			u-boot-spl {
-			};
-		};
+                u-boot-spl {
+                };
+        };
 
-	This calls mkimage to create a Rockchip RK3399-specific first stage
-	bootloader, made of TPL+SPL. Since this first stage bootloader requires to
-	align the TPL and SPL but also some weird hacks that is handled by mkimage
-	directly, binman is told to not perform the concatenation of datafiles prior
-	to passing the data to mkimage.
+    This calls mkimage to create a Rockchip RK3399-specific first stage
+    bootloader, made of TPL+SPL. Since this first stage bootloader requires to
+    align the TPL and SPL but also some weird hacks that is handled by mkimage
+    directly, binman is told to not perform the concatenation of datafiles prior
+    to passing the data to mkimage.
 
     To use CONFIG options in the arguments, use a string list instead, as in
     this example which also produces four arguments::
@@ -156,7 +156,8 @@ class Entry_mkimage(Entry):
             for entry in self._mkimage_entries.values():
                 if not entry.ObtainContents(fake_size=fake_size):
                     return False
-                fnames.append(tools.get_input_filename(entry.GetDefaultFilename()))
+                if entry._pathname:
+                    fnames.append(entry._pathname)
             input_fname = ":".join(fnames)
         else:
             data, input_fname, uniq = self.collect_contents_to_file(
@@ -170,6 +171,13 @@ class Entry_mkimage(Entry):
                 return False
         outfile = self._filename if self._filename else 'mkimage-out.%s' % uniq
         output_fname = tools.get_output_filename(outfile)
+
+        missing_list = []
+        self.CheckMissing(missing_list)
+        self.missing = bool(missing_list)
+        if self.missing:
+            self.SetContents(b'')
+            return self.allow_missing
 
         args = ['-d', input_fname]
         if self._data_to_imagename:
@@ -215,6 +223,20 @@ class Entry_mkimage(Entry):
             entry.SetAllowFakeBlob(allow_fake)
         if self._imagename:
             self._imagename.SetAllowFakeBlob(allow_fake)
+
+    def CheckMissing(self, missing_list):
+        """Check if any entries in this section have missing external blobs
+
+        If there are missing (non-optional) blobs, the entries are added to the
+        list
+
+        Args:
+            missing_list: List of Entry objects to be added to
+        """
+        for entry in self._mkimage_entries.values():
+            entry.CheckMissing(missing_list)
+        if self._imagename:
+            self._imagename.CheckMissing(missing_list)
 
     def CheckFakedBlobs(self, faked_blobs_list):
         """Check if any entries in this section have faked external blobs

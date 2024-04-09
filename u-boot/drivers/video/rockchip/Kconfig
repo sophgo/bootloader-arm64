@@ -10,7 +10,7 @@
 
 menuconfig VIDEO_ROCKCHIP
 	bool "Enable Rockchip Video Support"
-	depends on DM_VIDEO
+	depends on VIDEO
 	help
 	  Rockchip SoCs provide video output capabilities for High-Definition
 	  Multimedia Interface (HDMI), Low-voltage Differential Signalling
@@ -68,5 +68,13 @@ config DISPLAY_ROCKCHIP_MIPI
 	  This enables Mobile Industry Processor Interface(MIPI) display
 	  support. The mipi controller and dphy on rk3288& rk3399 support
 	  16,18, 24 bits per pixel with up to 2k resolution ratio.
+
+config DISPLAY_ROCKCHIP_DW_MIPI
+	bool "Rockchip Designware MIPI"
+	depends on VIDEO_ROCKCHIP
+	select VIDEO_DW_MIPI_DSI
+	help
+	  Select the Designware MIPI DSI controller in use on some Rockchip
+	  SOCs.
 
 endif

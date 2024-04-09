@@ -33,42 +33,42 @@ DECLARE_GLOBAL_DATA_PTR;
 struct ifc_regs ifc_cfg_nor_boot[CONFIG_SYS_FSL_IFC_BANK_COUNT] = {
 	{
 		"nor",
-		CONFIG_SYS_NOR_CSPR,
-		CONFIG_SYS_NOR_CSPR_EXT,
-		CONFIG_SYS_NOR_AMASK,
-		CONFIG_SYS_NOR_CSOR,
+		CFG_SYS_NOR_CSPR,
+		CFG_SYS_NOR_CSPR_EXT,
+		CFG_SYS_NOR_AMASK,
+		CFG_SYS_NOR_CSOR,
 		{
-			CONFIG_SYS_NOR_FTIM0,
-			CONFIG_SYS_NOR_FTIM1,
-			CONFIG_SYS_NOR_FTIM2,
-			CONFIG_SYS_NOR_FTIM3
+			CFG_SYS_NOR_FTIM0,
+			CFG_SYS_NOR_FTIM1,
+			CFG_SYS_NOR_FTIM2,
+			CFG_SYS_NOR_FTIM3
 		},
 
 	},
 	{
 		"nand",
-		CONFIG_SYS_NAND_CSPR,
-		CONFIG_SYS_NAND_CSPR_EXT,
-		CONFIG_SYS_NAND_AMASK,
-		CONFIG_SYS_NAND_CSOR,
+		CFG_SYS_NAND_CSPR,
+		CFG_SYS_NAND_CSPR_EXT,
+		CFG_SYS_NAND_AMASK,
+		CFG_SYS_NAND_CSOR,
 		{
-			CONFIG_SYS_NAND_FTIM0,
-			CONFIG_SYS_NAND_FTIM1,
-			CONFIG_SYS_NAND_FTIM2,
-			CONFIG_SYS_NAND_FTIM3
+			CFG_SYS_NAND_FTIM0,
+			CFG_SYS_NAND_FTIM1,
+			CFG_SYS_NAND_FTIM2,
+			CFG_SYS_NAND_FTIM3
 		},
 	},
 	{
 		"cpld",
-		CONFIG_SYS_CPLD_CSPR,
-		CONFIG_SYS_CPLD_CSPR_EXT,
-		CONFIG_SYS_CPLD_AMASK,
-		CONFIG_SYS_CPLD_CSOR,
+		CFG_SYS_CPLD_CSPR,
+		CFG_SYS_CPLD_CSPR_EXT,
+		CFG_SYS_CPLD_AMASK,
+		CFG_SYS_CPLD_CSOR,
 		{
-			CONFIG_SYS_CPLD_FTIM0,
-			CONFIG_SYS_CPLD_FTIM1,
-			CONFIG_SYS_CPLD_FTIM2,
-			CONFIG_SYS_CPLD_FTIM3
+			CFG_SYS_CPLD_FTIM0,
+			CFG_SYS_CPLD_FTIM1,
+			CFG_SYS_CPLD_FTIM2,
+			CFG_SYS_CPLD_FTIM3
 		},
 	}
 };
@@ -76,41 +76,41 @@ struct ifc_regs ifc_cfg_nor_boot[CONFIG_SYS_FSL_IFC_BANK_COUNT] = {
 struct ifc_regs ifc_cfg_nand_boot[CONFIG_SYS_FSL_IFC_BANK_COUNT] = {
 	{
 		"nand",
-		CONFIG_SYS_NAND_CSPR,
-		CONFIG_SYS_NAND_CSPR_EXT,
-		CONFIG_SYS_NAND_AMASK,
-		CONFIG_SYS_NAND_CSOR,
+		CFG_SYS_NAND_CSPR,
+		CFG_SYS_NAND_CSPR_EXT,
+		CFG_SYS_NAND_AMASK,
+		CFG_SYS_NAND_CSOR,
 		{
-			CONFIG_SYS_NAND_FTIM0,
-			CONFIG_SYS_NAND_FTIM1,
-			CONFIG_SYS_NAND_FTIM2,
-			CONFIG_SYS_NAND_FTIM3
+			CFG_SYS_NAND_FTIM0,
+			CFG_SYS_NAND_FTIM1,
+			CFG_SYS_NAND_FTIM2,
+			CFG_SYS_NAND_FTIM3
 		},
 	},
 	{
 		"nor",
-		CONFIG_SYS_NOR_CSPR,
-		CONFIG_SYS_NOR_CSPR_EXT,
-		CONFIG_SYS_NOR_AMASK,
-		CONFIG_SYS_NOR_CSOR,
+		CFG_SYS_NOR_CSPR,
+		CFG_SYS_NOR_CSPR_EXT,
+		CFG_SYS_NOR_AMASK,
+		CFG_SYS_NOR_CSOR,
 		{
-			CONFIG_SYS_NOR_FTIM0,
-			CONFIG_SYS_NOR_FTIM1,
-			CONFIG_SYS_NOR_FTIM2,
-			CONFIG_SYS_NOR_FTIM3
+			CFG_SYS_NOR_FTIM0,
+			CFG_SYS_NOR_FTIM1,
+			CFG_SYS_NOR_FTIM2,
+			CFG_SYS_NOR_FTIM3
 		},
 	},
 	{
 		"cpld",
-		CONFIG_SYS_CPLD_CSPR,
-		CONFIG_SYS_CPLD_CSPR_EXT,
-		CONFIG_SYS_CPLD_AMASK,
-		CONFIG_SYS_CPLD_CSOR,
+		CFG_SYS_CPLD_CSPR,
+		CFG_SYS_CPLD_CSPR_EXT,
+		CFG_SYS_CPLD_AMASK,
+		CFG_SYS_CPLD_CSOR,
 		{
-			CONFIG_SYS_CPLD_FTIM0,
-			CONFIG_SYS_CPLD_FTIM1,
-			CONFIG_SYS_CPLD_FTIM2,
-			CONFIG_SYS_CPLD_FTIM3
+			CFG_SYS_CPLD_FTIM0,
+			CFG_SYS_CPLD_FTIM1,
+			CFG_SYS_CPLD_FTIM2,
+			CFG_SYS_CPLD_FTIM3
 		},
 	}
 };
@@ -167,7 +167,7 @@ int checkboard(void)
 
 	if (cfg_rcw_src == 0x25)
 		printf("vBank %d\n", CPLD_READ(vbank));
-	else if (cfg_rcw_src == 0x106)
+	else if ((cfg_rcw_src == 0x106) || (cfg_rcw_src == 0x118))
 		puts("NAND\n");
 	else
 		printf("Invalid setting of SW4\n");
@@ -188,7 +188,7 @@ int checkboard(void)
 
 int board_init(void)
 {
-	struct ccsr_scfg *scfg = (struct ccsr_scfg *)CONFIG_SYS_FSL_SCFG_ADDR;
+	struct ccsr_scfg *scfg = (struct ccsr_scfg *)CFG_SYS_FSL_SCFG_ADDR;
 
 #ifdef CONFIG_SYS_FSL_ERRATUM_A010315
 	erratum_a010315();
@@ -230,7 +230,7 @@ int board_init(void)
 
 int config_board_mux(void)
 {
-	struct ccsr_scfg *scfg = (struct ccsr_scfg *)CONFIG_SYS_FSL_SCFG_ADDR;
+	struct ccsr_scfg *scfg = (struct ccsr_scfg *)CFG_SYS_FSL_SCFG_ADDR;
 	u32 usb_pwrfault;
 
 	if (hwconfig("qe-hdlc")) {
@@ -347,10 +347,54 @@ int ft_board_setup(void *blob, struct bd_info *bd)
 	return 0;
 }
 
+void nand_fixup(void)
+{
+	u32 csor = 0;
+
+	if (CPLD_READ(pcba_ver) < 0x7)
+		return;
+
+    /* Change NAND Flash PGS/SPRZ configuration */
+	csor = CFG_SYS_NAND_CSOR;
+	if ((csor & CSOR_NAND_PGS_MASK) == CSOR_NAND_PGS_2K)
+		csor = (csor & ~(CSOR_NAND_PGS_MASK)) | CSOR_NAND_PGS_4K;
+
+	if ((csor & CSOR_NAND_SPRZ_MASK) == CSOR_NAND_SPRZ_64)
+		csor = (csor & ~(CSOR_NAND_SPRZ_MASK)) | CSOR_NAND_SPRZ_224;
+
+	if (IS_ENABLED(CONFIG_TFABOOT)) {
+		u8 cfg_rcw_src1, cfg_rcw_src2;
+		u16 cfg_rcw_src;
+
+		cfg_rcw_src1 = CPLD_READ(cfg_rcw_src1);
+		cfg_rcw_src2 = CPLD_READ(cfg_rcw_src2);
+		cpld_rev_bit(&cfg_rcw_src1);
+		cfg_rcw_src = cfg_rcw_src1;
+		cfg_rcw_src = (cfg_rcw_src << 1) | cfg_rcw_src2;
+
+		if (cfg_rcw_src == 0x25)
+			set_ifc_csor(IFC_CS1, csor);
+		else if (cfg_rcw_src == 0x118)
+			set_ifc_csor(IFC_CS0, csor);
+		else
+			printf("Invalid setting\n");
+	} else {
+		if (IS_ENABLED(CONFIG_NAND_BOOT))
+			set_ifc_csor(IFC_CS0, csor);
+		else
+			set_ifc_csor(IFC_CS1, csor);
+	}
+}
+
 #if IS_ENABLED(CONFIG_OF_BOARD_FIXUP)
 int board_fix_fdt(void *blob)
 {
+	/* nand driver fix up */
+	nand_fixup();
+
+	/* fdt fix up */
 	fdt_fixup_phy_addr(blob);
+
 	return 0;
 }
 #endif

@@ -29,6 +29,7 @@ config ARCH_LS1028A
 	select ESBC_HDR_LS if CHAIN_OF_TRUST
 	select FSL_LAYERSCAPE
 	select FSL_LSCH3
+	select FSL_TZASC_400
 	select GICV3
 	select NXP_LSCH3_2
 	select SYS_FSL_HAS_CCI400
@@ -63,12 +64,13 @@ config ARCH_LS1043A
 	bool
 	select ARMV8_SET_SMPEN
 	select ARM_ERRATA_855873 if !TFABOOT
-	select FSL_IFC if TFABOOT || (!QSPI_BOOT && !SD_BOOT_QSPI)
+	select FSL_IFC if TFABOOT || (!QSPI_BOOT && !SD_BOOT_QSPI && !SD_BOOT)
 	select FSL_LAYERSCAPE
 	select FSL_LSCH2
 	select GICV2
 	select HAS_FSL_XHCI_USB if USB_HOST
 	select SKIP_LOWLEVEL_INIT
+	select SYS_DPAA_FMAN
 	select SYS_FSL_SRDS_1
 	select SYS_HAS_SERDES
 	select SYS_FSL_DDR
@@ -100,12 +102,13 @@ config ARCH_LS1043A
 config ARCH_LS1046A
 	bool
 	select ARMV8_SET_SMPEN
-	select FSL_IFC if TFABOOT || (!QSPI_BOOT && !SD_BOOT_QSPI)
+	select FSL_IFC if TFABOOT || (!QSPI_BOOT && !SD_BOOT_QSPI && !SD_BOOT)
 	select FSL_LAYERSCAPE
 	select FSL_LSCH2
 	select GICV2
 	select HAS_FSL_XHCI_USB if USB_HOST
 	select SKIP_LOWLEVEL_INIT
+	select SYS_DPAA_FMAN
 	select SYS_FSL_SRDS_1
 	select SYS_HAS_SERDES
 	select SYS_FSL_DDR
@@ -522,13 +525,6 @@ config SYS_CCI400_OFFSET
 	  Offset for CCI400 base
 	  CCI400 base addr = CCSRBAR + CCI400_OFFSET
 
-config SYS_FSL_IFC_BANK_COUNT
-	int "Maximum banks of Integrated flash controller"
-	depends on ARCH_LS1043A || ARCH_LS1046A || ARCH_LS2080A || ARCH_LS1088A
-	default 4 if ARCH_LS1043A
-	default 4 if ARCH_LS1046A
-	default 8 if ARCH_LS2080A || ARCH_LS1088A
-
 config SYS_FSL_HAS_CCI400
 	bool
 
@@ -571,16 +567,7 @@ config SYS_DP_DDR_BASE_PHY
 	  DDR controller uses this value as the base address for binding.
 	  It is mapped to CONFIG_SYS_DP_DDR_BASE for core to access.
 
-config SYS_FSL_SRDS_1
-	bool
-
-config SYS_FSL_SRDS_2
-	bool
-
 config SYS_NXP_SRDS_3
-	bool
-
-config SYS_HAS_SERDES
 	bool
 
 config FSL_TZASC_1

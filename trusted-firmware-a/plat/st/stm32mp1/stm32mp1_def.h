@@ -19,7 +19,6 @@
 #include <drivers/st/stm32mp1_clk.h>
 
 #include <boot_api.h>
-#include <stm32mp_auth.h>
 #include <stm32mp_common.h>
 #include <stm32mp_dt.h>
 #include <stm32mp1_dbgmcu.h>
@@ -27,11 +26,7 @@
 #include <stm32mp1_shared_resources.h>
 #endif
 
-#if !STM32MP_USE_STM32IMAGE
 #include "stm32mp1_fip_def.h"
-#else /* STM32MP_USE_STM32IMAGE */
-#include "stm32mp1_stm32image_def.h"
-#endif /* STM32MP_USE_STM32IMAGE */
 
 /*******************************************************************************
  * CHIP ID
@@ -71,6 +66,7 @@
 
 #define STM32MP1_REV_B		U(0x2000)
 #if STM32MP13
+#define STM32MP1_REV_Y		U(0x1003)
 #define STM32MP1_REV_Z		U(0x1001)
 #endif
 #if STM32MP15
@@ -182,12 +178,23 @@ enum ddr_type {
  #endif
 #endif
 
+#if STM32MP13
+#define STM32MP_BL33_BASE		STM32MP_DDR_BASE
+#endif
+#if STM32MP15
 #define STM32MP_BL33_BASE		(STM32MP_DDR_BASE + U(0x100000))
+#endif
 #define STM32MP_BL33_MAX_SIZE		U(0x400000)
 
 /* Define maximum page size for NAND devices */
 #define PLATFORM_MTD_MAX_PAGE_SIZE	U(0x1000)
 
+/* Define location for the MTD scratch buffer */
+#if STM32MP13
+#define STM32MP_MTD_BUFFER		(SRAM1_BASE + \
+					 SRAM1_SIZE - \
+					 PLATFORM_MTD_MAX_PAGE_SIZE)
+#endif
 /*******************************************************************************
  * STM32MP1 device/io map related constants (used for MMU)
  ******************************************************************************/
@@ -247,8 +254,14 @@ enum ddr_type {
 /*******************************************************************************
  * STM32MP1 UART
  ******************************************************************************/
+#if STM32MP13
+#define USART1_BASE			U(0x4C000000)
+#define USART2_BASE			U(0x4C001000)
+#endif
+#if STM32MP15
 #define USART1_BASE			U(0x5C000000)
 #define USART2_BASE			U(0x4000E000)
+#endif
 #define USART3_BASE			U(0x4000F000)
 #define UART4_BASE			U(0x40010000)
 #define UART5_BASE			U(0x40011000)
@@ -424,9 +437,17 @@ enum ddr_type {
 #define PACKAGE_OTP			"package_otp"
 #endif
 #define HW2_OTP				"hw2_otp"
+#if STM32MP13
+#define NAND_OTP			"cfg9_otp"
+#define NAND2_OTP			"cfg10_otp"
+#endif
+#if STM32MP15
 #define NAND_OTP			"nand_otp"
+#endif
 #define MONOTONIC_OTP			"monotonic_otp"
 #define UID_OTP				"uid_otp"
+#define PKH_OTP				"pkh_otp"
+#define ENCKEY_OTP			"enckey_otp"
 #define BOARD_ID_OTP			"board_id"
 
 /* OTP mask */
@@ -484,7 +505,7 @@ enum ddr_type {
 #define NAND_BLOCK_SIZE_128_PAGES	U(1)
 #define NAND_BLOCK_SIZE_256_PAGES	U(2)
 
-/* NAND number of block (in unit of 256 blocs) */
+/* NAND number of block (in unit of 256 blocks) */
 #define NAND_BLOCK_NB_MASK		GENMASK_32(26, 19)
 #define NAND_BLOCK_NB_SHIFT		19
 #define NAND_BLOCK_NB_UNIT		U(256)
@@ -505,6 +526,14 @@ enum ddr_type {
 /* NAND number of planes */
 #define NAND_PLANE_BIT_NB_MASK		BIT(14)
 
+/* NAND2 OTP */
+#define NAND2_PAGE_SIZE_SHIFT		16
+
+/* NAND2 config distribution */
+#define NAND2_CONFIG_DISTRIB		BIT(0)
+#define NAND2_PNAND_NAND2_SNAND_NAND1	U(0)
+#define NAND2_PNAND_NAND1_SNAND_NAND2	U(1)
+
 /* MONOTONIC OTP */
 #define MAX_MONOTONIC_VALUE		32
 
@@ -519,6 +548,7 @@ enum ddr_type {
  ******************************************************************************/
 #define TAMP_BASE			U(0x5C00A000)
 #define TAMP_BKP_REGISTER_BASE		(TAMP_BASE + U(0x100))
+#define TAMP_COUNTR			U(0x40)
 
 #if !(defined(__LINKER__) || defined(__ASSEMBLER__))
 static inline uintptr_t tamp_bkpr(uint32_t idx)
@@ -634,5 +664,6 @@ static inline uintptr_t tamp_bkpr(uint32_t idx)
 #define DT_RCC_SEC_CLK_COMPAT		"st,stm32mp1-rcc-secure"
 #endif
 #define DT_SDMMC2_COMPAT		"st,stm32-sdmmc2"
+#define DT_UART_COMPAT			"st,stm32h7-uart"
 
 #endif /* STM32MP1_DEF_H */

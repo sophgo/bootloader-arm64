@@ -19,8 +19,8 @@ int arch_cpu_init(void)
 }
 #endif
 
-/* R-Car Gen3 D-cache is enabled in memmap-gen3.c */
-#ifndef CONFIG_RCAR_GEN3
+/* R-Car Gen3 and Gen4 D-cache is enabled in memmap-gen3.c */
+#ifndef CONFIG_RCAR_64
 #if !CONFIG_IS_ENABLED(SYS_DCACHE_OFF)
 void enable_caches(void)
 {
@@ -30,7 +30,7 @@ void enable_caches(void)
 #endif
 
 #ifdef CONFIG_DISPLAY_CPUINFO
-#ifndef CONFIG_RZA1
+#if !defined(CONFIG_RZA1) && !defined(CONFIG_RZN1)
 __weak const u8 *rzg_get_cpu_name(void)
 {
 	return 0;
@@ -62,7 +62,6 @@ static const struct {
 	u16 cpu_type;
 	u8 cpu_name[10];
 } rmobile_cpuinfo[] = {
-	{ RMOBILE_CPU_TYPE_SH73A0, "SH73A0" },
 	{ RMOBILE_CPU_TYPE_R8A7740, "R8A7740" },
 	{ RMOBILE_CPU_TYPE_R8A7790, "R8A7790" },
 	{ RMOBILE_CPU_TYPE_R8A7791, "R8A7791" },
@@ -77,6 +76,8 @@ static const struct {
 	{ RMOBILE_CPU_TYPE_R8A77990, "R8A77990" },
 	{ RMOBILE_CPU_TYPE_R8A77995, "R8A77995" },
 	{ RMOBILE_CPU_TYPE_R8A779A0, "R8A779A0" },
+	{ RMOBILE_CPU_TYPE_R8A779F0, "R8A779F0" },
+	{ RMOBILE_CPU_TYPE_R8A779G0, "R8A779G0" },
 	{ 0x0, "CPU" },
 };
 
@@ -119,16 +120,29 @@ int print_cpuinfo(void)
 {
 	int i = rmobile_cpuinfo_idx();
 
+	if (rmobile_cpuinfo[i].cpu_type == RMOBILE_CPU_TYPE_R8A7796 &&
+	    rmobile_get_cpu_rev_integer() == 1 &&
+	    rmobile_get_cpu_rev_fraction() == 1) {
+		printf("CPU:   Renesas Electronics %s rev 1.1/1.2\n", get_cpu_name(i));
+		return 0;
+	}
+
 	printf("CPU:   Renesas Electronics %s rev %d.%d\n",
 		get_cpu_name(i), rmobile_get_cpu_rev_integer(),
 		rmobile_get_cpu_rev_fraction());
 
 	return 0;
 }
-#else
+#elif defined(CONFIG_RZA1)
 int print_cpuinfo(void)
 {
 	printf("CPU: Renesas Electronics RZ/A1\n");
+	return 0;
+}
+#else /* CONFIG_RZN1 */
+int print_cpuinfo(void)
+{
+	printf("CPU: Renesas Electronics RZ/N1\n");
 	return 0;
 }
 #endif

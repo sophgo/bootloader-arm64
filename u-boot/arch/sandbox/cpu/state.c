@@ -10,8 +10,10 @@
 #include <fdtdec.h>
 #include <log.h>
 #include <os.h>
+#include <trace.h>
 #include <asm/malloc.h>
 #include <asm/state.h>
+#include <asm/test.h>
 
 /* Main state record for the sandbox */
 static struct sandbox_state main_state;
@@ -366,6 +368,7 @@ void state_reset_for_test(struct sandbox_state *state)
 	state->sysreset_allowed[SYSRESET_POWER_OFF] = true;
 	state->sysreset_allowed[SYSRESET_COLD] = true;
 	state->allow_memio = false;
+	sandbox_set_eth_enable(true);
 
 	memset(&state->wdt, '\0', sizeof(state->wdt));
 	memset(state->spi, '\0', sizeof(state->spi));
@@ -396,11 +399,87 @@ bool autoboot_set_keyed(bool autoboot_keyed)
 	return old_val;
 }
 
+int state_get_rel_filename(const char *rel_path, char *buf, int size)
+{
+	struct sandbox_state *state = state_get_current();
+	int rel_len, prog_len;
+	char *p;
+	int len;
+
+	rel_len = strlen(rel_path);
+	p = strrchr(state->argv[0], '/');
+	prog_len = p ? p - state->argv[0] : 0;
+
+	/* allow space for a / and a terminator */
+	len = prog_len + 1 + rel_len + 1;
+	if (len > size)
+		return -ENOSPC;
+	strncpy(buf, state->argv[0], prog_len);
+	buf[prog_len] = '/';
+	strcpy(buf + prog_len + 1, rel_path);
+
+	return len;
+}
+
+int state_load_other_fdt(const char **bufp, int *sizep)
+{
+	struct sandbox_state *state = state_get_current();
+	char fname[256];
+	int len, ret;
+
+	/* load the file if needed */
+	if (!state->other_fdt_buf) {
+		len = state_get_rel_filename("arch/sandbox/dts/other.dtb",
+					     fname, sizeof(fname));
+		if (len < 0)
+			return len;
+
+		ret = os_read_file(fname, &state->other_fdt_buf,
+				   &state->other_size);
+		if (ret) {
+			log_err("Cannot read file '%s'\n", fname);
+			return ret;
+		}
+	}
+	*bufp = state->other_fdt_buf;
+	*sizep = state->other_size;
+
+	return 0;
+}
+
+void sandbox_set_eth_enable(bool enable)
+{
+	struct sandbox_state *state = state_get_current();
+
+	state->disable_eth = !enable;
+}
+
+bool sandbox_eth_enabled(void)
+{
+	struct sandbox_state *state = state_get_current();
+
+	return !state->disable_eth;
+}
+
+void sandbox_sf_set_enable_bootdevs(bool enable)
+{
+	struct sandbox_state *state = state_get_current();
+
+	state->disable_sf_bootdevs = !enable;
+}
+
+bool sandbox_sf_bootdev_enabled(void)
+{
+	struct sandbox_state *state = state_get_current();
+
+	return !state->disable_sf_bootdevs;
+}
+
 int state_init(void)
 {
 	state = &main_state;
 
-	state->ram_size = CONFIG_SYS_SDRAM_SIZE;
+	state->ram_size = CFG_SYS_SDRAM_SIZE;
 	state->ram_buf = os_malloc(state->ram_size);
 	if (!state->ram_buf) {
 		printf("Out of memory\n");
@@ -422,7 +501,7 @@ int state_uninit(void)
 	int err;
 
 	if (state->write_ram_buf || state->write_state)
-		log_info("Writing sandbox state\n");
+		log_debug("Writing sandbox state\n");
 	state = &main_state;
 
 	/* Finish the bloblist, so that it is correct before writing memory */
@@ -446,6 +525,10 @@ int state_uninit(void)
 	/* Delete this at the last moment so as not to upset gdb too much */
 	if (state->jumped_fname)
 		os_unlink(state->jumped_fname);
+
+	/* Disable tracing before unmapping RAM */
+	if (IS_ENABLED(CONFIG_TRACE))
+		trace_set_enabled(0);
 
 	os_free(state->state_fdt);
 	os_free(state->ram_buf);

@@ -112,12 +112,6 @@ function install_prepackages()
 	fi
 }
 
-function invoke_board_setup() {
-    local board setup
-    board="$(tr -d '\0' </proc/device-tree/info/file-name)"
-    setup="/usr/sbin/$(basename $board .dtb)-setup.sh"
-    test -x "$setup" && "$setup"
-}
 
 # enable /etc/ld.so.conf.d/system.conf
 ldconfig
@@ -158,7 +152,5 @@ else
 	systemctl start bmssm.service
 	systemctl enable sophliteos.service
 	systemctl start sophliteos.service
-
 fi
-invoke_board_setup
 echo "bmrt_setup finish done!!!"

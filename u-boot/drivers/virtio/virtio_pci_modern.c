@@ -218,25 +218,6 @@ static int virtio_pci_set_status(struct udevice *udev, u8 status)
 	return 0;
 }
 
-static int virtio_pci_reset(struct udevice *udev)
-{
-	struct virtio_pci_priv *priv = dev_get_priv(udev);
-
-	/* 0 status means a reset */
-	iowrite8(0, &priv->common->device_status);
-
-	/*
-	 * After writing 0 to device_status, the driver MUST wait for a read
-	 * of device_status to return 0 before reinitializing the device.
-	 * This will flush out the status write, and flush in device writes,
-	 * including MSI-X interrupts, if any.
-	 */
-	while (ioread8(&priv->common->device_status))
-		udelay(1000);
-
-	return 0;
-}
-
 static int virtio_pci_get_features(struct udevice *udev, u64 *features)
 {
 	struct virtio_pci_priv *priv = dev_get_priv(udev);
@@ -363,6 +344,25 @@ static int virtio_pci_find_vqs(struct udevice *udev, unsigned int nvqs,
 	return 0;
 }
 
+static int virtio_pci_reset(struct udevice *udev)
+{
+	struct virtio_pci_priv *priv = dev_get_priv(udev);
+
+	/* 0 status means a reset */
+	iowrite8(0, &priv->common->device_status);
+
+	/*
+	 * After writing 0 to device_status, the driver MUST wait for a read
+	 * of device_status to return 0 before reinitializing the device.
+	 * This will flush out the status write, and flush in device writes,
+	 * including MSI-X interrupts, if any.
+	 */
+	while (ioread8(&priv->common->device_status))
+		udelay(1000);
+
+	return virtio_pci_del_vqs(udev);
+}
+
 static int virtio_pci_notify(struct udevice *udev, struct virtqueue *vq)
 {
 	struct virtio_pci_priv *priv = dev_get_priv(udev);
@@ -466,7 +466,7 @@ static void __iomem *virtio_pci_map_capability(struct udevice *udev,
 	unsigned long mask =
 			PCI_REGION_TYPE | PCI_REGION_SYS_MEMORY | PCI_REGION_RO;
 	unsigned long flags = PCI_REGION_MEM;
-	u8 *p = dm_pci_map_bar(udev, PCI_BASE_ADDRESS_0 + cap->bar, cap->offset,
+	u8 *p = dm_pci_map_bar(udev, PCI_BASE_ADDRESS_0 + 4 * cap->bar, cap->offset,
 			       cap->length, mask, flags);
 
 	return (void __iomem *)p;

@@ -26,12 +26,12 @@
 static int spi_load_image_os(struct spl_image_info *spl_image,
 			     struct spl_boot_device *bootdev,
 			     struct spi_flash *flash,
-			     struct image_header *header)
+			     struct legacy_img_hdr *header)
 {
 	int err;
 
 	/* Read for a header, parse or error out. */
-	spi_flash_read(flash, CONFIG_SYS_SPI_KERNEL_OFFS, sizeof(*header),
+	spi_flash_read(flash, CFG_SYS_SPI_KERNEL_OFFS, sizeof(*header),
 		       (void *)header);
 
 	if (image_get_magic(header) != IH_MAGIC)
@@ -41,12 +41,12 @@ static int spi_load_image_os(struct spl_image_info *spl_image,
 	if (err)
 		return err;
 
-	spi_flash_read(flash, CONFIG_SYS_SPI_KERNEL_OFFS,
+	spi_flash_read(flash, CFG_SYS_SPI_KERNEL_OFFS,
 		       spl_image->size, (void *)spl_image->load_addr);
 
 	/* Read device tree. */
-	spi_flash_read(flash, CONFIG_SYS_SPI_ARGS_OFFS,
-		       CONFIG_SYS_SPI_ARGS_SIZE,
+	spi_flash_read(flash, CFG_SYS_SPI_ARGS_OFFS,
+		       CFG_SYS_SPI_ARGS_SIZE,
 		       (void *)CONFIG_SYS_SPL_ARGS_ADDR);
 
 	return 0;
@@ -92,7 +92,7 @@ static int spl_spi_load_image(struct spl_image_info *spl_image,
 	int err = 0;
 	unsigned int payload_offs;
 	struct spi_flash *flash;
-	struct image_header *header;
+	struct legacy_img_hdr *header;
 	unsigned int sf_bus = spl_spi_boot_bus();
 	unsigned int sf_cs = spl_spi_boot_cs();
 
@@ -139,7 +139,7 @@ static int spl_spi_load_image(struct spl_image_info *spl_image,
 			if (err)
 				return err;
 			err = spl_parse_image_header(spl_image, bootdev,
-					(struct image_header *)CONFIG_SYS_LOAD_ADDR);
+					(struct legacy_img_hdr *)CONFIG_SYS_LOAD_ADDR);
 		} else if (IS_ENABLED(CONFIG_SPL_LOAD_FIT) &&
 			   image_get_magic(header) == FDT_MAGIC) {
 			struct spl_load_info load;

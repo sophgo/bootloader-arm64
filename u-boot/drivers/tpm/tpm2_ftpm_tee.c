@@ -18,9 +18,12 @@
 #include <log.h>
 #include <tpm-v2.h>
 #include <tee.h>
+#include <tee/optee_service.h>
 
 #include "tpm_tis.h"
 #include "tpm2_ftpm_tee.h"
+
+OPTEE_SERVICE_DRIVER(optee_ftpm, TA_FTPM_UUID, "ftpm_tee");
 
 /**
  * ftpm_tee_transceive() - send fTPM commands and retrieve fTPM response.
@@ -186,6 +189,7 @@ static int ftpm_tee_probe(struct udevice *dev)
 
 	/* Open a session with the fTPM TA */
 	memset(&sess_arg, 0, sizeof(sess_arg));
+	sess_arg.clnt_login = TEE_LOGIN_REE_KERNEL;
 	tee_optee_ta_uuid_to_octets(sess_arg.uuid, &uuid);
 
 	rc = tee_open_session(context->tee_dev, &sess_arg, 0, NULL);

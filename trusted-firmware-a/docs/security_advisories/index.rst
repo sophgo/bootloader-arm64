@@ -4,7 +4,6 @@ Security Advisories
 .. toctree::
    :maxdepth: 1
    :caption: Contents
-   :numbered:
 
    security-advisory-tfv-1.rst
    security-advisory-tfv-2.rst
@@ -15,3 +14,4 @@ Security Advisories
    security-advisory-tfv-7.rst
    security-advisory-tfv-8.rst
    security-advisory-tfv-9.rst
+   security-advisory-tfv-10.rst

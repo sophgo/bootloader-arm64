@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2022, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -101,7 +101,7 @@
  * PLAT_ARM_MAX_BL1_RW_SIZE is calculated using the current BL1 RW debug size
  * plus a little space for growth.
  */
-#define PLAT_ARM_MAX_BL1_RW_SIZE	0xC000
+#define PLAT_ARM_MAX_BL1_RW_SIZE	0xD000
 
 /*
  * PLAT_ARM_MAX_ROMLIB_RW_SIZE is define to use a full page
@@ -117,20 +117,19 @@
 
 /*
  * PLAT_ARM_MAX_BL2_SIZE is calculated using the current BL2 debug size plus a
- * little space for growth.
+ * little space for growth. Current size is considering that TRUSTED_BOARD_BOOT
+ * and MEASURED_BOOT is enabled.
  */
-#if TRUSTED_BOARD_BOOT
-# define PLAT_ARM_MAX_BL2_SIZE		0x20000
-#else
-# define PLAT_ARM_MAX_BL2_SIZE		0x14000
-#endif
+# define PLAT_ARM_MAX_BL2_SIZE		0x26000
+
 
 /*
  * Since BL31 NOBITS overlays BL2 and BL1-RW, PLAT_ARM_MAX_BL31_SIZE is
  * calculated using the current BL31 PROGBITS debug size plus the sizes of
- * BL2 and BL1-RW
+ * BL2 and BL1-RW. Current size is considering that TRUSTED_BOARD_BOOT and
+ * MEASURED_BOOT is enabled.
  */
-#define PLAT_ARM_MAX_BL31_SIZE		0x3F000
+#define PLAT_ARM_MAX_BL31_SIZE		0x47000
 
 /*
  * Size of cacheable stacks
@@ -159,6 +158,13 @@
 # define PLATFORM_STACK_SIZE		0x440
 #endif
 
+/*
+ * In the current implementation the RoT Service request that requires the
+ * biggest message buffer is the RSS_DELEGATED_ATTEST_GET_PLATFORM_TOKEN. The
+ * maximum required buffer size is calculated based on the platform-specific
+ * needs of this request.
+ */
+#define PLAT_RSS_COMMS_PAYLOAD_MAX_SIZE	0x500
 
 #define TC_DEVICE_BASE			0x21000000
 #define TC_DEVICE_SIZE			0x5f000000
@@ -177,8 +183,14 @@
 
 #define PLAT_ARM_NSTIMER_FRAME_ID	0
 
+#if (TARGET_PLATFORM >= 2)
+#define PLAT_ARM_TRUSTED_ROM_BASE	0x1000
+#else
 #define PLAT_ARM_TRUSTED_ROM_BASE	0x0
-#define PLAT_ARM_TRUSTED_ROM_SIZE	0x00080000	/* 512KB */
+#endif
+
+/* PLAT_ARM_TRUSTED_ROM_SIZE 512KB minus ROM base. */
+#define PLAT_ARM_TRUSTED_ROM_SIZE	(0x00080000 - PLAT_ARM_TRUSTED_ROM_BASE)
 
 #define PLAT_ARM_NSRAM_BASE		0x06000000
 #define PLAT_ARM_NSRAM_SIZE		0x00080000	/* 512KB */
@@ -214,8 +226,13 @@
 #define PLAT_MAX_CPUS_PER_CLUSTER	U(8)
 #define PLAT_MAX_PE_PER_CPU		U(1)
 
+/* Message Handling Unit (MHU) base addresses */
 #define PLAT_CSS_MHU_BASE		UL(0x45400000)
 #define PLAT_MHUV2_BASE			PLAT_CSS_MHU_BASE
+
+/* TC2: AP<->RSS MHUs */
+#define PLAT_RSS_AP_SND_MHU_BASE	UL(0x2A840000)
+#define PLAT_RSS_AP_RCV_MHU_BASE	UL(0x2A850000)
 
 #define CSS_SYSTEM_PWR_DMN_LVL		ARM_PWR_LVL2
 #define PLAT_MAX_PWR_LVL		ARM_PWR_LVL1

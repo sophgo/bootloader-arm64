@@ -30,7 +30,7 @@
 #define DISK_PART_TABLE_ADDR	0x600000
 
 DECLARE_GLOBAL_DATA_PTR;
-#ifdef CONFIG_ARCH_MANGO_PLD
+#ifdef CFG_ARCH_MANGO_PLD
 int GET_BOARD_TYPE;
 #elif defined(CONFIG_ARCH_MANGO_FPGA)
 int GET_BOARD_TYPE = 1;
@@ -256,7 +256,7 @@ static void __maybe_unused show_mac(void *mac)
 
 static int setup_mac(void)
 {
-#if !defined(CONFIG_ARCH_MANGO_PLD) && !defined(CONFIG_ARCH_MANGO_PLD_FPGA)
+#if !defined(CFG_ARCH_MANGO_PLD) && !defined(CFG_ARCH_MANGO_PLD_FPGA)
 	int err, i;
 	uint8_t mac[MCU_MAC_MAX][MCU_MAC_SIZE];
 	char eth[16];

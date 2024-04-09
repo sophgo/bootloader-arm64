@@ -46,7 +46,7 @@ void s_init(void) {
 int board_init(void)
 {
 	/* Address of boot parameters for ATAG (if ATAG is used) */
-	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;
+	gd->bd->bi_boot_params = CFG_SYS_SDRAM_BASE + 0x100;
 
 	return 0;
 }
@@ -114,7 +114,7 @@ void board_fit_image_post_process(const void *fit, int node, void **p_image,
 #endif
 
 #if !IS_ENABLED(CONFIG_SPL_BUILD) && IS_ENABLED(CONFIG_FIT)
-void board_prep_linux(bootm_headers_t *images)
+void board_prep_linux(struct bootm_headers *images)
 {
 	if (!images->fit_uname_cfg) {
 		if (IS_ENABLED(CONFIG_SOCFPGA_SECURE_VAB_AUTH) &&

@@ -11,12 +11,10 @@ config SYS_CONFIG_NAME
 
 config BOARD_SPECIFIC_OPTIONS # dummy
 	def_bool y
+	select ENV_IS_NOWHERE
 
 config ENV_SIZE
 	default 0x4000
-
-config ENV_OFFSET
-	default 0x3fc000 if ENV_IS_IN_SPI_FLASH
 
 choice
 	prompt "Theobroma Systems RK3399-Q7 DDR Option"

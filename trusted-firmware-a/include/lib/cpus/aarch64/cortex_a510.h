@@ -17,6 +17,8 @@
 #define CORTEX_A510_CPUECTLR_EL1_READPREFERUNIQUE_DISABLE	U(1)
 #define CORTEX_A510_CPUECTLR_EL1_RSCTL_SHIFT			U(23)
 #define CORTEX_A510_CPUECTLR_EL1_NTCTL_SHIFT			U(46)
+#define CORTEX_A510_CPUECTLR_EL1_ATOM_EXECALLINSTRNEAR		U(2)
+#define CORTEX_A510_CPUECTLR_EL1_ATOM				U(38)
 
 /*******************************************************************************
  * CPU Power Control register specific definitions
@@ -33,5 +35,7 @@
  * Auxiliary control register specific definitions
  ******************************************************************************/
 #define CORTEX_A510_CPUACTLR_EL1				S3_0_C15_C1_0
+#define CORTEX_A510_CPUACTLR_EL1_BIT_17				(ULL(1) << 17)
+#define CORTEX_A510_CPUACTLR_EL1_BIT_38				(ULL(1) << 38)
 
 #endif /* CORTEX_A510_H */

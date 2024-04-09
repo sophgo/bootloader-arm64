@@ -109,16 +109,6 @@ void stm32mp_print_boardinfo(void);
 /* Initialise the IO layer and register platform IO devices */
 void stm32mp_io_setup(void);
 
-#if STM32MP_USE_STM32IMAGE
-/*
- * Check that the STM32 header of a .stm32 binary image is valid
- * @param header: pointer to the stm32 image header
- * @param buffer: address of the binary image (payload)
- * @return: 0 on success, negative value in case of error
- */
-int stm32mp_check_header(boot_api_image_header_t *header, uintptr_t buffer);
-#endif /* STM32MP_USE_STM32IMAGE */
-
 /* Functions to map DDR in MMU with non-cacheable attribute, and unmap it */
 int stm32mp_map_ddr_non_cacheable(void);
 int stm32mp_unmap_ddr(void);
@@ -127,10 +117,13 @@ int stm32mp_unmap_ddr(void);
 void stm32_save_boot_interface(uint32_t interface, uint32_t instance);
 void stm32_get_boot_interface(uint32_t *interface, uint32_t *instance);
 
-#if !STM32MP_USE_STM32IMAGE && PSA_FWU_SUPPORT
+/* Functions to save and get boot authentication status and partition used */
+void stm32_save_boot_auth(uint32_t auth_status, uint32_t boot_partition);
+
+#if PSA_FWU_SUPPORT
 void stm32mp1_fwu_set_boot_idx(void);
 uint32_t stm32_get_and_dec_fwu_trial_boot_cnt(void);
 void stm32_set_max_fwu_trial_boot_cnt(void);
-#endif /* !STM32MP_USE_STM32IMAGE && PSA_FWU_SUPPORT */
+#endif /* PSA_FWU_SUPPORT */
 
 #endif /* STM32MP_COMMON_H */

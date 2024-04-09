@@ -3,21 +3,42 @@
 
 #include "mango_pcie.h"
 
-const struct cdns_reg_pairs phy_reg_common_cfg_sets[] = {
+const struct cdns_reg_pairs phy_reg_nobfr_common_cfg_sets[] = {
 	// PHY Register settings
 	{0xC003, 0x0144},       // PHY_PIPE_COM_LOCK_CFG2
-	{0xC00E, 0x0000},       // PHY_PLL_CFG
 	{0xE000, 0x3300},       // PHY_PMA_CMN
 	// General PMA Common Settings
-	{0x0098, 0x0000},
 	{0x00A0, 0x002F},
 	// PLL PMA Common Setting
-	{0x0043, 0x00C8},
-	{0x004A, 0x0083},
-	{0x004C, 0x0000},
-	{0x0050, 0x0000},
+	{0x0048, 0x0105},
+	{0x0049, 0x2105},
+	{0x004A, 0x3106},
+	{0x0050, 0x8804},
 	{0x005A, 0x0CDB},
-	{0x0062, 0x0000},
+	{0x0062, 0x1219},
+	// If the following write is the only Common PMA write,
+	// it must be preceded by a read to PMA Common address offset 0x0000.
+	{0x0023, 0x413B}
+};
+
+const struct cdns_reg_pairs phy_reg_bfr_common_cfg_sets[] = {
+	// PHY Register settings
+	{0xC003, 0x0144},
+	{0xC00E, 0x0002},
+	{0xE000, 0x3300},
+	// General PMA Common Settings
+	{0x0098, 0x2100},
+	{0x00A0, 0x002F},
+	// PLL PMA Common Setting
+	{0x0048, 0x0105},
+	{0x00C8, 0x0105},
+	{0x004A, 0x3106},
+	{0x00CA, 0x2105},
+	{0x0050, 0x8804},
+	{0x005A, 0x0CDB},
+	{0x00DA, 0x0CDB},
+	{0x0062, 0x1219},
+	{0x00E2, 0x1912},
 	// If the following write is the only Common PMA write,
 	// it must be preceded by a read to PMA Common address offset 0x0000.
 	{0x0023, 0x413B}
@@ -28,8 +49,8 @@ const struct cdns_reg_pairs phy_reg_port_cfg_sets[] = {
 	// Port Config: port_mode=pcie_via_pipe  port_width=32
 	// port_fullrt=1000 port_lt=NA port_drv_mode=NA port_fts=no refclk_freq=25
 	{0x6003, 0x6910},
-
 	{0x6006, 0x0000},
+	{0x603B, 0x000C},
 	{0x604C, 0x0D33},
 	{0x606F, 0x9602},
 	{0x6071, 0x0271},

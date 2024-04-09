@@ -31,18 +31,16 @@ static int broadwell_init_cpu(void *ctx, struct event *event)
 	int ret;
 
 	/* Start up the LPC so we have serial */
-	ret = uclass_first_device(UCLASS_LPC, &dev);
+	ret = uclass_first_device_err(UCLASS_LPC, &dev);
 	if (ret)
 		return ret;
-	if (!dev)
-		return -ENODEV;
 	ret = cpu_set_flex_ratio_to_tdp_nominal();
 	if (ret)
 		return ret;
 
 	return 0;
 }
-EVENT_SPY(EVT_DM_POST_INIT, broadwell_init_cpu);
+EVENT_SPY(EVT_DM_POST_INIT_F, broadwell_init_cpu);
 
 void set_max_freq(void)
 {

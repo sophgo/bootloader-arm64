@@ -125,6 +125,10 @@
  */
 #define PHY_DETECT_MASK 0x1808
 
+/* PCS (SGMII) Link Status */
+#define ZYNQ_GEM_PCSSTATUS_LINK		BIT(2)
+#define ZYNQ_GEM_PCSSTATUS_ANEG_COMPL	BIT(5)
+
 /* TX BD status masks */
 #define ZYNQ_GEM_TXBUF_FRMLEN_MASK	0x000007ff
 #define ZYNQ_GEM_TXBUF_EXHAUSTED	0x08000000
@@ -164,7 +168,8 @@ struct zynq_gem_regs {
 	u32 stat[STAT_SIZE]; /* 0x100 - Octects transmitted Low reg */
 	u32 reserved9[20];
 	u32 pcscntrl;
-	u32 rserved12[36];
+	u32 pcsstatus;
+	u32 rserved12[35];
 	u32 dcfg6; /* 0x294 Design config reg6 */
 	u32 reserved7[106];
 	u32 transmit_q1_ptr; /* 0x440 - Transmit priority queue 1 */
@@ -328,7 +333,7 @@ static int zynq_phy_init(struct udevice *dev)
 
 	priv->phydev = phy_connect(priv->bus, priv->phyaddr, dev,
 				   priv->interface);
-	if (!priv->phydev)
+	if (IS_ERR_OR_NULL(priv->phydev))
 		return -ENODEV;
 
 	if (priv->max_speed) {
@@ -491,19 +496,47 @@ static int zynq_gem_init(struct udevice *dev)
 		 * Must be written after PCS_SEL is set in nwconfig,
 		 * otherwise writes will not take effect.
 		 */
-		if (priv->phydev->phy_id != PHY_FIXED_ID)
+		if (priv->phydev->phy_id != PHY_FIXED_ID) {
 			writel(readl(&regs->pcscntrl) | ZYNQ_GEM_PCS_CTL_ANEG_ENBL,
 			       &regs->pcscntrl);
-		else
+			/*
+			 * When the PHY link is already up, the PCS link needs
+			 * to get re-checked
+			 */
+			if (priv->phydev->link) {
+				u32 pcsstatus;
+
+				pcsstatus = ZYNQ_GEM_PCSSTATUS_LINK |
+					ZYNQ_GEM_PCSSTATUS_ANEG_COMPL;
+				ret = wait_for_bit_le32(&regs->pcsstatus,
+							pcsstatus,
+							true, 5000, true);
+				if (ret) {
+					dev_warn(dev,
+						 "no PCS (SGMII) link\n");
+				} else {
+					/*
+					 * Some additional minimal delay seems
+					 * to be needed so that the first
+					 * packet will be sent correctly
+					 */
+					mdelay(1);
+				}
+			}
+		} else {
 			writel(readl(&regs->pcscntrl) & ~ZYNQ_GEM_PCS_CTL_ANEG_ENBL,
 			       &regs->pcscntrl);
+		}
 	}
 #endif
 
-	ret = clk_set_rate(&priv->tx_clk, clk_rate);
-	if (IS_ERR_VALUE(ret)) {
-		dev_err(dev, "failed to set tx clock rate\n");
-		return ret;
+	ret = clk_get_rate(&priv->tx_clk);
+	if (ret != clk_rate) {
+		ret = clk_set_rate(&priv->tx_clk, clk_rate);
+		if (IS_ERR_VALUE(ret)) {
+			dev_err(dev, "failed to set tx clock rate %ld\n", clk_rate);
+			return ret;
+		}
 	}
 
 	ret = clk_enable(&priv->tx_clk);
@@ -659,21 +692,6 @@ static void zynq_gem_halt(struct udevice *dev)
 						ZYNQ_GEM_NWCTRL_TXEN_MASK, 0);
 }
 
-__weak int zynq_board_read_rom_ethaddr(unsigned char *ethaddr)
-{
-	return -ENOSYS;
-}
-
-static int zynq_gem_read_rom_mac(struct udevice *dev)
-{
-	struct eth_pdata *pdata = dev_get_plat(dev);
-
-	if (!pdata)
-		return -ENOSYS;
-
-	return zynq_board_read_rom_ethaddr(pdata->enetaddr);
-}
-
 static int zynq_gem_miiphy_read(struct mii_dev *bus, int addr,
 				int devad, int reg)
 {
@@ -720,7 +738,7 @@ static int gem_zynqmp_set_dynamic_config(struct udevice *dev)
 	u32 pm_info[2];
 	int ret;
 
-	if (IS_ENABLED(CONFIG_ARCH_ZYNQMP)) {
+	if (IS_ENABLED(CONFIG_ARCH_ZYNQMP) && IS_ENABLED(CONFIG_ZYNQMP_FIRMWARE)) {
 		if (!zynqmp_pm_is_function_supported(PM_IOCTL,
 						     IOCTL_SET_GEM_CONFIG)) {
 			ret = ofnode_read_u32_array(dev_ofnode(dev),
@@ -833,7 +851,8 @@ static int zynq_gem_probe(struct udevice *dev)
 
 	if (priv->interface == PHY_INTERFACE_MODE_SGMII && phy.dev) {
 		if (IS_ENABLED(CONFIG_DM_ETH_PHY)) {
-			if (device_is_compatible(dev, "cdns,zynqmp-gem")) {
+			if (device_is_compatible(dev, "cdns,zynqmp-gem") ||
+			    device_is_compatible(dev, "xlnx,zynqmp-gem")) {
 				ret = gem_zynqmp_set_dynamic_config(dev);
 				if (ret) {
 					dev_err
@@ -881,7 +900,6 @@ static const struct eth_ops zynq_gem_ops = {
 	.free_pkt		= zynq_gem_free_pkt,
 	.stop			= zynq_gem_halt,
 	.write_hwaddr		= zynq_gem_setup_mac,
-	.read_rom_hwaddr	= zynq_gem_read_rom_mac,
 };
 
 static int zynq_gem_of_to_plat(struct udevice *dev)
@@ -935,8 +953,11 @@ static int zynq_gem_of_to_plat(struct udevice *dev)
 }
 
 static const struct udevice_id zynq_gem_ids[] = {
+	{ .compatible = "xlnx,versal-gem", .data = RXCLK_EN },
 	{ .compatible = "cdns,versal-gem", .data = RXCLK_EN },
+	{ .compatible = "xlnx,zynqmp-gem" },
 	{ .compatible = "cdns,zynqmp-gem" },
+	{ .compatible = "xlnx,zynq-gem" },
 	{ .compatible = "cdns,zynq-gem" },
 	{ .compatible = "cdns,gem" },
 	{ }

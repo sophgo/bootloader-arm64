@@ -57,7 +57,6 @@ int bitmain_pinctrl_set_state(struct udevice *dev, struct udevice *config)
 			printf("pinctrl: error unknown pin %s\n", name);
 			continue;
 		}
-
 		if (pinmux != -1) {
 			value = readl(reg);
 			value &= ~(MUX_MASK << (MUX_OFFSET + pin_offset * 16));

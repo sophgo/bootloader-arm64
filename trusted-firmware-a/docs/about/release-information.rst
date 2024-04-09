@@ -52,22 +52,27 @@ depending on project requirement and partner feedback.
 +-----------------+---------------------------+------------------------------+
 | v2.8            | 5th week of Nov '22       | 3rd week of Nov '22          |
 +-----------------+---------------------------+------------------------------+
+| v2.9            | 1st week of May '23       | 3rd week of Apr '23          |
++-----------------+---------------------------+------------------------------+
 
 Removal of Deprecated Interfaces
 --------------------------------
 
-As mentioned in the :ref:`Platform Compatibility Policy`, this is a live
-document cataloging all the deprecated interfaces in TF-A project and the
-Release version after which it will be removed.
+As mentioned in the :ref:`Platform Ports Policy`, this is a live document
+cataloging all the deprecated interfaces in TF-A project and the Release version
+after which it will be removed.
 
 +--------------------------------+-------------+---------+---------------------------------------------------------+
 | Interface                      | Deprecation | Removed | Comments                                                |
 |                                | Date        | after   |                                                         |
 |                                |             | Release |                                                         |
 +================================+=============+=========+=========================================================+
-| STM32MP_USE_STM32IMAGE macro   |   Dec '21   |   2.7   | FIP is the recommended boot method for STM32MP          |
+| plat_convert_pk() function     |   Nov'22    | Next    | Platform conversion to manage specific PK hash          |
+|                                |             | release |                                                         |
+|                                |             | after   |                                                         |
+|                                |             | 2.8     |                                                         |
 +--------------------------------+-------------+---------+---------------------------------------------------------+
 
 --------------
 
-*Copyright (c) 2018-2021, Arm Limited and Contributors. All rights reserved.*
+*Copyright (c) 2018-2022, Arm Limited and Contributors. All rights reserved.*

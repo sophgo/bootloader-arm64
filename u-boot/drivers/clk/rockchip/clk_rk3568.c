@@ -14,6 +14,7 @@
 #include <asm/arch-rockchip/clock.h>
 #include <asm/arch-rockchip/hardware.h>
 #include <asm/io.h>
+#include <dm/device-internal.h>
 #include <dm/lists.h>
 #include <dt-bindings/clock/rk3568-cru.h>
 
@@ -424,6 +425,9 @@ static ulong rk3568_pmuclk_set_rate(struct clk *clk, ulong rate)
 	case PCLK_PMU:
 		ret = rk3568_pmu_set_pmuclk(priv, rate);
 		break;
+	case CLK_PCIEPHY0_REF:
+	case CLK_PCIEPHY1_REF:
+		return 0;
 	default:
 		return -ENOENT;
 	}
@@ -497,7 +501,7 @@ static int rk3568_pmuclk_bind(struct udevice *dev)
 	ret = offsetof(struct rk3568_pmucru, pmu_softrst_con[0]);
 	ret = rockchip_reset_bind(dev, ret, 1);
 	if (ret)
-		debug("Warning: pmucru software reset driver bind faile\n");
+		debug("Warning: pmucru software reset driver bind failed\n");
 #endif
 
 	return 0;
@@ -1442,6 +1446,7 @@ static ulong rk3568_sdmmc_set_clk(struct rk3568_clk_priv *priv,
 	switch (rate) {
 	case OSC_HZ:
 	case 26 * MHz:
+	case 25 * MHz:
 		src_clk = CLK_SDMMC_SEL_24M;
 		break;
 	case 400 * MHz:
@@ -1631,6 +1636,8 @@ static ulong rk3568_emmc_set_clk(struct rk3568_clk_priv *priv, ulong rate)
 
 	switch (rate) {
 	case OSC_HZ:
+	case 26 * MHz:
+	case 25 * MHz:
 		src_clk = CCLK_EMMC_SEL_24M;
 		break;
 	case 52 * MHz:
@@ -2831,6 +2838,8 @@ static int rk3568_clk_set_parent(struct clk *clk, struct clk *parent)
 	case ACLK_RKVDEC_PRE:
 	case CLK_RKVDEC_CORE:
 		return rk3568_rkvdec_set_parent(clk, parent);
+	case I2S1_MCLKOUT_TX:
+		break;
 	default:
 		return -ENOENT;
 	}
@@ -2934,13 +2943,14 @@ static int rk3568_clk_bind(struct udevice *dev)
 						    glb_srst_fst);
 		priv->glb_srst_snd_value = offsetof(struct rk3568_cru,
 						    glb_srsr_snd);
+		dev_set_priv(sys_child, priv);
 	}
 
 #if CONFIG_IS_ENABLED(RESET_ROCKCHIP)
 	ret = offsetof(struct rk3568_cru, softrst_con[0]);
 	ret = rockchip_reset_bind(dev, ret, 30);
 	if (ret)
-		debug("Warning: software reset driver bind faile\n");
+		debug("Warning: software reset driver bind failed\n");
 #endif
 
 	return 0;

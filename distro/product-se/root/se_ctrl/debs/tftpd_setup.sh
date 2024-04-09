@@ -1,8 +1,6 @@
 #!/bin/bash
 
 #fan and temperature monitor
-systemctl enable bmSE6Monitor.service
-systemctl restart bmSE6Monitor.service
 echo "stop systemd-timesyncd services"
 
 systemctl stop systemd-time-wait-sync.service

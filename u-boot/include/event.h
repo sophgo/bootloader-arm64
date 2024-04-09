@@ -22,7 +22,7 @@ enum event_t {
 	EVT_TEST,
 
 	/* Events related to driver model */
-	EVT_DM_POST_INIT,
+	EVT_DM_POST_INIT_F,
 	EVT_DM_PRE_PROBE,
 	EVT_DM_POST_PROBE,
 	EVT_DM_PRE_REMOVE,
@@ -33,6 +33,9 @@ enum event_t {
 
 	/* Device tree fixups before booting */
 	EVT_FT_FIXUP,
+
+	/* To be called once, before calling main_loop() */
+	EVT_MAIN_LOOP,
 
 	EVT_COUNT
 };
@@ -60,9 +63,11 @@ union event_data {
 	 * struct event_ft_fixup - FDT fixup before booting
 	 *
 	 * @tree: tree to update
+	 * @images: images which are being booted
 	 */
 	struct event_ft_fixup {
 		oftree tree;
+		struct bootm_headers *images;
 	} ft_fixup;
 };
 
@@ -143,8 +148,8 @@ static inline const char *event_spy_id(struct evspy_info *spy)
  * vbe_simple.c - so for now, make it global.
  */
 #define EVENT_SPY(_type, _func) \
-	__used ll_entry_declare(struct evspy_info, _type, evspy_info) = \
-	_ESPY_REC(_type, _func)
+	__used ll_entry_declare(struct evspy_info, _type ## _3_ ## _func, \
+		evspy_info) = _ESPY_REC(_type, _func)
 
 /**
  * event_register - register a new spy

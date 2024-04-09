@@ -23,7 +23,6 @@
 #include <spi_flash.h>
 
 #include <asm/io.h>
-#include <asm/arch/sys_proto.h>
 #include "common.h"
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -88,10 +87,10 @@ static void *sysfw_load_address;
  * Populate SPL hook to override the default load address used by the SPL
  * loader function with a custom address for SYSFW loading.
  */
-struct image_header *spl_get_load_buffer(ssize_t offset, size_t size)
+struct legacy_img_hdr *spl_get_load_buffer(ssize_t offset, size_t size)
 {
 	if (sysfw_loaded)
-		return (struct image_header *)(CONFIG_SYS_TEXT_BASE + offset);
+		return (struct legacy_img_hdr *)(CONFIG_TEXT_BASE + offset);
 	else if (sysfw_load_address)
 		return sysfw_load_address;
 	else
@@ -490,7 +489,7 @@ void k3_sysfw_loader(bool rom_loaded_sysfw,
 	sysfw_loaded = true;
 
 	/* Ensure the SYSFW image is in FIT format */
-	if (image_get_magic((const image_header_t *)sysfw_load_address) !=
+	if (image_get_magic((const struct legacy_img_hdr *)sysfw_load_address) !=
 	    FDT_MAGIC)
 		panic("SYSFW image not in FIT format!\n");
 

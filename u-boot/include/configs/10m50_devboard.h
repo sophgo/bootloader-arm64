@@ -15,7 +15,6 @@
 /*
  * SERIAL
  */
-#define CONFIG_SYS_NS16550_MEM32
 
 /*
  * Flash
@@ -31,9 +30,7 @@
  * -The heap is placed below the monitor
  * -The stack is placed below the heap (&grows down).
  */
-#define CONFIG_SYS_SDRAM_BASE		0xc8000000
-#define CONFIG_SYS_SDRAM_SIZE		0x08000000
-#define CONFIG_MONITOR_IS_IN_RAM
-#define CONFIG_SYS_MONITOR_LEN		0x80000	/* Reserve 512k */
+#define CFG_SYS_SDRAM_BASE		0xc8000000
+#define CFG_SYS_SDRAM_SIZE		0x08000000
 
 #endif /* __CONFIG_H */

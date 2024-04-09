@@ -57,7 +57,7 @@ In concert with maintainers migrating their block device usage to the
 appropriate DM driver, CONFIG_BLK needs to be set as well.  The final deadline
 here coincides with the final deadline for migration of the various block
 subsystems.  At this point we will be able to audit and correct the logic in
-Kconfig around using CONFIG_PARTITIONS and CONFIG_HAVE_BLOCK_DEVICE and make
+Kconfig around using CONFIG_PARTITIONS and CONFIG_SPL_LEGACY_BLOCK and make
 use of CONFIG_BLK / CONFIG_SPL_BLK as needed.
 
 CONFIG_DM_SPI / CONFIG_DM_SPI_FLASH
@@ -80,7 +80,7 @@ CONFIG_DM_VIDEO
 Deadline: 2019.07
 
 The video subsystem has supported driver model since early 2016. Maintainers
-should submit patches switching over to using CONFIG_DM_VIDEO and other base
+should submit patches switching over to using CONFIG_VIDEO and other base
 driver model options in time for inclusion in the 2019.07 release.
 
 CONFIG_DM_ETH
@@ -99,15 +99,7 @@ The I2C subsystem has supported the driver model since early 2015.
 Maintainers should submit patches switching over to using CONFIG_DM_I2C and
 other base driver model options in time for inclusion in the 2021.10 release.
 
-CONFIG_KEYBOARD
----------------
-Deadline: 2022.10
-
-This is a legacy option which has been replaced by driver model.
-Maintainers should submit patches switching over to using CONFIG_DM_KEYBOARD and
-other base driver model options in time for inclusion in the 2022.10 release.
-
-CONFIG_SYS_TIMER_RATE and CONFIG_SYS_TIMER_COUNTER
+CFG_SYS_TIMER_RATE and CFG_SYS_TIMER_COUNTER
 --------------------------------------------------
 Deadline: 2023.01
 

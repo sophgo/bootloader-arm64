@@ -189,10 +189,10 @@ void board_ft_fman_fixup_port(void *fdt, char *compat, phys_addr_t addr,
 	const char *phyconn;
 	int off;
 
-	ccsr_gur_t *gur = (void *)(CONFIG_SYS_MPC85xx_GUTS_ADDR);
+	ccsr_gur_t *gur = (void *)(CFG_SYS_MPC85xx_GUTS_ADDR);
 #ifdef CONFIG_TARGET_T2080QDS
 	serdes_corenet_t *srds_regs =
-		(void *)CONFIG_SYS_FSL_CORENET_SERDES_ADDR;
+		(void *)CFG_SYS_FSL_CORENET_SERDES_ADDR;
 	u32 srds1_pccr1 = in_be32(&srds_regs->srdspccr1);
 #endif
 	u32 srds_s1 = in_be32(&gur->rcwsr[4]) &
@@ -413,7 +413,7 @@ void fdt_fixup_board_enet(void *fdt)
  */
 static void initialize_lane_to_slot(void)
 {
-	ccsr_gur_t *gur = (void *)(CONFIG_SYS_MPC85xx_GUTS_ADDR);
+	ccsr_gur_t *gur = (void *)(CFG_SYS_MPC85xx_GUTS_ADDR);
 	u32 srds_s1 = in_be32(&gur->rcwsr[4]) &
 				FSL_CORENET2_RCWSR4_SRDS1_PRTCL;
 
@@ -459,7 +459,7 @@ int board_eth_init(struct bd_info *bis)
 	int i, idx, lane, slot, interface;
 	struct memac_mdio_info dtsec_mdio_info;
 	struct memac_mdio_info tgec_mdio_info;
-	ccsr_gur_t *gur = (void *)(CONFIG_SYS_MPC85xx_GUTS_ADDR);
+	ccsr_gur_t *gur = (void *)(CFG_SYS_MPC85xx_GUTS_ADDR);
 	u32 rcwsr13 = in_be32(&gur->rcwsr[13]);
 	u32 srds_s1;
 
@@ -474,7 +474,7 @@ int board_eth_init(struct bd_info *bis)
 		mdio_mux[i] = EMI_NONE;
 
 	dtsec_mdio_info.regs =
-		(struct memac_mdio_controller *)CONFIG_SYS_FM1_DTSEC_MDIO_ADDR;
+		(struct memac_mdio_controller *)CFG_SYS_FM1_DTSEC_MDIO_ADDR;
 
 	dtsec_mdio_info.name = DEFAULT_FM_MDIO_NAME;
 
@@ -482,7 +482,7 @@ int board_eth_init(struct bd_info *bis)
 	fm_memac_mdio_init(bis, &dtsec_mdio_info);
 
 	tgec_mdio_info.regs =
-		(struct memac_mdio_controller *)CONFIG_SYS_FM1_TGEC_MDIO_ADDR;
+		(struct memac_mdio_controller *)CFG_SYS_FM1_TGEC_MDIO_ADDR;
 	tgec_mdio_info.name = DEFAULT_FM_TGEC_MDIO_NAME;
 
 	/* Register the 10G MDIO bus */
@@ -625,7 +625,7 @@ int board_eth_init(struct bd_info *bis)
 		break;
 	}
 
-	for (i = FM1_DTSEC1; i < FM1_DTSEC1 + CONFIG_SYS_NUM_FM1_DTSEC; i++) {
+	for (i = FM1_DTSEC1; i < FM1_DTSEC1 + CFG_SYS_NUM_FM1_DTSEC; i++) {
 		idx = i - FM1_DTSEC1;
 		interface = fm_info_get_enet_if(i);
 		switch (interface) {
@@ -673,7 +673,7 @@ int board_eth_init(struct bd_info *bis)
 		}
 	}
 
-	for (i = FM1_10GEC1; i < FM1_10GEC1 + CONFIG_SYS_NUM_FM1_10GEC; i++) {
+	for (i = FM1_10GEC1; i < FM1_10GEC1 + CFG_SYS_NUM_FM1_10GEC; i++) {
 		idx = i - FM1_10GEC1;
 		switch (fm_info_get_enet_if(i)) {
 		case PHY_INTERFACE_MODE_XGMII:

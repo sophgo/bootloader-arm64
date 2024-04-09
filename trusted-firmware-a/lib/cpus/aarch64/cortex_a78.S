@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2022, ARM Limited. All rights reserved.
+ * Copyright (c) 2019-2023, ARM Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -16,6 +16,9 @@
 #if HW_ASSISTED_COHERENCY == 0
 #error "cortex_a78 must be compiled with HW_ASSISTED_COHERENCY enabled"
 #endif
+
+.globl cortex_a78_reset_func
+.globl cortex_a78_core_pwr_dwn
 
 #if WORKAROUND_CVE_2022_23960
 	wa_cve_2022_23960_bhb_vector_table CORTEX_A78_BHB_LOOP_COUNT, cortex_a78
@@ -323,6 +326,90 @@ func check_errata_2395406
 	b	cpu_rev_var_ls
 endfunc check_errata_2395406
 
+/* ----------------------------------------------------
+ * Errata Workaround for Cortex A78 Errata 2742426.
+ * This applies to revisions r0p0, r1p0, r1p1 and r1p2.
+ * It is still open.
+ * x0: variant[4:7] and revision[0:3] of current cpu.
+ * Shall clobber: x0-x1, x17
+ * ----------------------------------------------------
+ */
+func errata_a78_2742426_wa
+	/* Check revision. */
+	mov	x17, x30
+	bl	check_errata_2742426
+	cbz	x0, 1f
+
+	/* Apply the workaround */
+	mrs	x1, CORTEX_A78_ACTLR5_EL1
+	bic	x1, x1, #BIT(56)
+	orr	x1, x1, #BIT(55)
+	msr	CORTEX_A78_ACTLR5_EL1, x1
+
+1:
+	ret	x17
+endfunc errata_a78_2742426_wa
+
+func check_errata_2742426
+	/* Applies to r0p0, r1p0, r1p1, r1p2 */
+	mov	x1, #CPU_REV(1, 2)
+	b	cpu_rev_var_ls
+endfunc check_errata_2742426
+
+/* ----------------------------------------------------
+ * Errata Workaround for Cortex-A78 Errata 2772019
+ * This applies to revisions <= r1p2 and is still open.
+ * x0: variant[4:7] and revision[0:3] of current cpu.
+ * Shall clobber: x0-x17
+ * ----------------------------------------------------
+ */
+func errata_a78_2772019_wa
+	mov	x17, x30
+	bl	check_errata_2772019
+	cbz	x0, 1f
+
+
+	/* dsb before isb of power down sequence */
+	dsb	sy
+1:
+	ret	x17
+endfunc errata_a78_2772019_wa
+
+func check_errata_2772019
+	/* Applies to all revisions <= r1p2 */
+	mov	x1, #0x12
+	b	cpu_rev_var_ls
+endfunc check_errata_2772019
+
+/* ----------------------------------------------------
+ * Errata Workaround for Cortex A78 Errata 2779479.
+ * This applies to revisions r0p0, r1p0, r1p1, and r1p2.
+ * It is still open.
+ * x0: variant[4:7] and revision[0:3] of current cpu.
+ * Shall clobber: x0-x1, x17
+ * ----------------------------------------------------
+ */
+func errata_a78_2779479_wa
+	/* Check revision. */
+	mov	x17, x30
+	bl	check_errata_2779479
+	cbz	x0, 1f
+
+	/* Apply the workaround */
+	mrs	x1, CORTEX_A78_ACTLR3_EL1
+	orr	x1, x1, #BIT(47)
+	msr	CORTEX_A78_ACTLR3_EL1, x1
+
+1:
+	ret	x17
+endfunc errata_a78_2779479_wa
+
+func check_errata_2779479
+	/* Applies to r0p0, r1p0, r1p1, r1p2 */
+	mov	x1, #CPU_REV(1, 2)
+	b	cpu_rev_var_ls
+endfunc check_errata_2779479
+
 func check_errata_cve_2022_23960
 #if WORKAROUND_CVE_2022_23960
 	mov	x0, #ERRATA_APPLIES
@@ -386,6 +473,16 @@ func cortex_a78_reset_func
 	bl	errata_a78_2395406_wa
 #endif
 
+#if ERRATA_A78_2742426
+	mov	x0, x18
+	bl	errata_a78_2742426_wa
+#endif
+
+#if ERRATA_A78_2779479
+	mov	x0, x18
+	bl	errata_a78_2779479_wa
+#endif
+
 #if ENABLE_AMU
 	/* Make sure accesses from EL0/EL1 and EL2 are not trapped to EL3 */
 	mrs	x0, actlr_el3
@@ -431,6 +528,12 @@ func cortex_a78_core_pwr_dwn
 	mrs	x0, CORTEX_A78_CPUPWRCTLR_EL1
 	orr	x0, x0, #CORTEX_A78_CPUPWRCTLR_EL1_CORE_PWRDN_EN_BIT
 	msr	CORTEX_A78_CPUPWRCTLR_EL1, x0
+#if ERRATA_A78_2772019
+	mov	x15, x30
+	bl	cpu_get_rev_var
+	bl	errata_a78_2772019_wa
+	mov	x30, x15
+#endif /* ERRATA_A78_2772019 */
 	isb
 	ret
 endfunc cortex_a78_core_pwr_dwn
@@ -458,6 +561,9 @@ func cortex_a78_errata_report
 	report_errata ERRATA_A78_2242635, cortex_a78, 2242635
 	report_errata ERRATA_A78_2376745, cortex_a78, 2376745
 	report_errata ERRATA_A78_2395406, cortex_a78, 2395406
+	report_errata ERRATA_A78_2742426, cortex_a78, 2742426
+	report_errata ERRATA_A78_2772019, cortex_a78, 2772019
+	report_errata ERRATA_A78_2779479, cortex_a78, 2779479
 	report_errata WORKAROUND_CVE_2022_23960, cortex_a78, cve_2022_23960
 
 	ldp	x8, x30, [sp], #16

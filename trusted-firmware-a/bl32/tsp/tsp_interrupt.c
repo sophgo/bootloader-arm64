@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2014-2022, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -35,8 +35,6 @@ void tsp_update_sync_sel1_intr_stats(uint32_t type, uint64_t elr_el3)
 	if (type == TSP_HANDLE_SEL1_INTR_AND_RETURN)
 		tsp_stats[linear_id].sync_sel1_intr_ret_count++;
 
-#if LOG_LEVEL >= LOG_LEVEL_VERBOSE
-	spin_lock(&console_lock);
 	VERBOSE("TSP: cpu 0x%lx sync s-el1 interrupt request from 0x%" PRIx64 "\n",
 		read_mpidr(), elr_el3);
 	VERBOSE("TSP: cpu 0x%lx: %d sync s-el1 interrupt requests,"
@@ -44,8 +42,6 @@ void tsp_update_sync_sel1_intr_stats(uint32_t type, uint64_t elr_el3)
 		read_mpidr(),
 		tsp_stats[linear_id].sync_sel1_intr_count,
 		tsp_stats[linear_id].sync_sel1_intr_ret_count);
-	spin_unlock(&console_lock);
-#endif
 }
 
 /******************************************************************************
@@ -58,12 +54,8 @@ int32_t tsp_handle_preemption(void)
 	uint32_t linear_id = plat_my_core_pos();
 
 	tsp_stats[linear_id].preempt_intr_count++;
-#if LOG_LEVEL >= LOG_LEVEL_VERBOSE
-	spin_lock(&console_lock);
 	VERBOSE("TSP: cpu 0x%lx: %d preempt interrupt requests\n",
 		read_mpidr(), tsp_stats[linear_id].preempt_intr_count);
-	spin_unlock(&console_lock);
-#endif
 	return TSP_PREEMPTED;
 }
 
@@ -91,8 +83,18 @@ int32_t tsp_common_int_handler(void)
 	id = plat_ic_get_pending_interrupt_id();
 
 	/* TSP can only handle the secure physical timer interrupt */
-	if (id != TSP_IRQ_SEC_PHY_TIMER)
+	if (id != TSP_IRQ_SEC_PHY_TIMER) {
+#if SPMC_AT_EL3
+		/*
+		 * With the EL3 FF-A SPMC we expect only Timer secure interrupt to fire in
+		 * the TSP, so panic if any other interrupt does.
+		 */
+		ERROR("Unexpected interrupt id %u\n", id);
+		panic();
+#else
 		return tsp_handle_preemption();
+#endif
+	}
 
 	/*
 	 * Acknowledge and handle the secure timer interrupt. Also sanity check
@@ -105,13 +107,9 @@ int32_t tsp_common_int_handler(void)
 
 	/* Update the statistics and print some messages */
 	tsp_stats[linear_id].sel1_intr_count++;
-#if LOG_LEVEL >= LOG_LEVEL_VERBOSE
-	spin_lock(&console_lock);
 	VERBOSE("TSP: cpu 0x%lx handled S-EL1 interrupt %d\n",
 	       read_mpidr(), id);
 	VERBOSE("TSP: cpu 0x%lx: %d S-EL1 requests\n",
 	     read_mpidr(), tsp_stats[linear_id].sel1_intr_count);
-	spin_unlock(&console_lock);
-#endif
 	return 0;
 }

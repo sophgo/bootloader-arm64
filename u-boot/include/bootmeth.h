@@ -88,6 +88,22 @@ struct bootmeth_ops {
 	int (*read_bootflow)(struct udevice *dev, struct bootflow *bflow);
 
 	/**
+	 * set_bootflow() - set the bootflow for a device
+	 *
+	 * This provides a bootflow file to the bootmeth, to see if it is valid.
+	 * If it is, the bootflow is set up accordingly.
+	 *
+	 * @dev:	Bootmethod device to use
+	 * @bflow:	On entry, provides bootdev.
+	 *	Returns updated bootflow if found
+	 * @buf:	Buffer containing the possible bootflow file
+	 * @size:	Size of file
+	 * Return: 0 if OK, -ve on error
+	 */
+	int (*set_bootflow)(struct udevice *dev, struct bootflow *bflow,
+			    char *buf, int size);
+
+	/**
 	 * read_file() - read a file needed for a bootflow
 	 *
 	 * Read a file from the same place as the bootflow came from
@@ -174,6 +190,23 @@ int bootmeth_check(struct udevice *dev, struct bootflow_iter *iter);
 int bootmeth_read_bootflow(struct udevice *dev, struct bootflow *bflow);
 
 /**
+ * bootmeth_set_bootflow() - set the bootflow for a device
+ *
+ * This provides a bootflow file to the bootmeth, to see if it is valid.
+ * If it is, the bootflow is set up accordingly.
+ *
+ * @dev:	Bootmethod device to use
+ * @bflow:	On entry, provides bootdev.
+ *	Returns updated bootflow if found
+ * @buf:	Buffer containing the possible bootflow file (must be allocated
+ * by caller to @size + 1 bytes)
+ * @size:	Size of file
+ * Return: 0 if OK, -ve on error
+ */
+int bootmeth_set_bootflow(struct udevice *dev, struct bootflow *bflow,
+			  char *buf, int size);
+
+/**
  * bootmeth_read_file() - read a file needed for a bootflow
  *
  * Read a file from the same place as the bootflow came from
@@ -222,7 +255,7 @@ int bootmeth_setup_iter_order(struct bootflow_iter *iter, bool include_global);
  * This selects the ordering to use for bootmeths
  *
  * @order_str: String containing the ordering. This is a comma-separate list of
- * bootmeth-device names, e.g. "syslinux,efi". If empty then a default ordering
+ * bootmeth-device names, e.g. "extlinux,efi". If empty then a default ordering
  * is used, based on the sequence number of devices (i.e. using aliases)
  * Return: 0 if OK, -ENODEV if an unknown bootmeth is mentioned, -ENOMEM if
  * out of memory, -ENOENT if there are no bootmeth devices
@@ -240,7 +273,7 @@ int bootmeth_set_order(const char *order_str);
  * caller before reading the file.
  *
  * @bflow: Information about file to try
- * @desc: Block descriptor to read from
+ * @desc: Block descriptor to read from (NULL for sandbox host)
  * @prefix: Filename prefix to prepend to @fname (NULL for none)
  * @fname: Filename to read
  * Return: 0 if OK, -ENOMEM if not enough memory to allocate bflow->fname,
@@ -264,6 +297,22 @@ int bootmeth_try_file(struct bootflow *bflow, struct blk_desc *desc,
  *	other -ve on other error
  */
 int bootmeth_alloc_file(struct bootflow *bflow, uint size_limit, uint align);
+
+/**
+ * bootmeth_alloc_other() - Allocate and read a file for a bootflow
+ *
+ * This reads an arbitrary file in the same directory as the bootflow,
+ * allocating memory for it. The buffer is one byte larger than the file length,
+ * so that it can be nul-terminated.
+ *
+ * @bflow: Information about file to read
+ * @fname: Filename to read from (within bootflow->subdir)
+ * @bufp: Returns a pointer to the allocated buffer
+ * @sizep: Returns the size of the buffer
+ * Return: 0 if OK,  -ENOMEM if out of memory, other -ve on other error
+ */
+int bootmeth_alloc_other(struct bootflow *bflow, const char *fname,
+			 void **bufp, uint *sizep);
 
 /**
  * bootmeth_common_read_file() - Common handler for reading a file

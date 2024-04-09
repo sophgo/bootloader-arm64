@@ -17,8 +17,6 @@
 #include <openssl/pem.h>
 #include <openssl/evp.h>
 
-#define IMAGE_PRE_LOAD_PATH                             "/image/pre-load/sig"
-
 /**
  * fit_set_hash_value - set hash value in requested has node
  * @fit: pointer to the FIT format image header
@@ -917,7 +915,12 @@ static int fit_config_get_regions(const void *fit, int conf_noffset,
 				  int *region_countp, char **region_propp,
 				  int *region_proplen)
 {
-	char * const exc_prop[] = {"data"};
+	char * const exc_prop[] = {
+		FIT_DATA_PROP,
+		FIT_DATA_SIZE_PROP,
+		FIT_DATA_POSITION_PROP,
+		FIT_DATA_OFFSET_PROP,
+	};
 	struct strlist node_inc;
 	struct image_region *region;
 	struct fdt_region fdt_regions[100];
@@ -1289,8 +1292,12 @@ int fit_add_verification_data(const char *keydir, const char *keyfile,
 		ret = fit_image_add_verification_data(keydir, keyfile, keydest,
 				fit, noffset, comment, require_keys, engine_id,
 				cmdname, algo_name);
-		if (ret)
+		if (ret) {
+			printf("Can't add verification data for node '%s' (%s)\n",
+			       fdt_get_name(fit, noffset, NULL),
+			       fdt_strerror(ret));
 			return ret;
+		}
 	}
 
 	/* If there are no keys, we can't sign configurations */

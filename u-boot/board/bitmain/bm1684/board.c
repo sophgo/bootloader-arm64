@@ -153,7 +153,7 @@ static void pinmux_config(int io_type)
 				   (0x1 << 20) | (0x4 << 22) | (0x1 << 4)); /* RGMII0_IRQ RGMII0_MDC */
 		mmio_clrsetbits_32(PINMUX_BASE + 0x48, (0x3 << 4) | (0xf << 6),
 				   (0x1 << 4) | (0x2 << 6)); /* RGMII0_MDIO */
-#ifdef CONFIG_ARCH_BM1686_FPGA
+#ifdef CFG_ARCH_BM1686_FPGA
 		mmio_clrsetbits_32(PINMUX_BASE + 0x8c, (0x3 << 20), (0x1 << 20)); /* GPIO2 PHY RESET */
 #endif
 		break;
@@ -177,7 +177,7 @@ static void pinmux_config(int io_type)
 				   (0x1 << 20) | (0x4 << 22) | (0x1 << 4)); /* RGMII1_IRQ RGMII1_MDC */
 		mmio_clrsetbits_32(PINMUX_BASE + 0x68, (0x3 << 4) | (0xf << 6),
 				   (0x1 << 4) | (0x2 << 6)); /* RGMII1_MDIO */
-#ifdef CONFIG_ARCH_BM1686_FPGA
+#ifdef CFG_ARCH_BM1686_FPGA
 		mmio_clrsetbits_32(PINMUX_BASE + 0x90, (0x3 << 4), (0x1 << 4)); /* GPIO3 PHY RESET */
 #endif
 		break;
@@ -265,7 +265,7 @@ static void __maybe_unused show_mac(void *mac)
 
 static int setup_mac(void)
 {
-#if !defined(CONFIG_ARCH_BM1686_PLD) && !defined(CONFIG_ARCH_BM1686_FPGA)
+#if !defined(CFG_ARCH_BM1686_PLD) && !defined(CFG_ARCH_BM1686_FPGA)
 	int err, i;
 	uint8_t mac[MCU_MAC_MAX][MCU_MAC_SIZE];
 	char eth[16];
@@ -387,6 +387,9 @@ static void select_board(void)
 	case BM1684_SM5M_V3_1_TB:
 		env_set("dtb_name", "bm1684_sm5m_v3.1_tb.dtb");
 		break;
+	case BM1684_SM5M_V3_3_TB:
+		env_set("dtb_name", "bm1684_sm5m_v3.3_tb.dtb");
+		break;
 	case BM1684_SM5M_V0_0_RB:
 		env_set("dtb_name", "bm1684_sm5m_v0.0_rb.dtb");
 		break;
@@ -408,12 +411,12 @@ static void select_board(void)
 	case BM1684_SC5_EP:
 		env_set("dtb_name", "bm1684_sc5_ep.dtb");
 		env_set("disable_wdt", "enable");
-		env_set("bootcmd", CONFIG_PCIEBOOTCOMMAND);
+		env_set("bootcmd", CFG_PCIEBOOTCOMMAND);
 		break;
 	case BM1684_SC5_MIX:
 		env_set("dtb_name", "bm1684_sc5_mix.dtb");
 		env_set("disable_wdt", "enable");
-		env_set("bootcmd", CONFIG_PCIEBOOTCOMMAND);
+		env_set("bootcmd", CFG_PCIEBOOTCOMMAND);
 		break;
 	case BM1684X_PLD:
 		env_set("dtb_name", "bm1684x_pld.dtb");
@@ -439,6 +442,8 @@ static void select_board(void)
 		break;
 	case BM1684X_SM7M_V1_0:
 		env_set("dtb_name", "bm1684x_sm7m_v1.0.dtb");
+		mmio_setbits_32(0x50029000, 0x960);
+		mmio_setbits_32(0x50029004, 0xFA0);
 		break;
 	case BM1684X_SM7M_V1_2:
 		env_set("dtb_name", "bm1684x_sm7m_v1.2.dtb");
@@ -447,12 +452,12 @@ static void select_board(void)
 	case BM1684X_SC7_HP300:
 		env_set("dtb_name", "bm1684x_ep.dtb");
 		env_set("disable_wdt", "enable");
-		env_set("bootcmd", CONFIG_PCIEBOOTCOMMAND);
+		env_set("bootcmd", CFG_PCIEBOOTCOMMAND);
 		break;
 	case BM1684X_MIX:
 		env_set("dtb_name", "bm1684x_mix.dtb");
 		env_set("disable_wdt", "enable");
-		env_set("bootcmd", CONFIG_PCIEBOOTCOMMAND);
+		env_set("bootcmd", CFG_PCIEBOOTCOMMAND);
 		break;
 	case BM1684X_SE7_V1:
 		env_set("dtb_name", "bm1684x_se7_v1.dtb");
@@ -465,6 +470,9 @@ static void select_board(void)
 		break;
 	case BM1684X_SM7M_V1_0_RB_CTRL:
 		env_set("dtb_name", "bm1684x_sm7m_v0.0_ctrl.dtb");
+		break;
+	case BM1684X_M2_CUST02_V0_0:
+		env_set("dtb_name", "bm1684x_m2_cust02_v0.0.dtb");
 		break;
 	default:
 		printf("unknown board type %d\n", board_type);
@@ -487,7 +495,7 @@ int board_late_init(void)
 
 	setup_mac();
 	setup_mux();
-	env_set("recboot", CONFIG_RECBOOTCOMMAND);
+	env_set("recboot", CFG_RECBOOTCOMMAND);
 	bm_storage_boot_loader_version_uboot();
 	return 0;
 }
@@ -536,6 +544,7 @@ static const char * const board_names[] = {
 	[BM1684_SM5M_V0_2_TB] = "bitmain-bm1684-sm5m",
 	[BM1684_SM5M_V3_0_TB] = "bitmain-bm1684-sm5m",
 	[BM1684_SM5M_V3_1_TB] = "bitmain-bm1684-sm5m",
+	[BM1684_SM5M_V3_3_TB] = "bitmain-bm1684-sm5m",
 	[BM1684_SM5M_V0_0_RB] = "bitmain-bm1684-sm5m",
 	[BM1684_SM5M_V0_1_RB] = "bitmain-bm1684-sm5m",
 	[BM1684_SM5M_V0_2_RB] = "bitmain-bm1684-sm5m",
@@ -561,6 +570,7 @@ static const char * const board_names[] = {
 	[BM1684X_SE7_V2_0] = "bitmain-bm1684x-sm7m-v1.0",
 	[BM1684X_SM7_AIRBOX] = "bitmain-bm1684x-sm7m-v0.0-cust-v1",
 	[BM1684X_SM7M_V1_0_RB_CTRL] = "bitmain-bm1684x-sm7m-v1.0-ctrl",
+	[BM1684X_M2_CUST02_V0_0] = "bitmain-bm1684x-m2-cust02-v0.0",
 };
 
 int board_fit_config_name_match(const char *name)

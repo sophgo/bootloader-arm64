@@ -19,6 +19,12 @@ include drivers/arm/gic/v3/gicv3.mk
 
 include lib/libfdt/libfdt.mk
 
+IMX_DRAM_SOURCES	:=	plat/imx/imx8m/ddr/dram.c		\
+				plat/imx/imx8m/ddr/clock.c		\
+				plat/imx/imx8m/ddr/dram_retention.c	\
+				plat/imx/imx8m/ddr/ddr4_dvfs.c		\
+				plat/imx/imx8m/ddr/lpddr4_dvfs.c
+
 IMX_GIC_SOURCES		:=	${GICV3_SOURCES}			\
 				plat/common/plat_gicv3.c		\
 				plat/common/plat_psci_common.c		\
@@ -26,6 +32,7 @@ IMX_GIC_SOURCES		:=	${GICV3_SOURCES}			\
 
 BL31_SOURCES		+=	plat/imx/common/imx8_helpers.S			\
 				plat/imx/imx8m/gpc_common.c			\
+				plat/imx/imx8m/imx_hab.c			\
 				plat/imx/imx8m/imx_aipstz.c			\
 				plat/imx/imx8m/imx_rdc.c			\
 				plat/imx/imx8m/imx8m_csu.c			\
@@ -43,6 +50,7 @@ BL31_SOURCES		+=	plat/imx/common/imx8_helpers.S			\
 				drivers/delay_timer/delay_timer.c		\
 				drivers/delay_timer/generic_delay_timer.c	\
 				${XLAT_TABLES_LIB_SRCS}				\
+				${IMX_DRAM_SOURCES}				\
 				${IMX_GIC_SOURCES}
 
 ifeq (${NEED_BL2},yes)
@@ -125,15 +133,16 @@ certificates: $(ROT_KEY)
 $(ROT_KEY): | $(BUILD_PLAT)
 	@echo "  OPENSSL $@"
 	@if [ ! -f $(ROT_KEY) ]; then \
-		openssl genrsa 2048 > $@ 2>/dev/null; \
+		${OPENSSL_BIN_PATH}/openssl genrsa 2048 > $@ 2>/dev/null; \
 	fi
 
 $(ROTPK_HASH): $(ROT_KEY)
 	@echo "  OPENSSL $@"
-	$(Q)openssl rsa -in $< -pubout -outform DER 2>/dev/null |\
-	openssl dgst -sha256 -binary > $@ 2>/dev/null
+	$(Q)${OPENSSL_BIN_PATH}/openssl rsa -in $< -pubout -outform DER 2>/dev/null |\
+	${OPENSSL_BIN_PATH}/openssl dgst -sha256 -binary > $@ 2>/dev/null
 endif
 
+ENABLE_PIE		:=	1
 USE_COHERENT_MEM	:=	1
 RESET_TO_BL31		:=	1
 A53_DISABLE_NON_TEMPORAL_HINT := 0
@@ -161,6 +170,10 @@ ifeq (${MEASURED_BOOT},1)
     MEASURED_BOOT_MK := drivers/measured_boot/event_log/event_log.mk
     $(info Including ${MEASURED_BOOT_MK})
     include ${MEASURED_BOOT_MK}
+
+ifneq (${MBOOT_EL_HASH_ALG}, sha256)
+    $(eval $(call add_define,TF_MBEDTLS_MBOOT_USE_SHA512))
+endif
 
 BL2_SOURCES		+=	plat/imx/imx8m/imx8m_measured_boot.c	\
 				plat/imx/imx8m/imx8m_dyn_cfg_helpers.c	\

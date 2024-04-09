@@ -101,7 +101,7 @@ static void setup_gpmi_nand(void)
 }
 #endif
 
-#ifdef CONFIG_DM_VIDEO
+#ifdef CONFIG_VIDEO
 static iomux_v3_cfg_t const backlight_pads[] = {
 	/* Backlight On */
 	MX7D_PAD_SD1_WP__GPIO5_IO1 | MUX_PAD_CTRL(NO_PAD_CTRL),
@@ -134,7 +134,7 @@ static int setup_lcd(void)
  */
 void board_preboot_os(void)
 {
-#ifdef CONFIG_DM_VIDEO
+#ifdef CONFIG_VIDEO
 	gpio_direction_output(GPIO_PWM_A, 1);
 	gpio_direction_output(GPIO_BL_ON, 0);
 #endif
@@ -303,16 +303,6 @@ int ft_board_setup(void *blob, struct bd_info *bd)
 			fdt_status_disabled(blob, off);
 	}
 #endif
-#if defined(CONFIG_FDT_FIXUP_PARTITIONS)
-	static const struct node_info nodes[] = {
-		{ "fsl,imx7d-gpmi-nand", MTD_DEV_TYPE_NAND, }, /* NAND flash */
-		{ "fsl,imx6q-gpmi-nand", MTD_DEV_TYPE_NAND, },
-	};
-
-	/* Update partition nodes using info from mtdparts env var */
-	puts("   Updating MTD partitions...\n");
-	fdt_fixup_mtdparts(blob, nodes, ARRAY_SIZE(nodes));
-#endif
 
 	return ft_common_board_setup(blob, bd);
 }
@@ -321,9 +311,22 @@ int ft_board_setup(void *blob, struct bd_info *bd)
 #ifdef CONFIG_USB_EHCI_MX7
 int board_fix_fdt(void *rw_fdt_blob)
 {
+	int ret;
+
 	/* i.MX 7Solo has only one single USB OTG1 but no USB host port */
 	if (is_cpu_type(MXC_CPU_MX7S)) {
 		int offset = fdt_path_offset(rw_fdt_blob, "/soc/bus@30800000/usb@30b20000");
+
+		/*
+		 * We're changing from status = "okay" to status = "disabled".
+		 * In this case we'll need more space, so increase the size
+		 * a little bit.
+		 */
+		ret = fdt_increase_size(rw_fdt_blob, 32);
+		if (ret < 0) {
+			printf("Cannot increase FDT size: %d\n", ret);
+			return ret;
+		}
 
 		return fdt_status_disabled(rw_fdt_blob, offset);
 	}
@@ -334,7 +337,7 @@ int board_fix_fdt(void *rw_fdt_blob)
 #if defined(CONFIG_BOARD_LATE_INIT)
 int board_late_init(void)
 {
-#if defined(CONFIG_DM_VIDEO)
+#if defined(CONFIG_VIDEO)
 	setup_lcd();
 #endif
 

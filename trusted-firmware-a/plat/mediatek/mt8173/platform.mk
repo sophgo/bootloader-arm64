@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2015-2017, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2015-2022, ARM Limited and Contributors. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -8,6 +8,7 @@ MTK_PLAT		:=	plat/mediatek
 MTK_PLAT_SOC		:=	${MTK_PLAT}/${PLAT}
 
 PLAT_INCLUDES		:=	-I${MTK_PLAT}/common/				\
+				-I${MTK_PLAT}/include/				\
 				-Iinclude/plat/arm/common/aarch64		\
 				-I${MTK_PLAT_SOC}/drivers/crypt/		\
 				-I${MTK_PLAT_SOC}/drivers/mtcmos/		\
@@ -36,10 +37,10 @@ BL31_SOURCES		+=	common/desc_image_load.c			\
 				lib/cpus/aarch64/cortex_a53.S			\
 				lib/cpus/aarch64/cortex_a57.S			\
 				lib/cpus/aarch64/cortex_a72.S			\
-				${MTK_PLAT}/common/drivers/pmic_wrap/pmic_wrap_init.c	\
-				${MTK_PLAT}/common/drivers/rtc/rtc_common.c	\
 				${MTK_PLAT}/common/mtk_plat_common.c		\
 				${MTK_PLAT}/common/mtk_sip_svc.c		\
+				${MTK_PLAT}/drivers/pmic_wrap/pmic_wrap_init.c	\
+				${MTK_PLAT}/drivers/rtc/rtc_common.c		\
 				${MTK_PLAT_SOC}/aarch64/plat_helpers.S		\
 				${MTK_PLAT_SOC}/aarch64/platform_common.c	\
 				${MTK_PLAT_SOC}/bl31_plat_setup.c		\

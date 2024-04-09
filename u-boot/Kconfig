@@ -175,6 +175,8 @@ config CC_HAS_ASM_INLINE
 
 config XEN
 	bool "Select U-Boot be run as a bootloader for XEN Virtual Machine"
+	depends on ARM64
+	select SSCANF
 	help
 	  Enabling this option will make U-Boot be run as a bootloader
 	  for XEN [1] Virtual Machine.
@@ -190,33 +192,6 @@ config XEN
 	  Xen to use the device drivers for the Domain-0 kernel by default.
 
 	  [1] - https://xenproject.org/
-
-config DISTRO_DEFAULTS
-	bool "Select defaults suitable for booting general purpose Linux distributions"
-	select AUTO_COMPLETE
-	select CMDLINE_EDITING
-	select CMD_BOOTI if ARM64
-	select CMD_BOOTZ if ARM && !ARM64
-	select CMD_DHCP if CMD_NET
-	select CMD_ENV_EXISTS
-	select CMD_EXT2
-	select CMD_EXT4
-	select CMD_FAT
-	select CMD_FS_GENERIC
-	select CMD_PART if PARTITIONS
-	select CMD_PING if CMD_NET
-	select CMD_PXE if NET
-	select CMD_SYSBOOT
-	select ENV_VARS_UBOOT_CONFIG
-	select HUSH_PARSER
-	select SUPPORT_RAW_INITRD
-	select SYS_LONGHELP
-	imply CMD_MII if NET
-	imply USB_STORAGE
-	imply USE_BOOTCOMMAND
-	help
-	  Select this to enable various options and commands which are suitable
-	  for building u-boot for booting general purpose Linux distributions.
 
 config ENV_VARS_UBOOT_CONFIG
 	bool "Add arch, board, vendor and soc variables to default environment"
@@ -264,8 +239,8 @@ config HAS_CUSTOM_SYS_INIT_SP_ADDR
 	default y if TFABOOT
 	help
 	  Typically, we use an initial stack pointer address that is calculated
-	  by taking the statically defined CONFIG_SYS_INIT_RAM_ADDR, adding the
-	  statically defined CONFIG_SYS_INIT_RAM_SIZE and then subtracting the
+	  by taking the statically defined CFG_SYS_INIT_RAM_ADDR, adding the
+	  statically defined CFG_SYS_INIT_RAM_SIZE and then subtracting the
 	  build-time constant of GENERATED_GBL_DATA_SIZE.  On MIPS a different
 	  but statica calculation is performed.  However, some platforms will
 	  take a different approach.  Say Y here to define the address statically
@@ -274,7 +249,7 @@ config HAS_CUSTOM_SYS_INIT_SP_ADDR
 config CUSTOM_SYS_INIT_SP_ADDR
 	hex "Static location for the initial stack pointer"
 	depends on HAS_CUSTOM_SYS_INIT_SP_ADDR
-	default SYS_TEXT_BASE if TFABOOT
+	default TEXT_BASE if TFABOOT
 
 config SYS_MALLOC_F
 	bool "Enable malloc() pool before relocation"
@@ -312,9 +287,9 @@ config SYS_MALLOC_LEN
 	default 0x4000000 if SANDBOX
 	default 0x2000000 if ARCH_ROCKCHIP || ARCH_OMAP2PLUS || ARCH_MESON
 	default 0x200000 if ARCH_BMIPS || X86
-	default 0x120000 if MACH_SUNIV
-	default 0x220000 if MACH_SUN8I_V3S
-	default 0x4020000 if ARCH_SUNXI
+	default 0x4020000 if SUNXI_MINIMUM_DRAM_MB >= 256
+	default 0x220000 if SUNXI_MINIMUM_DRAM_MB >= 64
+	default 0x120000 if SUNXI_MINIMUM_DRAM_MB >= 32
 	default 0x400000
 	help
 	  This defines memory to be allocated for Dynamic allocation
@@ -333,7 +308,7 @@ config SPL_SYS_MALLOC_F_LEN
 	  particular needs this to operate, so that it can allocate the
 	  initial serial device and any others that are needed.
 
-	  It is possible to enable CONFIG_SYS_SPL_MALLOC_START to start a new
+	  It is possible to enable CFG_SYS_SPL_MALLOC_START to start a new
 	  malloc() region in SDRAM once it is inited.
 
 config TPL_SYS_MALLOC_F_LEN
@@ -422,10 +397,18 @@ endif # EXPERT
 
 config PHYS_64BIT
 	bool "64bit physical address support"
+	select FDT_64BIT
 	help
 	  Say Y here to support 64bit physical memory address.
 	  This can be used not only for 64bit SoCs, but also for
 	  large physical address extension on 32bit SoCs.
+
+config FDT_64BIT
+	bool "64bit fdt address support"
+	help
+	  Say Y here to support 64bit fdt addresses.
+	  This can be used not only for 64bit SoCs, but also
+	  for large address extensions on 32bit SoCs.
 
 config HAS_ROM
 	bool
@@ -454,15 +437,16 @@ config REMAKE_ELF
 
 config BUILD_TARGET
 	string "Build target special images"
+	default "u-boot-elf.srec" if RCAR_64
+	default "u-boot-with-spl.bin" if ARCH_AT91 && SPL_NAND_SUPPORT
+	default "u-boot-with-spl.bin" if MPC85xx && !E500MC && !E5500 && !E6500 && SPL
+	default "u-boot-with-spl.imx" if ARCH_MX6 && SPL
+	default "u-boot-with-spl.kwb" if ARMADA_32BIT && SPL
 	default "u-boot-with-spl.sfp" if TARGET_SOCFPGA_ARRIA10
 	default "u-boot-with-spl.sfp" if TARGET_SOCFPGA_GEN5
-	default "u-boot-spl.kwb" if ARCH_MVEBU && SPL
-	default "u-boot-elf.srec" if RCAR_GEN3
 	default "u-boot.itb" if !BINMAN && SPL_LOAD_FIT && (ARCH_ROCKCHIP || \
-				ARCH_SUNXI || RISCV || ARCH_ZYNQMP)
-	default "u-boot.kwb" if ARCH_KIRKWOOD
-	default "u-boot-with-spl.bin" if ARCH_AT91 && SPL_NAND_SUPPORT
-	default "u-boot-with-spl.imx" if ARCH_MX6 && SPL
+				RISCV || ARCH_ZYNQMP)
+	default "u-boot.kwb" if (ARCH_KIRKWOOD || ARMADA_32BIT) && !SPL
 	help
 	  Some SoCs need special image types (e.g. U-Boot binary
 	  with a special header) as build targets. By defining
@@ -472,14 +456,14 @@ config BUILD_TARGET
 
 config HAS_BOARD_SIZE_LIMIT
 	bool "Define a maximum size for the U-Boot image"
-	default y if RCAR_GEN3
+	default y if RCAR_64
 	help
 	  In some cases, we need to enforce a hard limit on how big the U-Boot
 	  image itself can be.
 
 config BOARD_SIZE_LIMIT
 	int "Maximum size of the U-Boot image in bytes"
-	default 1048576 if RCAR_GEN3
+	default 1048576 if RCAR_64
 	depends on HAS_BOARD_SIZE_LIMIT
 	help
 	  Maximum size of the U-Boot image. When defined, the build system
@@ -540,7 +524,7 @@ config PLATFORM_ELFENTRY
 
 config STACK_SIZE
 	hex "Define max stack size that can be used by U-Boot"
-	default 0x4000000 if ARCH_VERSAL || ARCH_ZYNQMP
+	default 0x4000000 if ARCH_VERSAL_NET || ARCH_VERSAL || ARCH_ZYNQMP
 	default 0x200000 if MICROBLAZE
 	default 0x1000000
 	help
@@ -583,19 +567,23 @@ config SYS_SRAM_SIZE
 	default 0x10000 if TARGET_TRICORDER
 	default 0x0
 
+config SYS_MONITOR_LEN
+	int "Maximum size in bytes reserved for U-Boot in memory"
+	default 1048576 if X86
+	default 786432 if ARCH_SUNXI
+	default 0
+	help
+	  Size of memory reserved for monitor code, used to determine
+	  _at_compile_time_ (!) if the environment is embedded within the
+	  U-Boot image, or in a separate flash sector, among other uses where
+	  we need to set a maximum size of the U-Boot binary itself that will
+	  be loaded.
+
 config MP
 	bool "Support for multiprocessor"
 	help
 	  This provides an option to bringup different processors
 	  in multiprocessor cases.
-
-config EXAMPLES
-	bool "Compile API examples"
-	depends on !SANDBOX
-	default y if ARCH_QEMU
-	help
-	  U-Boot provides an API for standalone applications. Examples are
-	  provided in directory examples/.
 
 endmenu		# General setup
 

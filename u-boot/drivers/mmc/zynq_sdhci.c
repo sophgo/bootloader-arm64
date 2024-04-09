@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * (C) Copyright 2013 - 2015 Xilinx, Inc.
+ * (C) Copyright 2013 - 2022, Xilinx, Inc.
+ * (C) Copyright 2022, Advanced Micro Devices, Inc.
  *
  * Xilinx Zynq SD Host Controller Interface
  */
@@ -13,9 +14,11 @@
 #include "mmc_private.h"
 #include <log.h>
 #include <reset.h>
+#include <asm/arch/sys_proto.h>
 #include <dm/device_compat.h>
 #include <linux/err.h>
 #include <linux/libfdt.h>
+#include <linux/iopoll.h>
 #include <asm/types.h>
 #include <linux/math64.h>
 #include <asm/cache.h>
@@ -48,6 +51,41 @@
 #define SD0_OTAPDLYSEL_MASK		GENMASK(5, 0)
 #define SD1_OTAPDLYSEL_MASK		GENMASK(21, 16)
 
+#define MIN_PHY_CLK_HZ			50000000
+
+#define PHY_CTRL_REG1			0x270
+#define PHY_CTRL_ITAPDLY_ENA_MASK	BIT(0)
+#define PHY_CTRL_ITAPDLY_SEL_MASK	GENMASK(5, 1)
+#define PHY_CTRL_ITAPDLY_SEL_SHIFT	1
+#define PHY_CTRL_ITAP_CHG_WIN_MASK	BIT(6)
+#define PHY_CTRL_OTAPDLY_ENA_MASK	BIT(8)
+#define PHY_CTRL_OTAPDLY_SEL_MASK	GENMASK(15, 12)
+#define PHY_CTRL_OTAPDLY_SEL_SHIFT	12
+#define PHY_CTRL_STRB_SEL_MASK		GENMASK(23, 16)
+#define PHY_CTRL_STRB_SEL_SHIFT		16
+#define PHY_CTRL_TEST_CTRL_MASK		GENMASK(31, 24)
+
+#define PHY_CTRL_REG2			0x274
+#define PHY_CTRL_EN_DLL_MASK		BIT(0)
+#define PHY_CTRL_DLL_RDY_MASK		BIT(1)
+#define PHY_CTRL_FREQ_SEL_MASK		GENMASK(6, 4)
+#define PHY_CTRL_FREQ_SEL_SHIFT		4
+#define PHY_CTRL_SEL_DLY_TX_MASK	BIT(16)
+#define PHY_CTRL_SEL_DLY_RX_MASK	BIT(17)
+#define FREQSEL_200M_170M		0x0
+#define FREQSEL_170M_140M	        0x1
+#define FREQSEL_140M_110M	        0x2
+#define FREQSEL_110M_80M	        0x3
+#define FREQSEL_80M_50M			0x4
+#define FREQSEL_275M_250M		0x5
+#define FREQSEL_250M_225M		0x6
+#define FREQSEL_225M_200M		0x7
+#define PHY_DLL_TIMEOUT_MS		100
+
+#define VERSAL_NET_EMMC_ICLK_PHASE_DDR52_DLY_CHAIN	39
+#define VERSAL_NET_EMMC_ICLK_PHASE_DDR52_DLL		146
+#define VERSAL_NET_PHY_CTRL_STRB90_STRB180_VAL		0X77
+
 struct arasan_sdhci_clk_data {
 	int clk_phase_in[MMC_TIMING_MMC_HS400 + 1];
 	int clk_phase_out[MMC_TIMING_MMC_HS400 + 1];
@@ -61,9 +99,10 @@ struct arasan_sdhci_plat {
 struct arasan_sdhci_priv {
 	struct sdhci_host *host;
 	struct arasan_sdhci_clk_data clk_data;
-	u8 deviceid;
+	u32 node_id;
 	u8 bank;
 	u8 no_1p8;
+	bool internal_phy_reg;
 	struct reset_ctl_bulk resets;
 };
 
@@ -84,7 +123,7 @@ __weak int zynqmp_pm_is_function_supported(const u32 api_id, const u32 id)
 	return 1;
 }
 
-#if defined(CONFIG_ARCH_ZYNQMP) || defined(CONFIG_ARCH_VERSAL)
+#if defined(CONFIG_ARCH_ZYNQMP) || defined(CONFIG_ARCH_VERSAL) || defined(CONFIG_ARCH_VERSAL_NET)
 /* Default settings for ZynqMP Clock Phases */
 static const u32 zynqmp_iclk_phases[] = {0, 63, 63, 0, 63,  0,
 					 0, 183, 54,  0, 0};
@@ -96,6 +135,12 @@ static const u32 versal_iclk_phases[] = {0, 132, 132, 0, 132,
 					 0, 0, 162, 90, 0, 0};
 static const u32 versal_oclk_phases[] = {0,  60, 48, 0, 48, 72,
 					 90, 36, 60, 90, 0};
+
+/* Default settings for versal-net eMMC Clock Phases */
+static const u32 versal_net_emmc_iclk_phases[] = {0, 0, 0, 0, 0, 0, 0, 0, 39,
+						  0, 0};
+static const u32 versal_net_emmc_oclk_phases[] = {0, 113, 0, 0, 0, 0, 0, 0,
+						  113, 79, 45};
 
 static const u8 mode2timing[] = {
 	[MMC_LEGACY] = MMC_TIMING_LEGACY,
@@ -109,9 +154,125 @@ static const u8 mode2timing[] = {
 	[UHS_DDR50] = MMC_TIMING_UHS_DDR50,
 	[UHS_SDR104] = MMC_TIMING_UHS_SDR104,
 	[MMC_HS_200] = MMC_TIMING_MMC_HS200,
+	[MMC_HS_400] = MMC_TIMING_MMC_HS400,
 };
 
-static inline int arasan_zynqmp_set_in_tapdelay(u8 node_id, u32 itap_delay)
+#if defined(CONFIG_ARCH_VERSAL_NET)
+/**
+ * arasan_phy_set_delaychain - Set eMMC delay chain based Input/Output clock
+ *
+ * @host:	Pointer to the sdhci_host structure
+ * @enable:	Enable or disable Delay chain based Tx and Rx clock
+ * Return:	None
+ *
+ * Enable or disable eMMC delay chain based Input and Output clock in
+ * PHY_CTRL_REG2
+ */
+static void arasan_phy_set_delaychain(struct sdhci_host *host, bool enable)
+{
+	u32 reg;
+
+	reg = sdhci_readw(host, PHY_CTRL_REG2);
+	if (enable)
+		reg |= PHY_CTRL_SEL_DLY_TX_MASK | PHY_CTRL_SEL_DLY_RX_MASK;
+	else
+		reg &= ~(PHY_CTRL_SEL_DLY_TX_MASK | PHY_CTRL_SEL_DLY_RX_MASK);
+
+	sdhci_writew(host, reg, PHY_CTRL_REG2);
+}
+
+/**
+ * arasan_phy_set_dll - Set eMMC DLL clock
+ *
+ * @host:	Pointer to the sdhci_host structure
+ * @enable:	Enable or disable DLL clock
+ * Return:	0 if success or timeout error
+ *
+ * Enable or disable eMMC DLL clock in PHY_CTRL_REG2. When DLL enable is
+ * set, wait till DLL is locked
+ */
+static int arasan_phy_set_dll(struct sdhci_host *host, bool enable)
+{
+	u32 reg;
+
+	reg = sdhci_readw(host, PHY_CTRL_REG2);
+	if (enable)
+		reg |= PHY_CTRL_EN_DLL_MASK;
+	else
+		reg &= ~PHY_CTRL_EN_DLL_MASK;
+
+	sdhci_writew(host, reg, PHY_CTRL_REG2);
+
+	/* If DLL is disabled return success */
+	if (!enable)
+		return 0;
+
+	/* If DLL is enabled wait till DLL loop is locked, which is
+	 * indicated by dll_rdy bit(bit1) in PHY_CTRL_REG2
+	 */
+	return readl_relaxed_poll_timeout(host->ioaddr + PHY_CTRL_REG2, reg,
+					  (reg & PHY_CTRL_DLL_RDY_MASK),
+					  1000 * PHY_DLL_TIMEOUT_MS);
+}
+
+/**
+ * arasan_phy_dll_set_freq - Select frequency range of DLL for eMMC
+ *
+ * @host:	Pointer to the sdhci_host structure
+ * @clock:	clock value
+ * Return:	None
+ *
+ * Set frequency range bits based on the selected clock for eMMC
+ */
+static void arasan_phy_dll_set_freq(struct sdhci_host *host, int clock)
+{
+	u32 reg, freq_sel, freq;
+
+	freq = DIV_ROUND_CLOSEST(clock, 1000000);
+	if (freq <= 200 && freq > 170)
+		freq_sel = FREQSEL_200M_170M;
+	else if (freq <= 170 && freq > 140)
+		freq_sel = FREQSEL_170M_140M;
+	else if (freq <= 140 && freq > 110)
+		freq_sel = FREQSEL_140M_110M;
+	else if (freq <= 110 && freq > 80)
+		freq_sel = FREQSEL_110M_80M;
+	else
+		freq_sel = FREQSEL_80M_50M;
+
+	reg = sdhci_readw(host, PHY_CTRL_REG2);
+	reg &= ~PHY_CTRL_FREQ_SEL_MASK;
+	reg |= (freq_sel << PHY_CTRL_FREQ_SEL_SHIFT);
+	sdhci_writew(host, reg, PHY_CTRL_REG2);
+}
+
+static int arasan_sdhci_config_dll(struct sdhci_host *host, unsigned int clock, bool enable)
+{
+	struct mmc *mmc = (struct mmc *)host->mmc;
+	struct arasan_sdhci_priv *priv = dev_get_priv(mmc->dev);
+
+	if (enable) {
+		if (priv->internal_phy_reg && clock >= MIN_PHY_CLK_HZ && enable)
+			arasan_phy_set_dll(host, 1);
+		return 0;
+	}
+
+	if (priv->internal_phy_reg && clock >= MIN_PHY_CLK_HZ) {
+		sdhci_writew(host, 0, SDHCI_CLOCK_CONTROL);
+		arasan_phy_set_dll(host, 0);
+		arasan_phy_set_delaychain(host, 0);
+		arasan_phy_dll_set_freq(host, clock);
+		return 0;
+	}
+
+	sdhci_writew(host, 0, SDHCI_CLOCK_CONTROL);
+	arasan_phy_set_delaychain(host, 1);
+
+	return 0;
+}
+#endif
+
+static inline int arasan_zynqmp_set_in_tapdelay(u32 node_id, u32 itap_delay)
 {
 	int ret;
 
@@ -155,7 +316,7 @@ static inline int arasan_zynqmp_set_in_tapdelay(u8 node_id, u32 itap_delay)
 		if (ret)
 			return ret;
 	} else {
-		return xilinx_pm_request(PM_IOCTL, (u32)node_id,
+		return xilinx_pm_request(PM_IOCTL, node_id,
 					 IOCTL_SET_SD_TAPDELAY,
 					 PM_TAPDELAY_INPUT, itap_delay, NULL);
 	}
@@ -163,7 +324,7 @@ static inline int arasan_zynqmp_set_in_tapdelay(u8 node_id, u32 itap_delay)
 	return 0;
 }
 
-static inline int arasan_zynqmp_set_out_tapdelay(u8 node_id, u32 otap_delay)
+static inline int arasan_zynqmp_set_out_tapdelay(u32 node_id, u32 otap_delay)
 {
 	if (IS_ENABLED(CONFIG_SPL_BUILD) || current_el() == 3) {
 		if (node_id == NODE_SD_0)
@@ -174,13 +335,13 @@ static inline int arasan_zynqmp_set_out_tapdelay(u8 node_id, u32 otap_delay)
 		return zynqmp_mmio_write(SD_OTAP_DLY, SD1_OTAPDLYSEL_MASK,
 					 (otap_delay << 16));
 	} else {
-		return xilinx_pm_request(PM_IOCTL, (u32)node_id,
+		return xilinx_pm_request(PM_IOCTL, node_id,
 					 IOCTL_SET_SD_TAPDELAY,
 					 PM_TAPDELAY_OUTPUT, otap_delay, NULL);
 	}
 }
 
-static inline int zynqmp_dll_reset(u8 node_id, u32 type)
+static inline int zynqmp_dll_reset(u32 node_id, u32 type)
 {
 	if (IS_ENABLED(CONFIG_SPL_BUILD) || current_el() == 3) {
 		if (node_id == NODE_SD_0)
@@ -192,12 +353,12 @@ static inline int zynqmp_dll_reset(u8 node_id, u32 type)
 					 type == PM_DLL_RESET_ASSERT ?
 					 SD1_DLL_RST : 0);
 	} else {
-		return xilinx_pm_request(PM_IOCTL, (u32)node_id,
+		return xilinx_pm_request(PM_IOCTL, node_id,
 					 IOCTL_SD_DLL_RESET, type, 0, NULL);
 	}
 }
 
-static int arasan_zynqmp_dll_reset(struct sdhci_host *host, u8 node_id)
+static int arasan_zynqmp_dll_reset(struct sdhci_host *host, u32 node_id)
 {
 	struct mmc *mmc = (struct mmc *)host->mmc;
 	struct udevice *dev = mmc->dev;
@@ -249,8 +410,7 @@ static int arasan_sdhci_execute_tuning(struct mmc *mmc, u8 opcode)
 	u32 ctrl;
 	struct sdhci_host *host;
 	struct arasan_sdhci_priv *priv = dev_get_priv(mmc->dev);
-	char tuning_loop_counter = SDHCI_TUNING_LOOP_COUNT;
-	u8 node_id = priv->deviceid ? NODE_SD_1 : NODE_SD_0;
+	int tuning_loop_counter = SDHCI_TUNING_LOOP_COUNT;
 
 	dev_dbg(mmc->dev, "%s\n", __func__);
 
@@ -262,7 +422,7 @@ static int arasan_sdhci_execute_tuning(struct mmc *mmc, u8 opcode)
 
 	mdelay(1);
 
-	arasan_zynqmp_dll_reset(host, node_id);
+	arasan_zynqmp_dll_reset(host, priv->node_id);
 
 	sdhci_writel(host, SDHCI_INT_DATA_AVAIL, SDHCI_INT_ENABLE);
 	sdhci_writel(host, SDHCI_INT_DATA_AVAIL, SDHCI_SIGNAL_ENABLE);
@@ -308,7 +468,7 @@ static int arasan_sdhci_execute_tuning(struct mmc *mmc, u8 opcode)
 	}
 
 	udelay(1);
-	arasan_zynqmp_dll_reset(host, node_id);
+	arasan_zynqmp_dll_reset(host, priv->node_id);
 
 	/* Enable only interrupts served by the SD controller */
 	sdhci_writel(host, SDHCI_INT_DATA_MASK | SDHCI_INT_CMD_MASK,
@@ -334,7 +494,6 @@ static int sdhci_zynqmp_sdcardclk_set_phase(struct sdhci_host *host,
 	struct mmc *mmc = (struct mmc *)host->mmc;
 	struct udevice *dev = mmc->dev;
 	struct arasan_sdhci_priv *priv = dev_get_priv(mmc->dev);
-	u8 node_id = priv->deviceid ? NODE_SD_1 : NODE_SD_0;
 	u8 tap_delay, tap_max = 0;
 	int timing = mode2timing[mmc->selected_mode];
 	int ret;
@@ -374,14 +533,14 @@ static int sdhci_zynqmp_sdcardclk_set_phase(struct sdhci_host *host,
 	tap_delay &= SDHCI_ARASAN_OTAPDLY_SEL_MASK;
 
 	/* Set the Clock Phase */
-	ret = arasan_zynqmp_set_out_tapdelay(node_id, tap_delay);
+	ret = arasan_zynqmp_set_out_tapdelay(priv->node_id, tap_delay);
 	if (ret) {
 		dev_err(dev, "Error setting output Tap Delay\n");
 		return ret;
 	}
 
 	/* Release DLL Reset */
-	ret = zynqmp_dll_reset(node_id, PM_DLL_RESET_RELEASE);
+	ret = zynqmp_dll_reset(priv->node_id, PM_DLL_RESET_RELEASE);
 	if (ret) {
 		dev_err(dev, "dll_reset release failed with err: %d\n", ret);
 		return ret;
@@ -405,7 +564,6 @@ static int sdhci_zynqmp_sampleclk_set_phase(struct sdhci_host *host,
 	struct mmc *mmc = (struct mmc *)host->mmc;
 	struct udevice *dev = mmc->dev;
 	struct arasan_sdhci_priv *priv = dev_get_priv(mmc->dev);
-	u8 node_id = priv->deviceid ? NODE_SD_1 : NODE_SD_0;
 	u8 tap_delay, tap_max = 0;
 	int timing = mode2timing[mmc->selected_mode];
 	int ret;
@@ -419,7 +577,7 @@ static int sdhci_zynqmp_sampleclk_set_phase(struct sdhci_host *host,
 		return 0;
 
 	/* Assert DLL Reset */
-	ret = zynqmp_dll_reset(node_id, PM_DLL_RESET_ASSERT);
+	ret = zynqmp_dll_reset(priv->node_id, PM_DLL_RESET_ASSERT);
 	if (ret) {
 		dev_err(dev, "dll_reset assert failed with err: %d\n", ret);
 		return ret;
@@ -451,7 +609,7 @@ static int sdhci_zynqmp_sampleclk_set_phase(struct sdhci_host *host,
 	/* Limit input tap_delay value to 8 bits */
 	tap_delay &= SDHCI_ARASAN_ITAPDLY_SEL_MASK;
 
-	ret = arasan_zynqmp_set_in_tapdelay(node_id, tap_delay);
+	ret = arasan_zynqmp_set_in_tapdelay(priv->node_id, tap_delay);
 	if (ret) {
 		dev_err(dev, "Error setting Input Tap Delay\n");
 		return ret;
@@ -588,6 +746,101 @@ static int sdhci_versal_sampleclk_set_phase(struct sdhci_host *host,
 	return 0;
 }
 
+/**
+ * sdhci_versal_net_emmc_sdcardclk_set_phase - Set eMMC Output Clock Tap Delays
+ *
+ * @host:		Pointer to the sdhci_host structure.
+ * @degrees:		The clock phase shift between 0 - 359.
+ * Return: 0
+ *
+ * Set eMMC Output Clock Tap Delays for Output path
+ */
+static int sdhci_versal_net_emmc_sdcardclk_set_phase(struct sdhci_host *host, int degrees)
+{
+	struct mmc *mmc = (struct mmc *)host->mmc;
+	int timing = mode2timing[mmc->selected_mode];
+	u8 tap_delay, tap_max = 0;
+	u32 regval;
+
+	switch (timing) {
+	case MMC_TIMING_MMC_HS:
+	case MMC_TIMING_MMC_DDR52:
+		tap_max = 16;
+		break;
+	case MMC_TIMING_MMC_HS200:
+	case MMC_TIMING_MMC_HS400:
+		 /* For 200MHz clock, 32 Taps are available */
+		tap_max = 32;
+		break;
+	default:
+		break;
+	}
+
+	tap_delay = (degrees * tap_max) / 360;
+	/* Set the Clock Phase */
+	if (tap_delay) {
+		regval = sdhci_readl(host, PHY_CTRL_REG1);
+		regval |= PHY_CTRL_OTAPDLY_ENA_MASK;
+		sdhci_writel(host, regval, PHY_CTRL_REG1);
+		regval &= ~PHY_CTRL_OTAPDLY_SEL_MASK;
+		regval |= tap_delay << PHY_CTRL_OTAPDLY_SEL_SHIFT;
+		sdhci_writel(host, regval, PHY_CTRL_REG1);
+	}
+
+	return 0;
+}
+
+/**
+ * sdhci_versal_net_emmc_sampleclk_set_phase - Set eMMC Input Clock Tap Delays
+ *
+ * @host:		Pointer to the sdhci_host structure.
+ * @degrees:		The clock phase shift between 0 - 359.
+ * Return: 0
+ *
+ * Set eMMC Input Clock Tap Delays for Input path. If HS400 is selected,
+ * set strobe90 and strobe180 in PHY_CTRL_REG1.
+ */
+static int sdhci_versal_net_emmc_sampleclk_set_phase(struct sdhci_host *host, int degrees)
+{
+	struct mmc *mmc = (struct mmc *)host->mmc;
+	int timing = mode2timing[mmc->selected_mode];
+	u8 tap_delay, tap_max = 0;
+	u32 regval;
+
+	switch (timing) {
+	case MMC_TIMING_MMC_HS:
+	case MMC_TIMING_MMC_DDR52:
+		tap_max = 32;
+		break;
+	case MMC_TIMING_MMC_HS400:
+		/* Strobe select tap point for strb90 and strb180 */
+		regval = sdhci_readl(host, PHY_CTRL_REG1);
+		regval &= ~PHY_CTRL_STRB_SEL_MASK;
+		regval |= VERSAL_NET_PHY_CTRL_STRB90_STRB180_VAL << PHY_CTRL_STRB_SEL_SHIFT;
+		sdhci_writel(host, regval, PHY_CTRL_REG1);
+		break;
+	default:
+		break;
+	}
+
+	tap_delay = (degrees * tap_max) / 360;
+	/* Set the Clock Phase */
+	if (tap_delay) {
+		regval = sdhci_readl(host, PHY_CTRL_REG1);
+		regval |= PHY_CTRL_ITAP_CHG_WIN_MASK;
+		sdhci_writel(host, regval, PHY_CTRL_REG1);
+		regval |= PHY_CTRL_ITAPDLY_ENA_MASK;
+		sdhci_writel(host, regval, PHY_CTRL_REG1);
+		regval &= ~PHY_CTRL_ITAPDLY_SEL_MASK;
+		regval |= tap_delay << PHY_CTRL_ITAPDLY_SEL_SHIFT;
+		sdhci_writel(host, regval, PHY_CTRL_REG1);
+		regval &= ~PHY_CTRL_ITAP_CHG_WIN_MASK;
+		sdhci_writel(host, regval, PHY_CTRL_REG1);
+	}
+
+	return 0;
+}
+
 static int arasan_sdhci_set_tapdelay(struct sdhci_host *host)
 {
 	struct arasan_sdhci_priv *priv = dev_get_priv(host->mmc->dev);
@@ -617,6 +870,19 @@ static int arasan_sdhci_set_tapdelay(struct sdhci_host *host)
 			return ret;
 
 		ret = sdhci_versal_sdcardclk_set_phase(host, oclk_phase);
+		if (ret)
+			return ret;
+	} else if (IS_ENABLED(CONFIG_ARCH_VERSAL_NET) &&
+		   device_is_compatible(dev, "xlnx,versal-net-5.1-emmc")) {
+		if (mmc->clock >= MIN_PHY_CLK_HZ)
+			if (iclk_phase == VERSAL_NET_EMMC_ICLK_PHASE_DDR52_DLY_CHAIN)
+				iclk_phase = VERSAL_NET_EMMC_ICLK_PHASE_DDR52_DLL;
+
+		ret = sdhci_versal_net_emmc_sampleclk_set_phase(host, iclk_phase);
+		if (ret)
+			return ret;
+
+		ret = sdhci_versal_net_emmc_sdcardclk_set_phase(host, oclk_phase);
 		if (ret)
 			return ret;
 	}
@@ -681,6 +947,14 @@ static void arasan_dt_parse_clk_phases(struct udevice *dev)
 		}
 	}
 
+	if (IS_ENABLED(CONFIG_ARCH_VERSAL_NET) &&
+	    device_is_compatible(dev, "xlnx,versal-net-5.1-emmc")) {
+		for (i = 0; i <= MMC_TIMING_MMC_HS400; i++) {
+			clk_data->clk_phase_in[i] = versal_net_emmc_iclk_phases[i];
+			clk_data->clk_phase_out[i] = versal_net_emmc_oclk_phases[i];
+		}
+	}
+
 	arasan_dt_read_clk_phase(dev, MMC_TIMING_LEGACY,
 				 "clk-phase-legacy");
 	arasan_dt_read_clk_phase(dev, MMC_TIMING_MMC_HS,
@@ -709,22 +983,25 @@ static const struct sdhci_ops arasan_ops = {
 	.platform_execute_tuning	= &arasan_sdhci_execute_tuning,
 	.set_delay = &arasan_sdhci_set_tapdelay,
 	.set_control_reg = &sdhci_set_control_reg,
+#if defined(CONFIG_ARCH_VERSAL_NET)
+	.config_dll = &arasan_sdhci_config_dll,
+#endif
 };
 #endif
 
-#if defined(CONFIG_ARCH_ZYNQMP)
+#if defined(CONFIG_ARCH_ZYNQMP) && defined(CONFIG_ZYNQMP_FIRMWARE)
 static int sdhci_zynqmp_set_dynamic_config(struct arasan_sdhci_priv *priv,
 					   struct udevice *dev)
 {
 	int ret;
-	u32 node_id = priv->deviceid ? NODE_SD_1 : NODE_SD_0;
 	struct clk clk;
 	unsigned long clock, mhz;
 
-	ret = xilinx_pm_request(PM_REQUEST_NODE, node_id, ZYNQMP_PM_CAPABILITY_ACCESS,
-				ZYNQMP_PM_MAX_QOS, ZYNQMP_PM_REQUEST_ACK_NO, NULL);
+	ret = xilinx_pm_request(PM_REQUEST_NODE, priv->node_id,
+				ZYNQMP_PM_CAPABILITY_ACCESS, ZYNQMP_PM_MAX_QOS,
+				ZYNQMP_PM_REQUEST_ACK_NO, NULL);
 	if (ret) {
-		dev_err(dev, "Request node failed for %d\n", node_id);
+		dev_err(dev, "Request node failed for %d\n", priv->node_id);
 		return ret;
 	}
 
@@ -743,13 +1020,13 @@ static int sdhci_zynqmp_set_dynamic_config(struct arasan_sdhci_priv *priv,
 		return ret;
 	}
 
-	ret = zynqmp_pm_set_sd_config(node_id, SD_CONFIG_FIXED, 0);
+	ret = zynqmp_pm_set_sd_config(priv->node_id, SD_CONFIG_FIXED, 0);
 	if (ret) {
 		dev_err(dev, "SD_CONFIG_FIXED failed\n");
 		return ret;
 	}
 
-	ret = zynqmp_pm_set_sd_config(node_id, SD_CONFIG_EMMC_SEL,
+	ret = zynqmp_pm_set_sd_config(priv->node_id, SD_CONFIG_EMMC_SEL,
 				      dev_read_bool(dev, "non-removable"));
 	if (ret) {
 		dev_err(dev, "SD_CONFIG_EMMC_SEL failed\n");
@@ -779,13 +1056,13 @@ static int sdhci_zynqmp_set_dynamic_config(struct arasan_sdhci_priv *priv,
 	else
 		mhz = 25;
 
-	ret = zynqmp_pm_set_sd_config(node_id, SD_CONFIG_BASECLK, mhz);
+	ret = zynqmp_pm_set_sd_config(priv->node_id, SD_CONFIG_BASECLK, mhz);
 	if (ret) {
 		dev_err(dev, "SD_CONFIG_BASECLK failed\n");
 		return ret;
 	}
 
-	ret = zynqmp_pm_set_sd_config(node_id, SD_CONFIG_8BIT,
+	ret = zynqmp_pm_set_sd_config(priv->node_id, SD_CONFIG_8BIT,
 				      (dev_read_u32_default(dev, "bus-width", 1) == 8));
 	if (ret) {
 		dev_err(dev, "SD_CONFIG_8BIT failed\n");
@@ -814,7 +1091,7 @@ static int arasan_sdhci_probe(struct udevice *dev)
 
 	host = priv->host;
 
-#if defined(CONFIG_ARCH_ZYNQMP)
+#if defined(CONFIG_ARCH_ZYNQMP) && defined(CONFIG_ZYNQMP_FIRMWARE)
 	if (device_is_compatible(dev, "xlnx,zynqmp-8.9a")) {
 		ret = zynqmp_pm_is_function_supported(PM_IOCTL,
 						      IOCTL_SET_SD_CONFIG);
@@ -825,6 +1102,8 @@ static int arasan_sdhci_probe(struct udevice *dev)
 		}
 	}
 #endif
+	if (device_is_compatible(dev, "xlnx,versal-net-5.1-emmc"))
+		priv->internal_phy_reg = true;
 
 	ret = clk_get_by_index(dev, 0, &clk);
 	if (ret < 0) {
@@ -855,6 +1134,10 @@ static int arasan_sdhci_probe(struct udevice *dev)
 
 	if (priv->no_1p8)
 		host->quirks |= SDHCI_QUIRK_NO_1_8_V;
+
+	if (CONFIG_IS_ENABLED(ARCH_VERSAL_NET) &&
+	    device_is_compatible(dev, "xlnx,versal-net-5.1-emmc"))
+		host->quirks |= SDHCI_QUIRK_CAPS_BIT63_FOR_HS400;
 
 	plat->cfg.f_max = CONFIG_ZYNQ_SDHCI_MAX_FREQ;
 
@@ -900,6 +1183,7 @@ static int arasan_sdhci_probe(struct udevice *dev)
 static int arasan_sdhci_of_to_plat(struct udevice *dev)
 {
 	struct arasan_sdhci_priv *priv = dev_get_priv(dev);
+	u32 pm_info[2];
 
 	priv->host = calloc(1, sizeof(struct sdhci_host));
 	if (!priv->host)
@@ -907,18 +1191,21 @@ static int arasan_sdhci_of_to_plat(struct udevice *dev)
 
 	priv->host->name = dev->name;
 
-#if defined(CONFIG_ARCH_ZYNQMP) || defined(CONFIG_ARCH_VERSAL)
+#if defined(CONFIG_ARCH_ZYNQMP) || defined(CONFIG_ARCH_VERSAL) || defined(CONFIG_ARCH_VERSAL_NET)
 	priv->host->ops = &arasan_ops;
 	arasan_dt_parse_clk_phases(dev);
 #endif
 
-	priv->host->ioaddr = (void *)dev_read_addr(dev);
-	if (IS_ERR(priv->host->ioaddr))
-		return PTR_ERR(priv->host->ioaddr);
+	priv->host->ioaddr = dev_read_addr_ptr(dev);
+	if (!priv->host->ioaddr)
+		return -EINVAL;
 
-	priv->deviceid = dev_read_u32_default(dev, "xlnx,device_id", -1);
 	priv->bank = dev_read_u32_default(dev, "xlnx,mio-bank", 0);
 	priv->no_1p8 = dev_read_bool(dev, "no-1-8-v");
+
+	priv->node_id = 0;
+	if (!dev_read_u32_array(dev, "power-domains", pm_info, ARRAY_SIZE(pm_info)))
+		priv->node_id = pm_info[1];
 
 	return 0;
 }
@@ -932,6 +1219,7 @@ static int arasan_sdhci_bind(struct udevice *dev)
 
 static const struct udevice_id arasan_sdhci_ids[] = {
 	{ .compatible = "arasan,sdhci-8.9a" },
+	{ .compatible = "xlnx,versal-net-5.1-emmc" },
 	{ }
 };
 

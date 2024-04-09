@@ -8,8 +8,10 @@
 #ifndef __VEXPRESS_AEMV8A_H
 #define __VEXPRESS_AEMV8A_H
 
-#define CONFIG_ARCH_MANGO_PLD
-//#define CONFIG_ARCH_MANGO_FPGA
+//#define CFG_ARCH_MANGO_PLD
+//#define CFG_ARCH_MANGO_FPGA
+
+#define USE_GRUB 0
 
 #ifndef __ASSEMBLY__
 enum {
@@ -20,8 +22,7 @@ enum {
 #endif
 
 /* CONFIG_LEGACY_IMAGE_FORMAT, moved to defconfig file */
-
-#define CONFIG_REMAKE_ELF
+/* CONFIG_REMAKE_ELF, moved to defconfig file */
 
 /* Link Definitions, ATF loads u-boot here */
 /* CONFIG_SYS_TEXT_BASE, moved to defconfig file */
@@ -30,16 +31,13 @@ enum {
 #define GICD_BASE			(0x7031001000)
 #define GICC_BASE			(0x7031002000)
 
-/* For network descriptor, should be enabled when mmu is okay */
-#define CONFIG_SYS_NONCACHED_MEMORY	BIT(20) /* 1 MiB */
-
 /* include/generated/autoconf.h would define CONFIG_BAUDRATE from drivers/serial/Kconfig (default 115200) */
 
 /* Physical Memory Map */
 #define PHYS_SDRAM		(0x0000000000)
 #define PHYS_SDRAM_SIZE		(0x0040000000) /* 1GB */
 
-#define CONFIG_SYS_SDRAM_BASE	PHYS_SDRAM
+#define CFG_SYS_SDRAM_BASE	PHYS_SDRAM
 
 #define SYS_CTRL_BASE		0x7030010000
 #define BOARD_TYPE_REG		(SYS_CTRL_BASE + 0x23C) // GP_REG31
@@ -68,7 +66,7 @@ enum {
 /* CONFIG_SYS_MEMTEST_END, moved to defconfig file */
 
 /* Initial environment variables */
-#define CONFIG_EXTRA_ENV_SETTINGS	\
+#define CFG_EXTRA_ENV_SETTINGS	\
 	"consoledev=ttyS1\0"		\
 	"baudrate=115200\0"		\
 	"othbootargs=earlycon\0"	\
@@ -86,7 +84,10 @@ enum {
 	"done; "                                                  \
 	"setenv devplist\0"					  \
 	\
-	"boot_scripts=boot.scr.sd boot.scr\0"
+	"boot_scripts=boot.scr.sd boot.scr\0"				\
+	"grubcmd=load mmc 1:3 ${fdt_addr_r} /boot/${dtb_name};"			\
+		"load mmc 1:1 ${kernel_addr_r} /EFI/ubuntu/grubaa64.efi;"	\
+		"bootefi ${kernel_addr_r} ${fdt_addr_r}\0"
 
 #define BOOT_TARGET_DEVICES_SPI(func) func(SPI, spi, na)
 #define BOOTENV_DEV_NAME_SPI(devtypeu, devtypel, instance) \
@@ -99,21 +100,17 @@ enum {
 	"setenv bootargs console=${consoledev},${baudrate} ${othbootargs} && " \
 	"booti ${kernel_addr_r} ${ramdisk_addr_r} ${fdt_addr_r};\0"
 
+#undef CONFIG_BOOTCOMMAND
+#if USE_GRUB
+#define CONFIG_BOOTCOMMAND "run grubcmd"
+#else
 #define CONFIG_BOOTCOMMAND "run distro_bootcmd"
+#endif
 #include <config_distro_bootcmd.h>
 
 #define BOOT_TARGET_DEVICES(func) \
 	func(MMC, mmc, 1) \
 	BOOT_TARGET_DEVICES_SPI(func)
-
-#define CONFIG_IPADDR			192.168.1.250
-#define CONFIG_NETMASK			255.255.255.0
-#define CONFIG_GATEWAYIP		192.168.1.1
-#define CONFIG_SERVERIP			192.168.1.100
-#define CONFIG_HOSTNAME			"unknown"
-#define CONFIG_ROOTPATH			"/home/share/nfsroot"
-
-
 
 #ifndef __ASSEMBLY__
 void board_before_jump_linux(void);

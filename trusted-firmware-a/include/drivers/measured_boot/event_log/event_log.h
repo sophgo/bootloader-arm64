@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2022, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -11,6 +11,7 @@
 
 #include <common/debug.h>
 #include <common/tbbr/tbbr_img_def.h>
+#include <drivers/auth/crypto_mod.h>
 #include <drivers/measured_boot/event_log/tcg.h>
 
 /*
@@ -78,6 +79,14 @@
 #define EVLOG_TB_FW_CONFIG_STRING	"TB_FW_CONFIG"
 #define	EVLOG_TOS_FW_CONFIG_STRING	"TOS_FW_CONFIG"
 #define EVLOG_RMM_STRING 		"RMM"
+#define EVLOG_SP1_STRING		"SP1"
+#define EVLOG_SP2_STRING		"SP2"
+#define EVLOG_SP3_STRING		"SP3"
+#define EVLOG_SP4_STRING		"SP4"
+#define EVLOG_SP5_STRING		"SP5"
+#define EVLOG_SP6_STRING		"SP6"
+#define EVLOG_SP7_STRING		"SP7"
+#define EVLOG_SP8_STRING		"SP8"
 
 typedef struct {
 	unsigned int id;
@@ -101,10 +110,16 @@ typedef struct {
 			sizeof(event2_data_t))
 
 /* Functions' declarations */
+void event_log_buf_init(uint8_t *event_log_start, uint8_t *event_log_finish);
 void event_log_init(uint8_t *event_log_start, uint8_t *event_log_finish);
+void event_log_write_specid_event(void);
 void event_log_write_header(void);
 void dump_event_log(uint8_t *log_addr, size_t log_size);
 const event_log_metadata_t *plat_event_log_get_metadata(void);
+int event_log_measure(uintptr_t data_base, uint32_t data_size,
+		      unsigned char hash_data[CRYPTO_MD_MAX_SIZE]);
+void event_log_record(const uint8_t *hash, uint32_t event_type,
+		      const event_log_metadata_t *metadata_ptr);
 int event_log_measure_and_record(uintptr_t data_base, uint32_t data_size,
 				 uint32_t data_id);
 size_t event_log_get_cur_size(uint8_t *event_log_start);

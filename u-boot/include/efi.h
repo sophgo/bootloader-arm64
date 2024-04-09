@@ -37,12 +37,14 @@
 #define EFIAPI __attribute__((ms_abi))
 #define efi_va_list __builtin_ms_va_list
 #define efi_va_start __builtin_ms_va_start
+#define efi_va_copy __builtin_ms_va_copy
 #define efi_va_arg __builtin_va_arg
 #define efi_va_end __builtin_ms_va_end
 #else
 #define EFIAPI asmlinkage
 #define efi_va_list va_list
 #define efi_va_start va_start
+#define efi_va_copy va_copy
 #define efi_va_arg va_arg
 #define efi_va_end va_end
 #endif /* __x86_64__ */
@@ -50,11 +52,31 @@
 #define EFI32_LOADER_SIGNATURE	"EL32"
 #define EFI64_LOADER_SIGNATURE	"EL64"
 
-struct efi_device_path;
+/**
+ * struct efi_device_path - device path protocol
+ *
+ * @type:	device path type
+ * @sub_type:	device path sub-type
+ * @length:	length of the device path node including the header
+ */
+struct efi_device_path {
+	u8 type;
+	u8 sub_type;
+	u16 length;
+} __packed;
 
+/*
+ * The EFI spec defines the EFI_GUID as
+ * "128-bit buffer containing a unique identifier value. Unless otherwise specified,
+ * aligned on a 64-bit boundary".
+ * Page 163 of the UEFI specification v2.10 and
+ * EDK2 reference implementation both define EFI_GUID as
+ * struct { u32 a; u16; b; u16 c; u8 d[8]; }; which is 4-byte
+ * aligned.
+ */
 typedef struct {
 	u8 b[16];
-} efi_guid_t __attribute__((aligned(8)));
+} efi_guid_t __attribute__((aligned(4)));
 
 #define EFI_BITS_PER_LONG	(sizeof(long) * 8)
 
@@ -625,5 +647,14 @@ int efi_call_exit_boot_services(void);
  */
 int efi_get_mmap(struct efi_mem_desc **descp, int *sizep, uint *keyp,
 		 int *desc_sizep, uint *versionp);
+
+/**
+ * efi_show_tables() - Show a list of available tables
+ *
+ * Shows the address, GUID (and name where known) for each table
+ *
+ * @systab: System table containing the list of tables
+ */
+void efi_show_tables(struct efi_system_table *systab);
 
 #endif /* _LINUX_EFI_H */

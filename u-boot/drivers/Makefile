@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0+
 
+obj-$(CONFIG_$(SPL_TPL_)BLK) += block/
 obj-$(CONFIG_$(SPL_TPL_)BOOTCOUNT_LIMIT) += bootcount/
 obj-$(CONFIG_$(SPL_TPL_)BUTTON) += button/
 obj-$(CONFIG_$(SPL_TPL_)CACHE) += cache/
@@ -8,6 +9,7 @@ obj-$(CONFIG_$(SPL_TPL_)DM) += core/
 obj-$(CONFIG_$(SPL_TPL_)DMA) += dma/
 obj-$(CONFIG_$(SPL_TPL_)DMA_LEGACY) += dma/
 obj-$(CONFIG_$(SPL_TPL_)DFU) += dfu/
+obj-$(CONFIG_$(SPL_TPL_)EXTCON) += extcon/
 obj-$(CONFIG_$(SPL_TPL_)GPIO) += gpio/
 obj-$(CONFIG_$(SPL_TPL_)DRIVERS_MISC) += misc/
 obj-$(CONFIG_$(SPL_TPL_)SYSRESET) += sysreset/
@@ -17,7 +19,6 @@ obj-$(CONFIG_$(SPL_TPL_)INPUT) += input/
 obj-$(CONFIG_$(SPL_TPL_)LED) += led/
 obj-$(CONFIG_$(SPL_TPL_)MMC) += mmc/
 obj-y += mtd/
-obj-$(CONFIG_$(SPL_)MULTIPLEXER) += mux/
 obj-$(CONFIG_$(SPL_TPL_)ETH) += net/
 obj-$(CONFIG_$(SPL_TPL_)PCH) += pch/
 obj-$(CONFIG_$(SPL_TPL_)PCI) += pci/
@@ -36,6 +37,7 @@ obj-$(CONFIG_$(SPL_)SYSINFO) += sysinfo/
 obj-$(CONFIG_$(SPL_TPL_)TPM) += tpm/
 obj-$(CONFIG_XEN) += xen/
 obj-$(CONFIG_$(SPL_)FPGA) += fpga/
+obj-y += bus/
 
 ifndef CONFIG_TPL_BUILD
 ifndef CONFIG_VPL_BUILD
@@ -57,10 +59,10 @@ obj-$(CONFIG_SPL_USB_GADGET) += usb/common/
 obj-$(CONFIG_SPL_USB_GADGET) += usb/gadget/udc/
 obj-$(CONFIG_SPL_WATCHDOG) += watchdog/
 obj-$(CONFIG_SPL_USB_HOST) += usb/host/
-obj-$(CONFIG_OMAP_USB_PHY) += usb/phy/
 obj-$(CONFIG_SPL_SATA) += ata/ scsi/
-obj-$(CONFIG_HAVE_BLOCK_DEVICE) += block/
+obj-$(CONFIG_SPL_LEGACY_BLOCK) += block/
 obj-$(CONFIG_SPL_THERMAL) += thermal/
+obj-$(CONFIG_SPL_VIDEO) +=video/
 
 endif
 endif
@@ -76,7 +78,6 @@ ifeq ($(CONFIG_SPL_BUILD)$(CONFIG_TPL_BUILD),)
 
 obj-y += adc/
 obj-y += ata/
-obj-y += bus/
 obj-$(CONFIG_DM_DEMO) += demo/
 obj-$(CONFIG_BIOSEMU) += bios_emulator/
 obj-y += block/
@@ -84,8 +85,10 @@ obj-y += cache/
 obj-$(CONFIG_CPU) += cpu/
 obj-y += crypto/
 obj-$(CONFIG_FASTBOOT) += fastboot/
+obj-$(CONFIG_FWU_MDATA) += fwu-mdata/
 obj-y += misc/
 obj-$(CONFIG_MMC) += mmc/
+obj-$(CONFIG_MULTIPLEXER) += mux/
 obj-$(CONFIG_NVME) += nvme/
 obj-$(CONFIG_PCI_ENDPOINT) += pci_endpoint/
 obj-y += dfu/
@@ -101,6 +104,7 @@ obj-$(CONFIG_QE) += qe/
 obj-$(CONFIG_U_QE) += qe/
 obj-y += mailbox/
 obj-y += memory/
+obj-y += mfd/
 obj-y += mtd/
 obj-y += pwm/
 obj-y += reset/

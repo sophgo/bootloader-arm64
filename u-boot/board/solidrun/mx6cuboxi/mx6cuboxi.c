@@ -107,7 +107,7 @@ int dram_init(void)
 {
 	u32 max_size = imx_ddr_size();
 
-	gd->ram_size = get_ram_size_stride_test((u32 *) CONFIG_SYS_SDRAM_BASE,
+	gd->ram_size = get_ram_size_stride_test((u32 *) CFG_SYS_SDRAM_BASE,
 						(u32)max_size);
 
 	return 0;
@@ -275,7 +275,7 @@ int board_early_init_f(void)
 {
 	setup_iomux_uart();
 
-#ifdef CONFIG_CMD_SATA
+#ifdef CONFIG_SATA
 	setup_sata();
 #endif
 	setup_fec();
@@ -288,7 +288,7 @@ int board_init(void)
 	int ret = 0;
 
 	/* address of boot parameters */
-	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;
+	gd->bd->bi_boot_params = CFG_SYS_SDRAM_BASE + 0x100;
 
 #ifdef CONFIG_VIDEO_IPUV3
 	ret = setup_display();
@@ -843,6 +843,9 @@ void board_init_f(ulong dummy)
 
 	/* setup GP timer */
 	timer_init();
+
+	/* Enable device tree and early DM support*/
+	spl_early_init();
 
 	/* UART clocks enabled and gd valid - init serial console */
 	preloader_console_init();

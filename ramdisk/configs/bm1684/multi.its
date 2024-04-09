@@ -367,6 +367,17 @@
 			};
 		};
 
+		fdt-pcb37 {
+			description = "for SM5M V3.3 @TB";
+			data = /incbin/("./bm1684_sm5m_v3.3_tb.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
 		fdt-pcb38 {
 			description = "for SC5 EP only mode";
 			data = /incbin/("./bm1684_sc5_ep.dtb");
@@ -526,7 +537,7 @@
 		};
 
 		fdt-pcb139 {
-			description = "for BM1684X SM7M V1_0 board";
+			description = "for BM1684X SM7M V1.0 board";
 			data = /incbin/("./bm1684x_sm7m_v1.0.dtb");
 			type = "flat_dt";
 			arch = "arm64";
@@ -537,7 +548,7 @@
 		};
 
 		fdt-pcb140 {
-			description = "for BM1684X SM7M V1_2 board";
+			description = "for BM1684X SM7M V1.2 board";
 			data = /incbin/("./bm1684x_sm7m_v1.2.dtb");
 			type = "flat_dt";
 			arch = "arm64";
@@ -548,7 +559,7 @@
 		};
 
 		fdt-pcb141 {
-			description = "for BM1684X SE7 V2_0 board";
+			description = "for BM1684X SE7 V2.0 board";
 			data = /incbin/("./bm1684x_se7_v2.0.dtb");
 			type = "flat_dt";
 			arch = "arm64";
@@ -557,6 +568,7 @@
 				algo = "sha1";
 			};
 		};
+
 		fdt-pcb142 {
 			description = "for BM1684X SM7 AIRBOX";
 			data = /incbin/("./bm1684x_sm7_airbox.dtb");
@@ -567,9 +579,21 @@
 				algo = "sha1";
 			};
 		};
+
 		fdt-pcb143 {
-			description = "for BM1684X SM7 V1_0 SE8 CTRL";
+			description = "for BM1684X SM7 V0.0 SE8 CTRL";
 			data = /incbin/("./bm1684x_sm7m_v0.0_ctrl.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb144 {
+			description = "for BM1684X M.2 CUST02 V0.0";
+			data = /incbin/("./bm1684x_m2_cust02_v0.0.dtb");
 			type = "flat_dt";
 			arch = "arm64";
 			compression = "none";
@@ -942,6 +966,18 @@
 			};
 		};
 
+		config-pcb37 {
+			description = "for SM5M V3.3 @TB";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb37";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
 		config-pcb38 {
 			description = "for SC5 EP only mode";
 			kernel = "kernel";
@@ -1123,7 +1159,7 @@
 		};
 
 		config-pcb139 {
-			description = "for BM1684X SM7M V1_0 control board";
+			description = "for BM1684X SM7M V1.0 control board";
 			kernel = "kernel";
 			ramdisk = "ramdisk";
 			fdt = "fdt-pcb139";
@@ -1135,7 +1171,7 @@
 		};
 
 		config-pcb140 {
-			description = "for BM1684X SM7M V1_2 control board";
+			description = "for BM1684X SM7M V1.2 control board";
 			kernel = "kernel";
 			ramdisk = "ramdisk";
 			fdt = "fdt-pcb140";
@@ -1147,7 +1183,7 @@
 		};
 
 		config-pcb141 {
-			description = "for BM1684X SE7 V2_0 board";
+			description = "for BM1684X SE7 V2.0 board";
 			kernel = "kernel";
 			ramdisk = "ramdisk";
 			fdt = "fdt-pcb141";
@@ -1169,11 +1205,24 @@
 				sign-images = "fdt", "ramdisk", "kernel";
 			};
 		};
+
 		config-pcb143 {
-			description = "for BM1684X SM7 V1_0 SE8 CTRL";
+			description = "for BM1684X SM7 V1.0 SE8 CTRL";
 			kernel = "kernel";
 			ramdisk = "ramdisk";
 			fdt = "fdt-pcb143";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb144 {
+			description = "for BM1684X M.2 CUST02 V0.0";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb144";
 			signature {
 				algo = "sha1,rsa2048";
 				key-name-hint = "vboot";

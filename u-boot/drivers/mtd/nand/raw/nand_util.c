@@ -103,7 +103,7 @@ int nand_erase_opts(struct mtd_info *mtd,
 	     erased_length < erase_length;
 	     erase.addr += mtd->erasesize) {
 
-		WATCHDOG_RESET();
+		schedule();
 
 		if (opts->lim && (erase.addr >= (opts->offset + opts->lim))) {
 			puts("Size of erase exceeds limit\n");
@@ -113,9 +113,10 @@ int nand_erase_opts(struct mtd_info *mtd,
 			int ret = mtd_block_isbad(mtd, erase.addr);
 			if (ret > 0) {
 				if (!opts->quiet)
-					printf("\rSkipping bad block at  "
+					printf("\rSkipping %s at  "
 					       "0x%08llx                 "
 					       "                         \n",
+					       ret == 1 ? "bad block" : "bbt reserved",
 					       erase.addr);
 
 				if (!opts->spread)
@@ -638,7 +639,7 @@ int nand_write_skip_bad(struct mtd_info *mtd, loff_t offset, size_t *length,
 		size_t block_offset = offset & (mtd->erasesize - 1);
 		size_t write_size, truncated_write_size;
 
-		WATCHDOG_RESET();
+		schedule();
 
 		if (nand_block_isbad(mtd, block_start)) {
 			printf("Skip bad block 0x%08llx\n", block_start);
@@ -753,7 +754,7 @@ int nand_read_skip_bad(struct mtd_info *mtd, loff_t offset, size_t *length,
 		size_t block_offset = offset & (mtd->erasesize - 1);
 		size_t read_length;
 
-		WATCHDOG_RESET();
+		schedule();
 
 		if (nand_block_isbad(mtd, offset & ~(mtd->erasesize - 1))) {
 			printf("Skipping bad block 0x%08llx\n",

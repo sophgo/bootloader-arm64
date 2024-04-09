@@ -7,17 +7,44 @@
 #ifndef STM32MP1_FIP_DEF_H
 #define STM32MP1_FIP_DEF_H
 
+#if STM32MP15_OPTEE_RSV_SHM
 #define STM32MP_DDR_S_SIZE		U(0x01E00000)	/* 30 MB */
 #define STM32MP_DDR_SHMEM_SIZE		U(0x00200000)	/* 2 MB */
+#else
+#define STM32MP_DDR_S_SIZE		U(0x02000000)	/* 32 MB */
+#define STM32MP_DDR_SHMEM_SIZE		U(0)		/* empty */
+#endif
 
+#if TRUSTED_BOARD_BOOT && !STM32MP_USE_EXTERNAL_HEAP
+#if STM32MP15
+#define STM32MP_BL2_RO_SIZE		U(0x00014000)	/* 80 KB */
+#define STM32MP_BL2_SIZE		U(0x0001B000)	/* 108 KB for BL2 */
+#endif /* STM32MP15 */
+#else /* TRUSTED_BOARD_BOOT && !STM32MP_USE_EXTERNAL_HEAP */
 #if STM32MP13
+#if BL2_IN_XIP_MEM
 #define STM32MP_BL2_RO_SIZE		U(0x00015000)	/* 84 KB */
 #define STM32MP_BL2_SIZE		U(0x00017000)	/* 92 KB for BL2 */
-#define STM32MP_BL2_DTB_SIZE		U(0x00004000)	/* 16 KB for DTB */
+#else
+/* STM32MP_BL2_RO_SIZE not used if !BL2_IN_XIP_MEM */
+#define STM32MP_BL2_SIZE		U(0x0001B000)	/* 108KB for BL2 */
+					/* with 20KB for DTB, SYSRAM is full */
+#endif
 #endif /* STM32MP13 */
 #if STM32MP15
 #define STM32MP_BL2_RO_SIZE		U(0x00011000)	/* 68 KB */
 #define STM32MP_BL2_SIZE		U(0x00016000)	/* 88 KB for BL2 */
+#endif /* STM32MP15 */
+#endif /* TRUSTED_BOARD_BOOT && !STM32MP_USE_EXTERNAL_HEAP */
+
+#if STM32MP13
+#if TRUSTED_BOARD_BOOT
+#define STM32MP_BL2_DTB_SIZE		U(0x00005000)	/* 20 KB for DTB */
+#else /* TRUSTED_BOARD_BOOT */
+#define STM32MP_BL2_DTB_SIZE		U(0x00004000)	/* 16 KB for DTB */
+#endif /* TRUSTED_BOARD_BOOT */
+#endif /* STM32MP13 */
+#if STM32MP15
 #define STM32MP_BL2_DTB_SIZE		U(0x00007000)	/* 28 KB for DTB */
 #endif /* STM32MP15 */
 #define STM32MP_BL32_SIZE		U(0x0001B000)	/* 108 KB for BL32 */
@@ -98,9 +125,14 @@
 #endif
 
 /*******************************************************************************
- * STM32MP1 RAW partition offset for MTD devices
+ * STM32MP1 RAW partition offset for devices without GPT
  ******************************************************************************/
+#define STM32MP_EMMC_BOOT_FIP_OFFSET	U(0x00040000)
+#ifndef STM32MP_NOR_FIP_OFFSET
 #define STM32MP_NOR_FIP_OFFSET		U(0x00080000)
+#endif
+#ifndef STM32MP_NAND_FIP_OFFSET
 #define STM32MP_NAND_FIP_OFFSET		U(0x00200000)
+#endif
 
 #endif /* STM32MP1_FIP_DEF_H */

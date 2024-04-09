@@ -8,6 +8,7 @@
 
 #include <lib/utils_def.h>
 #include <lib/xlat_tables/xlat_tables_v2.h>
+#include <plat/common/common_def.h>
 
 #define PLATFORM_LINKER_FORMAT		"elf64-littleaarch64"
 #define PLATFORM_LINKER_ARCH		aarch64
@@ -40,7 +41,8 @@
 #define PLAT_SDEI_SGI_PRIVATE		U(9)
 
 #define BL31_BASE			U(0x960000)
-#define BL31_LIMIT			U(0x980000)
+#define BL31_SIZE			SZ_128K
+#define BL31_LIMIT			(BL31_BASE + BL31_SIZE)
 
 /* non-secure uboot base */
 #define PLAT_NS_IMAGE_OFFSET		U(0x40200000)
@@ -70,7 +72,7 @@
 #define IMX_AIPSTZ4			U(0x32df0000)
 
 #define IMX_AIPS_BASE			U(0x30000000)
-#define IMX_AIPS_SIZE			U(0xC00000)
+#define IMX_AIPS_SIZE			U(0x3000000)
 #define IMX_GPV_BASE			U(0x32000000)
 #define IMX_GPV_SIZE			U(0x800000)
 #define IMX_AIPS1_BASE			U(0x30200000)
@@ -92,6 +94,13 @@
 #define IMX_DDR_IPS_BASE		U(0x3d000000)
 #define IMX_DDR_IPS_SIZE		U(0x1800000)
 #define IMX_ROM_BASE			U(0x0)
+#define IMX_ROM_SIZE			U(0x40000)
+#define IMX_NS_OCRAM_BASE		U(0x900000)
+#define IMX_NS_OCRAM_SIZE		U(0x60000)
+#define IMX_CAAM_RAM_BASE		U(0x100000)
+#define IMX_CAAM_RAM_SIZE		U(0x10000)
+#define IMX_DRAM_BASE			U(0x40000000)
+#define IMX_DRAM_SIZE			U(0xc0000000)
 
 #define IMX_GIC_BASE			PLAT_GICD_BASE
 #define IMX_GIC_SIZE			U(0x200000)
@@ -138,5 +147,16 @@
 #define AIPS_MAP	MAP_REGION_FLAT(IMX_AIPS_BASE, IMX_AIPS_SIZE, MT_DEVICE | MT_RW) /* AIPS map */
 #define OCRAM_S_MAP	MAP_REGION_FLAT(OCRAM_S_BASE, OCRAM_S_SIZE, MT_DEVICE | MT_RW) /* OCRAM_S */
 #define DDRC_MAP	MAP_REGION_FLAT(IMX_DDRPHY_BASE, IMX_DDR_IPS_SIZE, MT_DEVICE | MT_RW) /* DDRMIX */
+#define CAAM_RAM_MAP	MAP_REGION_FLAT(IMX_CAAM_RAM_BASE, IMX_CAAM_RAM_SIZE, MT_MEMORY | MT_RW) /* CAMM RAM */
+#define NS_OCRAM_MAP	MAP_REGION_FLAT(IMX_NS_OCRAM_BASE, IMX_NS_OCRAM_SIZE, MT_MEMORY | MT_RW) /* NS OCRAM */
+#define ROM_MAP		MAP_REGION_FLAT(IMX_ROM_BASE, IMX_ROM_SIZE, MT_MEMORY | MT_RO) /* ROM code */
+
+/*
+ * Note: DRAM region is mapped with entire size available and uses MT_RW
+ * attributes.
+ * See details in docs/plat/imx8m.rst "High Assurance Boot (HABv4)" section
+ * for explanation of this mapping scheme.
+ */
+#define DRAM_MAP	MAP_REGION_FLAT(IMX_DRAM_BASE, IMX_DRAM_SIZE, MT_MEMORY | MT_RW | MT_NS) /* DRAM */
 
 #endif /* platform_def.h */

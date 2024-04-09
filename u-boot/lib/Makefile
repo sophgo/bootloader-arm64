@@ -9,6 +9,7 @@ obj-$(CONFIG_EFI) += efi/
 obj-$(CONFIG_EFI_LOADER) += efi_driver/
 obj-$(CONFIG_EFI_LOADER) += efi_loader/
 obj-$(CONFIG_CMD_BOOTEFI_SELFTEST) += efi_selftest/
+obj-$(CONFIG_FWU_MULTI_BANK_UPDATE) += fwu_updates/
 obj-$(CONFIG_LZMA) += lzma/
 obj-$(CONFIG_BZIP2) += bzip2/
 obj-$(CONFIG_FIT) += libfdt/
@@ -56,15 +57,16 @@ endif
 
 obj-$(CONFIG_$(SPL_TPL_)TPM) += tpm-common.o
 ifeq ($(CONFIG_$(SPL_TPL_)TPM),y)
-obj-y += crc8.o
 obj-$(CONFIG_TPM) += tpm_api.o
 obj-$(CONFIG_TPM_V1) += tpm-v1.o
 obj-$(CONFIG_TPM_V2) += tpm-v2.o
 endif
 
+obj-$(CONFIG_$(SPL_TPL_)CRC8) += crc8.o
+
 obj-y += crypto/
 
-obj-$(CONFIG_$(SPL_TPL_)GENERATE_ACPI_TABLE) += acpi/
+obj-$(CONFIG_$(SPL_TPL_)ACPI) += acpi/
 obj-$(CONFIG_$(SPL_)MD5) += md5.o
 obj-$(CONFIG_ECDSA) += ecdsa/
 obj-$(CONFIG_$(SPL_)RSA) += rsa/
@@ -125,7 +127,7 @@ obj-$(CONFIG_LIB_UUID) += uuid.o
 obj-$(CONFIG_LIB_RAND) += rand.o
 obj-y += panic.o
 
-ifeq ($(CONFIG_$(SPL_TPL_)BUILD),y)
+ifeq ($(CONFIG_SPL_BUILD),y)
 # SPL U-Boot may use full-printf, tiny-printf or none at all
 ifdef CONFIG_$(SPL_TPL_)USE_TINY_PRINTF
 obj-$(CONFIG_$(SPL_TPL_)SPRINTF) += tiny-printf.o
@@ -144,6 +146,8 @@ obj-y += abuf.o
 obj-y += date.o
 obj-y += rtc-lib.o
 obj-$(CONFIG_LIB_ELF) += elf.o
+
+obj-$(CONFIG_$(SPL_TPL_)SEMIHOSTING) += semihosting.o
 
 #
 # Build a fast OID lookup registry from include/linux/oid_registry.h

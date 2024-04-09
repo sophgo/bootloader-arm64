@@ -129,7 +129,7 @@ int board_mmc_init(struct bd_info *bis)
 	 * mmc0                    USDHC1
 	 * mmc1                    USDHC2
 	 */
-	for (i = 0; i < CONFIG_SYS_FSL_USDHC_NUM; i++) {
+	for (i = 0; i < CFG_SYS_FSL_USDHC_NUM; i++) {
 		switch (i) {
 		case 0:
 			init_clk_usdhc(1);
@@ -208,9 +208,6 @@ int power_init_board(void)
 	/* Kernel uses OD/OD freq for SOC */
 	/* To avoid timing risk from SOC to ARM,increase VDD_ARM to OD voltage 0.95v */
 	pmic_reg_write(pdev, PCA9450_BUCK2OUT_DVS0, 0x1C);
-
-	/* set WDOG_B_CFG to cold reset */
-	pmic_reg_write(pdev, PCA9450_RESET_CTRL, 0xA1);
 
 	/* Forced enable the I2C level translator*/
 	pmic_reg_write(pdev, PCA9450_CONFIG2, 0x03);

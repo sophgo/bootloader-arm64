@@ -14,8 +14,6 @@
 
 /* NAND support */
 
-#define CONFIG_SYS_MAX_NAND_DEVICE	1
-
 /* if no target-specific extra environment settings were defined by the
    target, define an empty one */
 #ifndef PCM052_EXTRA_ENV_SETTINGS
@@ -31,7 +29,7 @@
 /* boot command, including the target-defined one if any */
 
 /* Extra env settings (including the target-defined ones if any) */
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#define CFG_EXTRA_ENV_SETTINGS \
 	PCM052_EXTRA_ENV_SETTINGS \
 	"fdt_high=0xffffffff\0" \
 	"initrd_high=0xffffffff\0" \
@@ -120,9 +118,9 @@
 #define PHYS_SDRAM			(0x80000000)
 #define PHYS_SDRAM_SIZE			(CONFIG_PCM052_DDR_SIZE * SZ_1M)
 
-#define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM
-#define CONFIG_SYS_INIT_RAM_ADDR	IRAM_BASE_ADDR
-#define CONFIG_SYS_INIT_RAM_SIZE	IRAM_SIZE
+#define CFG_SYS_SDRAM_BASE		PHYS_SDRAM
+#define CFG_SYS_INIT_RAM_ADDR	IRAM_BASE_ADDR
+#define CFG_SYS_INIT_RAM_SIZE	IRAM_SIZE
 
 /* environment organization */
 

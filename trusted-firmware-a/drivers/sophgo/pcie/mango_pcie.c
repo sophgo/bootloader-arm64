@@ -23,111 +23,6 @@
 #include <drivers/sophgo/mango_pcie.h>
 #include <drivers/sophgo/mango_pcie_phy.h>
 
-#ifndef CONFIG_ARCH_MANGO_PLD
-
-struct cdns_reg_pairs phy_cfg_ex_SSC[] = {
-	{0x0050,  0x8804},
-	{0x0062,  0x1B26}
-};
-
-struct cdns_reg_pairs phy_cfg_in_SSC[] = {
-	{0x0048,  0x000E},
-	{0x0049,  0x4006},
-	{0x004A,  0x4006},
-	{0x004C,  0x0000},
-
-	{0x004F,  0x0000},
-	{0x0050,  0x0000},
-	{0x0051,  0x0581},
-	{0x0052,  0x7F80},
-
-	{0x0053,  0x0041},
-	{0x0054,  0x0464},
-	{0x0062,  0x0D0D},
-	{0x0063,  0x0060}
-};
-
-struct cdns_reg_pairs phy_cfg_both_SSC[] = {
-	{0x409E,  0x8C67},
-	{0x409F,  0x8C67},
-	{0x40A0,  0xFF67},
-	{0x40A1,  0xFF67},
-	{0x40A3,  0xBAA9}
-};
-
-struct cdns_reg_pairs phy_cfg_both_SSC_2[] = {
-	{0x4081,  0x813E},
-	{0x4088,  0x8844},
-	{0x4087,  0x884B},
-	{0x4086,  0x884B},
-
-	{0x4085,  0x8053},
-	{0x4091,  0x033C},
-	{0x4097,  0x44CC}
-};
-
-struct cdns_reg_pairs phy_cfg_cmn_pllc[] = {
-	{0x0046,  0x0000},
-	{0x0047,  0x0000},
-	{0x004B,  0x0020},
-	{0x0045,  0x0019},
-
-	{0x004F,  0x0000},
-	{0xC050,  0x0000},
-	{0xC0C6,  0x0000},
-	{0xC0C7,  0x0000},
-
-	{0xC0CB,  0x0000},
-	{0xC0C5,  0x0019},
-	{0xC0CF,  0x0000},
-	{0xC0D0,  0x0000},
-
-	{0xC002,  0x4010},
-	{0xC003,  0x0810},
-	{0xC004,  0x0101},
-	{0xC006,  0x000A}
-};
-
-struct cdns_reg_pairs phy_cfg_mix_reg[] = {
-	{0x4020,  0x0041},
-	{0x4020,  0x0041},
-	{0x4041,  0x0001},
-	{0x4042,  0x0001},
-
-	{0x4096,  0x8001},
-	{0x40C9,  0xD004},
-	{0x4071,  0x0005},
-	{0x40B3,  0x000F},
-
-	{0x40B4,  0x0003},
-	{0x40C8,  0x0000},
-	{0x40CA,  0x0000},
-	{0x40D3,  0x000A},
-
-	{0x40F1,  0x0101},
-	{0x40F2,  0x0101},
-	{0x40F3,  0x0101},
-	{0x40F4,  0x0101},
-
-	{0x40F5,  0x0000},
-	{0x40F8,  0x0000},
-	{0x40F9,  0x0000},
-	{0x40FB,  0x0000},
-
-	{0x40FC,  0x0003},
-	{0x4110,  0x0101},
-	{0x4111,  0x0101},
-	{0x4112,  0x0100},
-
-	{0x4124,  0x0000},
-	{0x415C,  0x5425},
-	{0x4183,  0x745B},
-	{0x4184,  0x4B3B},
-
-	{0x4003,  0xE900},
-	{0x4003,  0xE900}
-};
-#endif
 
 #ifdef CONFIG_ARCH_MANGO_PLD
 void pcie_udelay(uint32_t cnt)
@@ -352,18 +247,16 @@ int pcie_phy_rst_wait_pclk(PCIE_ID pcie_id)
 	return 0;
 }
 
-int pcie_config_phy(PCIE_ID pcie_id, PCIE_LANES_MODE lanes)
+int pcie_config_phy(PCIE_ID pcie_id, PCIE_LANES_MODE lanes, PCIE_LINK_SPEED speed)
 {
 	uint32_t val = 0;
 	uintptr_t base = 0;
 #ifndef CONFIG_ARCH_MANGO_PLD
 	uint32_t reg = 0;
 	uint32_t size = 0;
-#ifdef CONFIG_USING_SELF_LIST
-	uint32_t cfg_circle = 0;
-	uint32_t lane = 0;
-#endif
 	uint32_t addr = 0;
+	uint32_t circle = 0;
+	uint32_t loop = 0;
 #endif
 
 	base = PCIE0_CFG_BASE + (pcie_id * 0x02000000) + PCIE_CFG_MANGO_APB;
@@ -382,109 +275,58 @@ int pcie_config_phy(PCIE_ID pcie_id, PCIE_LANES_MODE lanes)
 
 #ifndef CONFIG_ARCH_MANGO_PLD
 	base = PCIE0_CFG_BASE + (pcie_id * 0x02000000) + PCIE_CFG_PHY_APB;
-#ifdef CONFIG_USING_SELF_LIST
-	for (cfg_circle = 0; cfg_circle < 2; cfg_circle++) {
-		size = sizeof(phy_cfg_ex_SSC) / sizeof(struct cdns_reg_pairs);
+
+	if (lanes == PCIE_LINK0_X16) {
+		size = sizeof(phy_reg_nobfr_common_cfg_sets) / sizeof(struct cdns_reg_pairs);
 		for (reg = 0; reg < size; reg++) {
-			addr = base + (phy_cfg_ex_SSC[reg].offset << 2);
-			mmio_write_32(addr, phy_cfg_ex_SSC[reg].value);
+			addr = base + (phy_reg_nobfr_common_cfg_sets[reg].offset << 2);
+			mmio_write_32(addr, phy_reg_nobfr_common_cfg_sets[reg].value);
 		}
-
-		size = sizeof(phy_cfg_in_SSC) / sizeof(struct cdns_reg_pairs);
+		circle = 1;
+	} else if (lanes == PCIE_LINK0_X8_LINK1_X8) {
+		size = sizeof(phy_reg_bfr_common_cfg_sets) / sizeof(struct cdns_reg_pairs);
 		for (reg = 0; reg < size; reg++) {
-			addr = base + (phy_cfg_in_SSC[reg].offset << 2);
-			mmio_write_32(addr, phy_cfg_in_SSC[reg].value);
+			addr = base + (phy_reg_bfr_common_cfg_sets[reg].offset << 2);
+			mmio_write_32(addr, phy_reg_bfr_common_cfg_sets[reg].value);
 		}
-
-		size = sizeof(phy_cfg_both_SSC) / sizeof(struct cdns_reg_pairs);
-		for (reg = 0; reg < size; reg++) {
-			addr = base + (phy_cfg_both_SSC[reg].offset << 2);
-			mmio_write_32(addr, phy_cfg_both_SSC[reg].value);
-		}
-
-		size = sizeof(phy_cfg_both_SSC_2) / sizeof(struct cdns_reg_pairs);
-		for (lane = 0; lane < 16; lane++) {
-			for (reg = 0; reg < size; reg++) {
-				addr = base + ((phy_cfg_both_SSC_2[reg].offset << 2) | (lane << 11));
-				mmio_write_32(addr, phy_cfg_both_SSC_2[reg].value);
-			}
-		}
-
-		size = sizeof(phy_cfg_cmn_pllc) / sizeof(struct cdns_reg_pairs);
-		for (reg = 0; reg < size; reg++) {
-			addr = base + (phy_cfg_cmn_pllc[reg].offset << 2);
-			mmio_write_32(addr, phy_cfg_cmn_pllc[reg].value);
-		}
-
-		size = sizeof(phy_cfg_mix_reg) / sizeof(struct cdns_reg_pairs);
-		for (lane = 0; lane < 16; lane++) {
-			for (reg = 0; reg < size; reg++) {
-				addr = base + ((phy_cfg_mix_reg[reg].offset << 2) | (lane << 11));
-				mmio_write_32(addr, phy_cfg_mix_reg[reg].value);
-			}
-		}
-	}
-#else
-	size = sizeof(phy_reg_common_cfg_sets) / sizeof(struct cdns_reg_pairs);
-	for (reg = 0; reg < size; reg++) {
-		addr = base + (phy_reg_common_cfg_sets[reg].offset << 2);
-		mmio_write_32(addr, phy_reg_common_cfg_sets[reg].value);
+		circle = 2;
 	}
 
-	size = sizeof(phy_reg_port_cfg_sets) / sizeof(struct cdns_reg_pairs);
-	for (reg = 0; reg < size; reg++) {
-		addr = base + (phy_reg_port_cfg_sets[reg].offset << 2);
-		mmio_write_32(addr, phy_reg_port_cfg_sets[reg].value);
-	}
+	for (loop = 0; loop < circle; loop++) {
 
-	size = sizeof(vga_lut_cfg_sets) / sizeof(struct cdns_reg_pairs);
-	for (reg = 0; reg < size; reg++) {
-		addr = base + (CDNS_PHY_VGA_LUT_ADDR_REG << 2);
-		mmio_write_32(addr, vga_lut_cfg_sets[reg].offset);
-		addr = base + (CDNS_PHY_VGA_LUT_DATA_REG << 2);
-		mmio_write_32(addr, vga_lut_cfg_sets[reg].value);
-	}
-
-	addr = base + (CDNS_PHY_DBG_MUX_CTRL2_REG << 2);
-	mmio_write_32(addr, 0x10081840);
-	addr = base + (CDNS_PHY_PIPE_FIFO_LATENCY_CTRL_REG << 2);
-	mmio_write_32(addr, 0x00000002);
-	addr = base + (CNDS_PHY_G3_G4_LNK_EQ_CTRL_REG << 2);
-	mmio_write_32(addr, 0x00000001);
-	addr = base + (CDNS_PHY_LNK_EQ_CTRL2_REG << 2);
-	mmio_write_32(addr, 0x00006C09);
-
-	if (lanes == PCIE_LINK0_X8_LINK1_X8) {
 		size = sizeof(phy_reg_port_cfg_sets) / sizeof(struct cdns_reg_pairs);
 		for (reg = 0; reg < size; reg++) {
-			addr = base + ((phy_reg_port_cfg_sets[reg].offset + 0x200) << 2);
+			if ((phy_reg_port_cfg_sets[reg].offset == 0x603B) && (lanes == PCIE_LINK0_X16))
+				continue;
+			addr = base + ((phy_reg_port_cfg_sets[reg].offset + 0x200 * loop) << 2);
 			mmio_write_32(addr, phy_reg_port_cfg_sets[reg].value);
 		}
 
 		size = sizeof(vga_lut_cfg_sets) / sizeof(struct cdns_reg_pairs);
 		for (reg = 0; reg < size; reg++) {
-			addr = base + ((CDNS_PHY_VGA_LUT_ADDR_REG + 0x200) << 2);
+			addr = base + ((CDNS_PHY_VGA_LUT_ADDR_REG  + 0x200 * loop) << 2);
 			mmio_write_32(addr, vga_lut_cfg_sets[reg].offset);
-			addr = base + ((CDNS_PHY_VGA_LUT_DATA_REG + 0x200) << 2);
+			addr = base + ((CDNS_PHY_VGA_LUT_DATA_REG  + 0x200 * loop) << 2);
 			mmio_write_32(addr, vga_lut_cfg_sets[reg].value);
 		}
 
-		addr = base + (CDNS_PHY_DBG_MUX_CTRL2_REG << 2);
+		addr = base + ((CDNS_PHY_DBG_MUX_CTRL2_REG + 0x200 * loop) << 2);
 		mmio_write_32(addr, 0x10081840);
-		addr = base + (CDNS_PHY_PIPE_FIFO_LATENCY_CTRL_REG << 2);
+		addr = base + ((CDNS_PHY_PIPE_FIFO_LATENCY_CTRL_REG + 0x200 * loop) << 2);
 		mmio_write_32(addr, 0x00000002);
-		addr = base + (CNDS_PHY_G3_G4_LNK_EQ_CTRL_REG << 2);
+		addr = base + ((CNDS_PHY_G3_G4_LNK_EQ_CTRL_REG + 0x200 * loop) << 2);
 		mmio_write_32(addr, 0x00000001);
-		addr = base + (CDNS_PHY_LNK_EQ_CTRL2_REG << 2);
-		mmio_write_32(addr, 0x00006C09);
+		if ((speed == PCIE_LINK_SPEED_8G) || (speed == PCIE_LINK_SPEED_16G)) {
+			addr = base + ((CDNS_PHY_LNK_EQ_CTRL2_REG + 0x200 * loop) << 2);
+			mmio_write_32(addr, 0x00006C09);
+		}
 	}
-#endif
 #endif
 
 	return 0;
 }
 
-int pcie_config_ctrl(PCIE_ID pcie_id, PCIE_OP_MODE op_mode,
+int pcie_config_ctrl(PCIE_ID pcie_id, PCIE_OP_MODE lk0_op_mode, PCIE_OP_MODE lk1_op_mode,
 		     PCIE_LANES_MODE lanes, PCIE_LINK_SPEED speed)
 {
 	uint32_t val = 0;
@@ -493,9 +335,9 @@ int pcie_config_ctrl(PCIE_ID pcie_id, PCIE_OP_MODE op_mode,
 	apb_base = PCIE0_CFG_BASE + (pcie_id * 0x02000000) + PCIE_CFG_MANGO_APB;
 
 	val = mmio_read_32(apb_base + PCIE_IRS_REG0004);
-	if (op_mode == PCIE_OP_MODE_RC) {  //EP is 0, RC is 1
+	if (lk0_op_mode == PCIE_OP_MODE_RC) {  //EP is 0, RC is 1
 		val |= (1 << IRS_REG0004_LINK0_MODE_SELECT_BIT);
-	} else if (op_mode == PCIE_OP_MODE_EP) {
+	} else if (lk0_op_mode == PCIE_OP_MODE_EP) {
 		val &= (~(1 << IRS_REG0004_LINK0_MODE_SELECT_BIT));
 	}
 	mmio_write_32((apb_base + PCIE_IRS_REG0004), val);
@@ -525,9 +367,9 @@ int pcie_config_ctrl(PCIE_ID pcie_id, PCIE_OP_MODE op_mode,
 		val = mmio_read_32(apb_base + PCIE_IRS_REG0178);
 		val &= (~IRS_REG0178_LINK1_PCIE_GENERATION_SEL_MASK);
 		val |= ((speed << 8) & IRS_REG0178_LINK1_PCIE_GENERATION_SEL_MASK); //Gen4
-		if (op_mode == PCIE_OP_MODE_RC) {  //EP is 0, RC is 1
+		if (lk1_op_mode == PCIE_OP_MODE_RC) {  //EP is 0, RC is 1
 			val |= (1 << IRS_REG0178_LINK1_MODE_SELECT_BIT);
-		} else if (op_mode == PCIE_OP_MODE_EP) {
+		} else if (lk1_op_mode == PCIE_OP_MODE_EP) {
 			val &= (~(1 << IRS_REG0178_LINK1_MODE_SELECT_BIT));
 		}
 		mmio_write_32((apb_base + PCIE_IRS_REG0178), val);
@@ -642,18 +484,22 @@ int pcie_init_sideband(PCIE_ID pcie_id, PCIE_LANES_MODE lanes)
 	return 0;
 }
 
-void pcie_set_perst(void)
+void pcie_set_perst(PCIE_ID pcie_id, PCIE_LINK_ID link_id)
 {
 	uint32_t val = 0;
+	uint32_t offset = 0;
+	uint32_t reg = 0;
 
+	offset = pcie_id * 2 + link_id;
+	reg = MANGO_GPIO12_FOR_PCIE_PERST + offset;
 	/* GPIO12 for perst */
-	val = gpio_get_direction(MANGO_GPIO12_FOR_PCIE_PERST);
-	NOTICE("gpio 12 raw dir = 0x%x\n", val);
-	gpio_set_direction(MANGO_GPIO12_FOR_PCIE_PERST, GPIO_DIR_OUT);
+	val = gpio_get_direction(reg);
+	NOTICE("gpio %d raw dir = 0x%x\n", reg, val);
+	gpio_set_direction(reg, GPIO_DIR_OUT);
 
-	val = gpio_get_value(MANGO_GPIO12_FOR_PCIE_PERST);
-	NOTICE("gpio 12 raw level = 0x%x\n", val);
-	gpio_set_value(MANGO_GPIO12_FOR_PCIE_PERST, GPIO_LEVEL_HIGH);
+	val = gpio_get_value(reg);
+	NOTICE("gpio %d raw level = 0x%x\n", reg, val);
+	gpio_set_value(reg, GPIO_LEVEL_HIGH);
 
 #ifdef CONFIG_ARCH_MANGO_PLD
 	pcie_udelay(20);
@@ -766,14 +612,14 @@ void mango_pcie_init(PCIE_ID pcie_id, PCIE_OP_MODE op_mode,
 	mmio_write_32((apb_base + PCIE_IRS_REG084C), 0x0);
 	mmio_write_32((apb_base + PCIE_IRS_REG0850), 0x0);
 	pcie_init_sideband(pcie_id, lanes);
-	pcie_config_ctrl(pcie_id, op_mode, lanes, speed);
-	pcie_config_phy(pcie_id, lanes);
+	pcie_config_ctrl(pcie_id, op_mode, op_mode, lanes, speed);
+	pcie_config_phy(pcie_id, lanes, speed);
 	pcie_phy_rst_wait_pclk(pcie_id);
 
 	pcie_config_link_width(pcie_id, lanes, PCIE_LINK_WIDTH_X16);
 
 	if (op_mode == PCIE_OP_MODE_RC) {
-		pcie_set_perst();
+		pcie_set_perst(pcie_id, PCIE_LINK_0);
 	}
 
 	if (lanes == PCIE_LINK0_X16) {
@@ -819,6 +665,97 @@ void mango_pcie_init(PCIE_ID pcie_id, PCIE_OP_MODE op_mode,
 
 	apb_base = PCIE0_CFG_BASE + (pcie_id * 0x02000000) + PCIE_CFG_LINK0_APB;
 	if (op_mode == PCIE_OP_MODE_RC) {
+		val = mmio_read_32(apb_base + PCIE_RP_OFFSET + LINKX_RP_DEV_CAP_REG);
+		max_payload = (val & LINKX_DEV_CAP_MAX_PL_MASK);
+		NOTICE("PCIe RC max payload %d\n", max_payload);
+	} else {
+		mmio_write_32((apb_base + PCIE_LM_OFFSET + LINKX_LM_PF_PHY_FUNC_CFG_REG), 0x01);
+		val = mmio_read_32(apb_base + PCIE_PF_OFFSET + LINKX_PF_DEV_CAP_REG);
+		max_payload = (val & LINKX_DEV_CAP_MAX_PL_MASK);
+		NOTICE("PCIe EP max payload %d\n", max_payload);
+	}
+}
+
+void mango_pcie_slt_init(PCIE_ID pcie_id, PCIE_OP_MODE lk0_op_mode, PCIE_OP_MODE lk1_op_mode,
+			 PCIE_LANES_MODE lanes, PCIE_LINK_SPEED speed)
+{
+	uint32_t val = 0;
+	uintptr_t apb_base = 0;
+	uint32_t ltssm_state = 0;
+	PCIE_LINK_STATUS link_status = 0;
+	PCIE_LINK_WIDTH negotiated_link_width = 0;
+	PCIE_LINK_SPEED negotiated_speed = 0;
+	uint32_t max_payload = 0;
+
+	NOTICE("PCIe init, lk0_op_mode = %d, lk1_op_mode = %d\n", lk0_op_mode, lk1_op_mode);
+	apb_base = PCIE0_CFG_BASE + (pcie_id * 0x02000000) + PCIE_CFG_MANGO_APB;
+
+	mmio_write_32((apb_base + PCIE_IRS_REG0844), 0x0);
+	mmio_write_32((apb_base + PCIE_IRS_REG0848), 0x0);
+	mmio_write_32((apb_base + PCIE_IRS_REG084C), 0x0);
+	mmio_write_32((apb_base + PCIE_IRS_REG0850), 0x0);
+	pcie_init_sideband(pcie_id, lanes);
+	pcie_config_ctrl(pcie_id, lk0_op_mode, lk1_op_mode, lanes, speed);
+	pcie_config_phy(pcie_id, lanes, speed);
+	pcie_phy_rst_wait_pclk(pcie_id);
+
+	pcie_config_link_width(pcie_id, lanes, PCIE_LINK_WIDTH_X16);
+
+	pcie_set_perst(pcie_id, PCIE_LINK_0);
+	pcie_set_perst(pcie_id, PCIE_LINK_1);
+
+	if (lanes == PCIE_LINK0_X16) {
+		pcie_link0_reset(pcie_id);
+	}
+	if (lanes == PCIE_LINK0_X8_LINK1_X8) {
+		pcie_link0_reset(pcie_id);
+		pcie_link1_reset(pcie_id);
+	}
+	pcie_train_link(pcie_id, lanes);
+
+	val = mmio_read_32(apb_base + PCIE_IRS_REG00C0);
+	ltssm_state = (val & IRS_REG00C0_LINK0_LTSSM_STATE_MASK) >> 3;
+	val = mmio_read_32(apb_base + PCIE_IRS_REG0080);
+	link_status = (val & IRS_REG0080_LINK0_LINK_STATUS_MASK) >> 22;
+	negotiated_link_width = (val & IRS_REG0080_LINK0_NEGOTIATED_LINK_WIDTH) >> 19;
+	negotiated_speed = (val & IRS_REG0080_LINK0_NEGOTIATED_SPEED) >> 16;
+
+	if ((ltssm_state != 0x10) || (link_status != PCIE_LINK_DL_INIT_COMPLETED) ||
+	    (speed != negotiated_speed)) {
+		ERROR("PCIe RC x8 not linked\n");
+	}
+
+	NOTICE("PCIe init, %d - %d - %d -%d\n", ltssm_state, link_status, negotiated_link_width, negotiated_speed);
+
+	val = mmio_read_32(apb_base + PCIE_IRS_REG0204);
+	ltssm_state = (val & IRS_REG0204_LINK1_LTSSM_STATE_MASK) >> 3;
+	val = mmio_read_32(apb_base + PCIE_IRS_REG0200);
+	link_status = (val & IRS_REG0200_LINK1_LINK_STATUS_MASK) >> 7;
+	negotiated_link_width = (val & IRS_REG0200_LINK1_NEGOTIATED_LINK_WIDTH) >> 0;
+	val = mmio_read_32(apb_base + PCIE_IRS_REG0208);
+	negotiated_speed = (val & IRS_REG0208_LINK1_NEGOTIATED_SPEED) >> 0;
+
+	if ((ltssm_state != 0x10) || (link_status != PCIE_LINK_DL_INIT_COMPLETED) ||
+	    (speed != negotiated_speed)) {
+		ERROR("PCIe EP x8 not linked\n");
+	}
+
+	NOTICE("PCIe init, %d - %d - %d -%d\n", ltssm_state, link_status, negotiated_link_width, negotiated_speed);
+
+	apb_base = PCIE0_CFG_BASE + (pcie_id * 0x02000000) + PCIE_CFG_LINK0_APB;
+	if (lk0_op_mode == PCIE_OP_MODE_RC) {
+		val = mmio_read_32(apb_base + PCIE_RP_OFFSET + LINKX_RP_DEV_CAP_REG);
+		max_payload = (val & LINKX_DEV_CAP_MAX_PL_MASK);
+		NOTICE("PCIe RC max payload %d\n", max_payload);
+	} else {
+		mmio_write_32((apb_base + PCIE_LM_OFFSET + LINKX_LM_PF_PHY_FUNC_CFG_REG), 0x01);
+		val = mmio_read_32(apb_base + PCIE_PF_OFFSET + LINKX_PF_DEV_CAP_REG);
+		max_payload = (val & LINKX_DEV_CAP_MAX_PL_MASK);
+		NOTICE("PCIe EP max payload %d\n", max_payload);
+	}
+
+	apb_base = PCIE0_CFG_BASE + (pcie_id * 0x02000000) + PCIE_CFG_LINK1_APB;
+	if (lk1_op_mode == PCIE_OP_MODE_RC) {
 		val = mmio_read_32(apb_base + PCIE_RP_OFFSET + LINKX_RP_DEV_CAP_REG);
 		max_payload = (val & LINKX_DEV_CAP_MAX_PL_MASK);
 		NOTICE("PCIe RC max payload %d\n", max_payload);
@@ -888,12 +825,12 @@ void mango_ccix_init(PCIE_ID pcie_id, PCIE_OP_MODE op_mode, PCIE_LINK_SPEED spee
 	val &= (~IRS_REG0038_LINK0_MAX_EVAL_ITERATION_MASK);
 	mmio_write_32((apb_base + PCIE_IRS_REG0038), val);
 
-	pcie_config_ctrl(pcie_id, op_mode, PCIE_LINK0_X16, speed);
-	pcie_config_phy(pcie_id, PCIE_LINK0_X16);
+	pcie_config_ctrl(pcie_id, op_mode, op_mode, PCIE_LINK0_X16, speed);
+	pcie_config_phy(pcie_id, PCIE_LINK0_X16, speed);
 	pcie_phy_rst_wait_pclk(pcie_id);
 	pcie_config_link_width(pcie_id, PCIE_LINK0_X16, PCIE_LINK_WIDTH_X16);
 
-	pcie_set_perst();
+	pcie_set_perst(pcie_id, PCIE_LINK_0);
 	pcie_link0_reset(pcie_id);
 	pcie_link1_reset(pcie_id);
 

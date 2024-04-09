@@ -92,7 +92,7 @@ Arm Platform Build Options
    SBROM library must be specified via ``CCSBROM_LIB_PATH`` flag.
 
 -  ``ARM_ETHOSN_NPU_DRIVER``: boolean option to enable a SiP service that can
-   configure an Arm Ethos-N NPU. To use this service the target platform's
+   configure an Arm® Ethos™-N NPU. To use this service the target platform's
    ``HW_CONFIG`` must include the device tree nodes for the NPU. Currently, only
    the Arm Juno platform has this included in its ``HW_CONFIG`` and the platform
    only loads the ``HW_CONFIG`` in AArch64 builds. Default is 0.
@@ -151,6 +151,11 @@ Arm CSS Platform-Specific Build Options
     core count, cluster count or other peripherals. This build option is used
     to select the appropriate platform variant for the build. The range of
     valid values is platform specific.
+
+- ``CSS_SYSTEM_GRACEFUL_RESET``: Build option to enable graceful powerdown of
+   CPU core on reset. This build option can be used on CSS platforms that
+   require all the CPUs to execute the CPU specific power down sequence to
+   complete a warm reboot sequence in which only the CPUs are power cycled.
 
 --------------
 

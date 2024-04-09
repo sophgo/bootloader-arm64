@@ -6,7 +6,7 @@
  * uclass devices probe when a SCMI server exposes resources.
  *
  * Note in test.dts the protocol@10 node in scmi node. Protocol 0x10 is not
- * implemented in U-Boot SCMI components but the implementation is exepected
+ * implemented in U-Boot SCMI components but the implementation is expected
  * to not complain on unknown protocol IDs, as long as it is not used. Note
  * in test.dts tests that SCMI drivers probing does not fail for such an
  * unknown SCMI protocol ID.
@@ -187,10 +187,10 @@ static int dm_test_scmi_resets(struct unit_test_state *uts)
 	ut_assertnonnull(agent);
 
 	/* Test SCMI resect controller manipulation */
-	ut_assert(!agent->reset[0].asserted)
+	ut_assert(!agent->reset[0].asserted);
 
 	ut_assertok(reset_assert(&scmi_devices->reset[0]));
-	ut_assert(agent->reset[0].asserted)
+	ut_assert(agent->reset[0].asserted);
 
 	ut_assertok(reset_deassert(&scmi_devices->reset[0]));
 	ut_assert(!agent->reset[0].asserted);

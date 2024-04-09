@@ -23,6 +23,7 @@
 	.globl  plat_off_mmu
 	.globl  plat_primary_suspend
 	.globl	memcpy16_safe
+	.globl	invalidate_icache_all
 
 func plat_my_core_pos
 	mrs	x0, mpidr_el1
@@ -142,6 +143,12 @@ func plat_off_mmu
 	isb
 	ret
 endfunc plat_off_mmu
+
+func invalidate_icache_all
+	ic	ialluis
+	isb	sy
+	ret
+endfunc invalidate_icache_all
 
 func plat_non_primary_suspend
 	bl plat_off_mmu

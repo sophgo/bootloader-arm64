@@ -175,6 +175,7 @@ struct eqos_dma_regs {
 #define EQOS_DMA_SYSBUS_MODE_BLEN4			BIT(1)
 
 #define EQOS_DMA_CH0_CONTROL_DSL_SHIFT			18
+#define EQOS_DMA_CH0_CONTROL_DSL_MASK			0x7
 #define EQOS_DMA_CH0_CONTROL_PBLX8			BIT(16)
 
 #define EQOS_DMA_CH0_TX_CONTROL_TXPBL_SHIFT		16
@@ -265,6 +266,7 @@ struct eqos_priv {
 	struct eqos_mtl_regs *mtl_regs;
 	struct eqos_dma_regs *dma_regs;
 	struct eqos_tegra186_regs *tegra186_regs;
+	void *eqos_qcom_rgmii_regs;
 	struct reset_ctl reset_ctl;
 	struct gpio_desc phy_reset_gpio;
 	struct clk clk_master_bus;
@@ -277,9 +279,11 @@ struct eqos_priv {
 	struct phy_device *phy;
 	ofnode phy_of_node;
 	u32 max_speed;
-	void *descs;
+	void *tx_descs;
+	void *rx_descs;
 	int tx_desc_idx, rx_desc_idx;
 	unsigned int desc_size;
+	unsigned int desc_per_cacheline;
 	void *tx_dma_buf;
 	void *rx_dma_buf;
 	void *rx_pkt;
@@ -289,6 +293,8 @@ struct eqos_priv {
 #if defined(CONFIG_ARCH_BITMAIN) || defined(CONFIG_ARCH_SOPHGO)
 	bool has_phy_reset_gpio;
 #endif
+	unsigned int tx_fifo_sz, rx_fifo_sz;
+	u32 reset_delays[3];
 };
 
 void eqos_inval_desc_generic(void *desc);
@@ -298,3 +304,4 @@ void eqos_flush_buffer_generic(void *buf, size_t size);
 int eqos_null_ops(struct udevice *dev);
 
 extern struct eqos_config eqos_imx_config;
+extern struct eqos_config eqos_qcom_config;

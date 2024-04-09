@@ -9,6 +9,7 @@
 #include <log.h>
 #include <malloc.h>
 #include <phy.h>
+#include <net.h>
 #include <net/ncsi.h>
 #include <net/ncsi-pkt.h>
 #include <asm/unaligned.h>
@@ -880,7 +881,7 @@ int ncsi_shutdown(struct phy_device *phydev)
 	return 0;
 }
 
-static struct phy_driver ncsi_driver = {
+U_BOOT_PHY_DRIVER(ncsi) = {
 	.uid		= PHY_NCSI_ID,
 	.mask		= 0xffffffff,
 	.name		= "NC-SI",
@@ -890,9 +891,3 @@ static struct phy_driver ncsi_driver = {
 	.startup	= ncsi_startup,
 	.shutdown	= ncsi_shutdown,
 };
-
-int phy_ncsi_init(void)
-{
-	phy_register(&ncsi_driver);
-	return 0;
-}

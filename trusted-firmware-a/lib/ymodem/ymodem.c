@@ -7,6 +7,7 @@
 /*
  * Serial up- and download support
  */
+#include <platform_def.h>
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>

@@ -33,7 +33,7 @@ int cmd_ubifs_mount(char *vol_name)
 
 	ret = uboot_ubifs_mount(vol_name);
 	if (ret)
-		return -1;
+		return CMD_RET_FAILURE;
 
 	ubifs_mounted = 1;
 
@@ -62,7 +62,7 @@ int cmd_ubifs_umount(void)
 {
 	if (ubifs_initialized == 0) {
 		printf("No UBIFS volume mounted!\n");
-		return -1;
+		return CMD_RET_FAILURE;
 	}
 
 	uboot_ubifs_umount();
@@ -89,7 +89,7 @@ static int do_ubifs_ls(struct cmd_tbl *cmdtp, int flag, int argc,
 
 	if (!ubifs_mounted) {
 		printf("UBIFS not mounted, use ubifsmount to mount volume first!\n");
-		return -1;
+		return CMD_RET_FAILURE;
 	}
 
 	if (argc == 2)
@@ -111,12 +111,12 @@ static int do_ubifs_load(struct cmd_tbl *cmdtp, int flag, int argc,
 	char *filename;
 	char *endp;
 	int ret;
-	u32 addr;
+	unsigned long addr;
 	u32 size = 0;
 
 	if (!ubifs_mounted) {
 		printf("UBIFS not mounted, use ubifs mount to mount volume first!\n");
-		return -1;
+		return CMD_RET_FAILURE;
 	}
 
 	if (argc < 3)
@@ -133,7 +133,7 @@ static int do_ubifs_load(struct cmd_tbl *cmdtp, int flag, int argc,
 		if (endp == argv[3])
 			return CMD_RET_USAGE;
 	}
-	debug("Loading file '%s' to address 0x%08x (size %d)\n", filename, addr, size);
+	debug("Loading file '%s' to address 0x%08lx (size %d)\n", filename, addr, size);
 
 	ret = ubifs_load(filename, addr, size);
 	if (ret) {

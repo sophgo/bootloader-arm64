@@ -32,7 +32,7 @@
 	dcc: dcc {
 		compatible = "arm,dcc";
 		status = "disabled";
-		u-boot,dm-pre-reloc;
+		bootph-all;
 	};
 
 	clk_xin: clk_xin {
@@ -48,7 +48,7 @@
 		ranges;
 
 		sdhci0: sdhci@ff160000 {
-			u-boot,dm-pre-reloc;
+			bootph-all;
 			compatible = "xlnx,zynqmp-8.9a", "arasan,sdhci-8.9a";
 			status = "disabled";
 			non-removable;
@@ -56,7 +56,6 @@
 			reg = <0x0 0xff160000 0x0 0x1000>;
 			clock-names = "clk_xin", "clk_ahb";
 			clocks = <&clk_xin &clk_xin>;
-			xlnx,device_id = <0>;
 		};
 	};
 };

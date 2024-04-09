@@ -14,7 +14,7 @@ Development target
 ------------------
 
 The implementation of UEFI in U-Boot strives to reach the requirements described
-in the "Embedded Base Boot Requirements (EBBR) Specification - Release v1.0"
+in the "Embedded Base Boot Requirements (EBBR) Specification - Release v2.1.0"
 [2]. The "Server Base Boot Requirements System Software on ARM Platforms" [3]
 describes a superset of the EBBR specification and may be used as further
 reference.
@@ -277,6 +277,8 @@ Enable ``CONFIG_OPTEE``, ``CONFIG_CMD_OPTEE_RPMB`` and ``CONFIG_EFI_MM_COMM_TEE`
 
 [1] https://optee.readthedocs.io/en/latest/building/efi_vars/stmm.html
 
+.. _uefi_capsule_update_ref:
+
 Enabling UEFI Capsule Update feature
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -376,6 +378,16 @@ image should be 3. The dfu alt number can be obtained by running the
 following command::
 
     dfu list
+
+When the FWU Multi Bank Update feature is enabled on the platform, the
+image index is used only to identify the image index with the image
+GUID. The image index would not correspond to the dfu alt number. This
+is because the FWU feature supports multiple partitions(banks) of
+updatable images, and the actual dfu alt number to which the image is
+to be written to is determined at runtime, based on the value of the
+update bank to which the image is to be written. For more information
+on the FWU Multi Bank Update feature, please refer to
+:doc:`/develop/uefi/fwu_updates`.
 
 When using the FMP for FIT images, the image index value needs to be
 set to 1.
@@ -748,7 +760,7 @@ UEFI block IO driver
 The UEFI block IO driver supports devices exposing the EFI_BLOCK_IO_PROTOCOL.
 
 When connected it creates a new U-Boot block IO device with interface type
-IF_TYPE_EFI_LOADER, adds child controllers mapping the partitions, and installs
+UCLASS_EFI_LOADER, adds child controllers mapping the partitions, and installs
 the EFI_SIMPLE_FILE_SYSTEM_PROTOCOL on these. This can be used together with the
 software iPXE to boot from iSCSI network drives [4].
 
@@ -787,8 +799,8 @@ Links
 -----
 
 * [1] http://uefi.org/specifications - UEFI specifications
-* [2] https://github.com/ARM-software/ebbr/releases/download/v1.0/ebbr-v1.0.pdf -
-  Embedded Base Boot Requirements (EBBR) Specification - Release v1.0
+* [2] https://github.com/ARM-software/ebbr/releases/download/v2.1.0/ebbr-v2.1.0.pdf -
+  Embedded Base Boot Requirements (EBBR) Specification - Release v2.1.0
 * [3] https://developer.arm.com/docs/den0044/latest/server-base-boot-requirements-system-software-on-arm-platforms-version-11 -
   Server Base Boot Requirements System Software on ARM Platforms - Version 1.1
 * [4] :doc:`iscsi`

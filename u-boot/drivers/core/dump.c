@@ -5,19 +5,41 @@
 
 #include <common.h>
 #include <dm.h>
+#include <malloc.h>
 #include <mapmem.h>
+#include <sort.h>
 #include <dm/root.h>
 #include <dm/util.h>
 #include <dm/uclass-internal.h>
 
-static void show_devices(struct udevice *dev, int depth, int last_flag)
+/**
+ * struct sort_info - information used for sorting
+ *
+ * @dev: List of devices
+ * @alloced: Maximum number of devices in @dev
+ */
+struct sort_info {
+	struct udevice **dev;
+	int size;
+};
+
+static int h_cmp_uclass_id(const void *d1, const void *d2)
+{
+	const struct udevice *const *dev1 = d1;
+	const struct udevice *const *dev2 = d2;
+
+	return device_get_uclass_id(*dev1) - device_get_uclass_id(*dev2);
+}
+
+static void show_devices(struct udevice *dev, int depth, int last_flag,
+			 struct udevice **devs)
 {
 	int i, is_last;
 	struct udevice *child;
 	u32 flags = dev_get_flags(dev);
 
 	/* print the first 20 characters to not break the tree-format. */
-	printf(IS_ENABLED(CONFIG_SPL_BUILD) ? " %s  %d  [ %c ]   %s  " :
+	printf(CONFIG_IS_ENABLED(USE_TINY_PRINTF) ? " %s  %d  [ %c ]   %s  " :
 	       " %-10.10s  %3d  [ %c ]   %-20.20s  ", dev->uclass->uc_drv->name,
 	       dev_get_uclass_index(dev, NULL),
 	       flags & DM_FLAG_ACTIVATED ? '+' : ' ', dev->driver->name);
@@ -39,21 +61,52 @@ static void show_devices(struct udevice *dev, int depth, int last_flag)
 
 	printf("%s\n", dev->name);
 
-	device_foreach_child(child, dev) {
-		is_last = list_is_last(&child->sibling_node, &dev->child_head);
-		show_devices(child, depth + 1, (last_flag << 1) | is_last);
+	if (devs) {
+		int count;
+		int i;
+
+		count = 0;
+		device_foreach_child(child, dev)
+			devs[count++] = child;
+		qsort(devs, count, sizeof(struct udevice *), h_cmp_uclass_id);
+
+		for (i = 0; i < count; i++) {
+			show_devices(devs[i], depth + 1,
+				     (last_flag << 1) | (i == count - 1),
+				     devs + count);
+		}
+	} else {
+		device_foreach_child(child, dev) {
+			is_last = list_is_last(&child->sibling_node,
+					       &dev->child_head);
+			show_devices(child, depth + 1,
+				     (last_flag << 1) | is_last, NULL);
+		}
 	}
 }
 
-void dm_dump_tree(void)
+void dm_dump_tree(bool sort)
 {
 	struct udevice *root;
 
 	root = dm_root();
 	if (root) {
+		int dev_count, uclasses;
+		struct udevice **devs = NULL;
+
+		dm_get_stats(&dev_count, &uclasses);
+
 		printf(" Class     Index  Probed  Driver                Name\n");
 		printf("-----------------------------------------------------------\n");
-		show_devices(root, -1, 0);
+		if (sort) {
+			devs = calloc(dev_count, sizeof(struct udevice *));
+			if (!devs) {
+				printf("(out of memory)\n");
+				return;
+			}
+		}
+		show_devices(root, -1, 0, devs);
+		free(devs);
 	}
 }
 

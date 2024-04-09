@@ -14,7 +14,6 @@
 #include <dm.h>
 #include <env.h>
 #include <init.h>
-#include <lcd.h>
 #include <net.h>
 #ifndef CONFIG_DM_ETH
 #include <netdev.h>
@@ -101,16 +100,16 @@ static int gurnard_nand_hw_init(void)
 	       AT91_SMC_MODE_TDF_CYCLE(3),
 	       &smc->cs[3].mode);
 
-	ret = gpio_request(CONFIG_SYS_NAND_READY_PIN, "nand_rdy");
+	ret = gpio_request(CFG_SYS_NAND_READY_PIN, "nand_rdy");
 	if (ret)
 		return ret;
-	gpio_direction_input(CONFIG_SYS_NAND_READY_PIN);
+	gpio_direction_input(CFG_SYS_NAND_READY_PIN);
 
 	/* Enable NandFlash */
-	ret = gpio_request(CONFIG_SYS_NAND_ENABLE_PIN, "nand_ce");
+	ret = gpio_request(CFG_SYS_NAND_ENABLE_PIN, "nand_ce");
 	if (ret)
 		return ret;
-	gpio_direction_output(CONFIG_SYS_NAND_ENABLE_PIN, 1);
+	gpio_direction_output(CFG_SYS_NAND_ENABLE_PIN, 1);
 
 	return 0;
 }
@@ -140,7 +139,7 @@ static void lcd_splash(int width, int height)
 }
 #endif
 
-#ifdef CONFIG_DM_VIDEO
+#ifdef CONFIG_VIDEO
 static void at91sam9g45_lcd_hw_init(void)
 {
 	at91_set_A_periph(AT91_PIN_PE0, 0);	/* LCDDPWR */
@@ -308,7 +307,7 @@ int board_init(void)
 	gd->bd->bi_arch_number = MACH_TYPE_SNAPPER_9260;
 
 	/* Address of boot parameters */
-	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;
+	gd->bd->bi_boot_params = CFG_SYS_SDRAM_BASE + 0x100;
 
 #ifdef CONFIG_CMD_NAND
 	ret = gurnard_nand_hw_init();
@@ -338,7 +337,7 @@ int board_init(void)
 	at91_mci_hw_init();
 #endif
 
-#ifdef CONFIG_DM_VIDEO
+#ifdef CONFIG_VIDEO
 	at91sam9g45_lcd_hw_init();
 	at91_set_A_periph(AT91_PIN_PE6, 1);	/* power up */
 
@@ -408,8 +407,8 @@ int board_eth_init(struct bd_info *bis)
 
 int dram_init(void)
 {
-	gd->ram_size = get_ram_size((void *)CONFIG_SYS_SDRAM_BASE,
-				    CONFIG_SYS_SDRAM_SIZE);
+	gd->ram_size = get_ram_size((void *)CFG_SYS_SDRAM_BASE,
+				    CFG_SYS_SDRAM_SIZE);
 	return 0;
 }
 

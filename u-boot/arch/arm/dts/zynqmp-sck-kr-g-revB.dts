@@ -18,6 +18,7 @@
 &{/} {
 	compatible = "xlnx,zynqmp-sk-kr260-revB",
 		     "xlnx,zynqmp-sk-kr260", "xlnx,zynqmp";
+	model = "ZynqMP KR260 revB";
 
 	ina260-u14 {
 		compatible = "iio-hwmon";
@@ -228,7 +229,7 @@
 
 /* gem2/gem3 via PL with phys u79@2 and u80@3 */
 
-&pinctrl0 { /* required by spec */
+&pinctrl0 {
 	status = "okay";
 
 	pinctrl_uart1_default: uart1-default {

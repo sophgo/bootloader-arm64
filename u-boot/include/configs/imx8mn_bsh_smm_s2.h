@@ -14,7 +14,7 @@
 #include <config_distro_bootcmd.h>
 
 #define NANDARGS \
-	"nandargs=setenv bootargs console=${console} " \
+	"nandargs=setenv bootargs " \
 		"${optargs} " \
 		"mtdparts=${mtdparts} " \
 		"root=${nandroot} " \
@@ -35,7 +35,7 @@
 	#devtypel #instance " "
 
 /* Initial environment variables */
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#define CFG_EXTRA_ENV_SETTINGS \
 	MEM_LAYOUT_ENV_SETTINGS \
 	NANDARGS \
 	BOOTENV
@@ -43,8 +43,7 @@
 #define PHYS_SDRAM_SIZE			SZ_256M
 
 /* NAND */
-#define CONFIG_SYS_MAX_NAND_DEVICE	1
 
-#define CONFIG_SYS_NAND_BASE		0x20000000
+#define CFG_SYS_NAND_BASE		0x20000000
 
 #endif /* __IMX8MN_BSH_SMM_S2_H */

@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2019, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2023, NVIDIA Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -18,6 +19,29 @@
 #include "../common/gic_common_private.h"
 #include "gic600_multichip_private.h"
 
+static struct gic600_multichip_data *plat_gic_multichip_data;
+
+/*******************************************************************************
+ * Retrieve the address of the chip owner for a given SPI ID
+ ******************************************************************************/
+uintptr_t gic600_multichip_gicd_base_for_spi(uint32_t spi_id)
+{
+	unsigned int i;
+
+	/* Find the multichip instance */
+	for (i = 0U; i < GIC600_MAX_MULTICHIP; i++) {
+		if ((spi_id <= plat_gic_multichip_data->spi_ids[i].spi_id_max) &&
+		     (spi_id >= plat_gic_multichip_data->spi_ids[i].spi_id_min)) {
+			break;
+		}
+	}
+
+	/* Ensure that plat_gic_multichip_data contains valid values */
+	assert(i < GIC600_MAX_MULTICHIP);
+
+	return plat_gic_multichip_data->spi_ids[i].gicd_base;
+}
+
 /*******************************************************************************
  * GIC-600 multichip operation related helper functions
  ******************************************************************************/
@@ -26,7 +50,7 @@ static void gicd_dchipr_wait_for_power_update_progress(uintptr_t base)
 	unsigned int retry = GICD_PUP_UPDATE_RETRIES;
 
 	while ((read_gicd_dchipr(base) & GICD_DCHIPR_PUP_BIT) != 0U) {
-		if (retry-- == 0) {
+		if (retry-- == 0U) {
 			ERROR("GIC-600 connection to Routing Table Owner timed "
 					 "out\n");
 			panic();
@@ -97,16 +121,28 @@ static void set_gicd_chipr_n(uintptr_t base,
 		spi_id_max = GIC600_SPI_ID_MIN;
 	}
 
-	spi_block_min = SPI_BLOCK_MIN_VALUE(spi_id_min);
-	spi_blocks    = SPI_BLOCKS_VALUE(spi_id_min, spi_id_max);
-
 	switch ((gicd_iidr_val & IIDR_MODEL_MASK)) {
 	case IIDR_MODEL_ARM_GIC_600:
+		spi_block_min = SPI_BLOCK_MIN_VALUE(spi_id_min);
+		spi_blocks    = SPI_BLOCKS_VALUE(spi_id_min, spi_id_max);
+
 		chipr_n_val = GICD_CHIPR_VALUE_GIC_600(chip_addr,
 						       spi_block_min,
 						       spi_blocks);
 		break;
 	case IIDR_MODEL_ARM_GIC_700:
+		/* Calculate the SPI_ID_MIN value for ESPI */
+		if (spi_id_min >= GIC700_ESPI_ID_MIN) {
+			spi_block_min = ESPI_BLOCK_MIN_VALUE(spi_id_min);
+			spi_block_min += SPI_BLOCKS_VALUE(GIC700_SPI_ID_MIN,
+				GIC700_SPI_ID_MAX);
+		} else {
+			spi_block_min = SPI_BLOCK_MIN_VALUE(spi_id_min);
+		}
+
+		/* Calculate the total number of blocks */
+		spi_blocks = SPI_BLOCKS_VALUE(spi_id_min, spi_id_max);
+
 		chipr_n_val = GICD_CHIPR_VALUE_GIC_700(chip_addr,
 						       spi_block_min,
 						       spi_blocks);
@@ -173,11 +209,11 @@ static void gic600_multichip_validate_data(
 		panic();
 	}
 
-	for (i = 0; i < multichip_data->chip_count; i++) {
-		spi_id_min = multichip_data->spi_ids[i][SPI_MIN_INDEX];
-		spi_id_max = multichip_data->spi_ids[i][SPI_MAX_INDEX];
+	for (i = 0U; i < multichip_data->chip_count; i++) {
+		spi_id_min = multichip_data->spi_ids[i].spi_id_min;
+		spi_id_max = multichip_data->spi_ids[i].spi_id_max;
 
-		if ((spi_id_min != 0) || (spi_id_max != 0)) {
+		if ((spi_id_min != 0U) || (spi_id_max != 0U)) {
 
 			/* SPI IDs range check */
 			if (!(spi_id_min >= GIC600_SPI_ID_MIN) ||
@@ -202,13 +238,104 @@ static void gic600_multichip_validate_data(
 }
 
 /*******************************************************************************
- * Intialize GIC-600 Multichip operation.
+ * Validates the GIC-700 Multichip data structure passed by the platform.
+ ******************************************************************************/
+static void gic700_multichip_validate_data(
+		struct gic600_multichip_data *multichip_data)
+{
+	unsigned int i, spi_id_min, spi_id_max, blocks_of_32;
+	unsigned int multichip_spi_blocks = 0U, multichip_espi_blocks = 0U;
+
+	assert(multichip_data != NULL);
+
+	if (multichip_data->chip_count > GIC600_MAX_MULTICHIP) {
+		ERROR("GIC-700 Multichip count (%u) should not exceed %u\n",
+				multichip_data->chip_count, GIC600_MAX_MULTICHIP);
+		panic();
+	}
+
+	for (i = 0U; i < multichip_data->chip_count; i++) {
+		spi_id_min = multichip_data->spi_ids[i].spi_id_min;
+		spi_id_max = multichip_data->spi_ids[i].spi_id_max;
+
+		if ((spi_id_min == 0U) || (spi_id_max == 0U)) {
+			continue;
+		}
+
+		/* MIN SPI ID check */
+		if ((spi_id_min < GIC700_SPI_ID_MIN) ||
+		    ((spi_id_min >= GIC700_SPI_ID_MAX) &&
+		     (spi_id_min < GIC700_ESPI_ID_MIN))) {
+			ERROR("Invalid MIN SPI ID {%u} passed for "
+					"Chip %u\n", spi_id_min, i);
+			panic();
+		}
+
+		if ((spi_id_min > spi_id_max) ||
+		    ((spi_id_max - spi_id_min + 1) % 32 != 0)) {
+			ERROR("Unaligned SPI IDs {%u, %u} passed for "
+					"Chip %u\n", spi_id_min,
+					spi_id_max, i);
+			panic();
+		}
+
+		/* ESPI IDs range check */
+		if ((spi_id_min >= GIC700_ESPI_ID_MIN) &&
+		    (spi_id_max > GIC700_ESPI_ID_MAX)) {
+			ERROR("Invalid ESPI IDs {%u, %u} passed for "
+					"Chip %u\n", spi_id_min,
+					spi_id_max, i);
+			panic();
+
+		}
+
+		/* SPI IDs range check */
+		if (((spi_id_min < GIC700_SPI_ID_MAX) &&
+		     (spi_id_max > GIC700_SPI_ID_MAX))) {
+			ERROR("Invalid SPI IDs {%u, %u} passed for "
+					"Chip %u\n", spi_id_min,
+					spi_id_max, i);
+			panic();
+		}
+
+		/* SPI IDs overlap check */
+		if (spi_id_max < GIC700_SPI_ID_MAX) {
+			blocks_of_32 = BLOCKS_OF_32(spi_id_min, spi_id_max);
+			if ((multichip_spi_blocks & blocks_of_32) != 0) {
+				ERROR("SPI IDs of Chip %u overlapping\n", i);
+				panic();
+			}
+			multichip_spi_blocks |= blocks_of_32;
+		}
+
+		/* ESPI IDs overlap check */
+		if (spi_id_max > GIC700_ESPI_ID_MIN) {
+			blocks_of_32 = BLOCKS_OF_32(spi_id_min - GIC700_ESPI_ID_MIN,
+					spi_id_max - GIC700_ESPI_ID_MIN);
+			if ((multichip_espi_blocks & blocks_of_32) != 0) {
+				ERROR("SPI IDs of Chip %u overlapping\n", i);
+				panic();
+			}
+			multichip_espi_blocks |= blocks_of_32;
+		}
+	}
+}
+
+/*******************************************************************************
+ * Intialize GIC-600 and GIC-700 Multichip operation.
  ******************************************************************************/
 void gic600_multichip_init(struct gic600_multichip_data *multichip_data)
 {
 	unsigned int i;
+	uint32_t gicd_iidr_val = gicd_read_iidr(multichip_data->rt_owner_base);
 
-	gic600_multichip_validate_data(multichip_data);
+	if ((gicd_iidr_val & IIDR_MODEL_MASK) == IIDR_MODEL_ARM_GIC_600) {
+		gic600_multichip_validate_data(multichip_data);
+	}
+
+	if ((gicd_iidr_val & IIDR_MODEL_MASK) == IIDR_MODEL_ARM_GIC_700) {
+		gic700_multichip_validate_data(multichip_data);
+	}
 
 	/*
 	 * Ensure that G0/G1S/G1NS interrupts are disabled. This also ensures
@@ -238,9 +365,9 @@ void gic600_multichip_init(struct gic600_multichip_data *multichip_data)
 	set_gicd_chipr_n(multichip_data->rt_owner_base, multichip_data->rt_owner,
 			multichip_data->chip_addrs[multichip_data->rt_owner],
 			multichip_data->
-			spi_ids[multichip_data->rt_owner][SPI_MIN_INDEX],
+			spi_ids[multichip_data->rt_owner].spi_id_min,
 			multichip_data->
-			spi_ids[multichip_data->rt_owner][SPI_MAX_INDEX]);
+			spi_ids[multichip_data->rt_owner].spi_id_max);
 
 	for (i = 0; i < multichip_data->chip_count; i++) {
 		if (i == multichip_data->rt_owner)
@@ -248,7 +375,17 @@ void gic600_multichip_init(struct gic600_multichip_data *multichip_data)
 
 		set_gicd_chipr_n(multichip_data->rt_owner_base, i,
 				multichip_data->chip_addrs[i],
-				multichip_data->spi_ids[i][SPI_MIN_INDEX],
-				multichip_data->spi_ids[i][SPI_MAX_INDEX]);
+				multichip_data->spi_ids[i].spi_id_min,
+				multichip_data->spi_ids[i].spi_id_max);
 	}
+
+	plat_gic_multichip_data = multichip_data;
+}
+
+/*******************************************************************************
+ * Allow a way to query the status of the GIC600 multichip driver
+ ******************************************************************************/
+bool gic600_multichip_is_initialized(void)
+{
+	return (plat_gic_multichip_data != NULL);
 }

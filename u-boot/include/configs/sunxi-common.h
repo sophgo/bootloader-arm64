@@ -16,21 +16,19 @@
 #include <linux/stringify.h>
 
 /* Serial & console */
-#define CONFIG_SYS_NS16550_SERIAL
 /* ns16550 reg in the low bits of cpu reg */
 #ifdef CONFIG_MACH_SUNIV
 /* suniv doesn't have apb2 and uart is connected to apb1 */
-#define CONFIG_SYS_NS16550_CLK		100000000
+#define CFG_SYS_NS16550_CLK		100000000
 #else
-#define CONFIG_SYS_NS16550_CLK		24000000
+#define CFG_SYS_NS16550_CLK		24000000
 #endif
-#ifndef CONFIG_DM_SERIAL
-# define CONFIG_SYS_NS16550_REG_SIZE	-4
-# define CONFIG_SYS_NS16550_COM1		SUNXI_UART0_BASE
-# define CONFIG_SYS_NS16550_COM2		SUNXI_UART1_BASE
-# define CONFIG_SYS_NS16550_COM3		SUNXI_UART2_BASE
-# define CONFIG_SYS_NS16550_COM4		SUNXI_UART3_BASE
-# define CONFIG_SYS_NS16550_COM5		SUNXI_R_UART_BASE
+#if !CONFIG_IS_ENABLED(DM_SERIAL)
+# define CFG_SYS_NS16550_COM1		SUNXI_UART0_BASE
+# define CFG_SYS_NS16550_COM2		SUNXI_UART1_BASE
+# define CFG_SYS_NS16550_COM3		SUNXI_UART2_BASE
+# define CFG_SYS_NS16550_COM4		SUNXI_UART3_BASE
+# define CFG_SYS_NS16550_COM5		SUNXI_R_UART_BASE
 #endif
 
 /* CPU */
@@ -44,13 +42,13 @@
  */
 #ifdef CONFIG_MACH_SUN9I
 #define SDRAM_OFFSET(x) 0x2##x
-#define CONFIG_SYS_SDRAM_BASE		0x20000000
+#define CFG_SYS_SDRAM_BASE		0x20000000
 #elif defined(CONFIG_MACH_SUNIV)
 #define SDRAM_OFFSET(x) 0x8##x
-#define CONFIG_SYS_SDRAM_BASE		0x80000000
+#define CFG_SYS_SDRAM_BASE		0x80000000
 #else
 #define SDRAM_OFFSET(x) 0x4##x
-#define CONFIG_SYS_SDRAM_BASE		0x40000000
+#define CFG_SYS_SDRAM_BASE		0x40000000
 /* V3s do not have enough memory to place code at 0x4a000000 */
 #endif
 
@@ -64,33 +62,18 @@
  * is known yet.
  * H6 has SRAM A1 at 0x00020000.
  */
-#define CONFIG_SYS_INIT_RAM_ADDR	CONFIG_SUNXI_SRAM_ADDRESS
+#define CFG_SYS_INIT_RAM_ADDR	CONFIG_SUNXI_SRAM_ADDRESS
 /* FIXME: this may be larger on some SoCs */
-#define CONFIG_SYS_INIT_RAM_SIZE	0x8000 /* 32 KiB */
+#define CFG_SYS_INIT_RAM_SIZE	0x8000 /* 32 KiB */
 
-#define PHYS_SDRAM_0			CONFIG_SYS_SDRAM_BASE
+#define PHYS_SDRAM_0			CFG_SYS_SDRAM_BASE
 #define PHYS_SDRAM_0_SIZE		0x80000000 /* 2 GiB */
-
-#ifdef CONFIG_NAND_SUNXI
-#define CONFIG_SYS_NAND_MAX_ECCPOS 1664
-#define CONFIG_SYS_MAX_NAND_DEVICE 8
-#endif
-
-/* mmc config */
-#define CONFIG_MMC_SUNXI_SLOT		0
-
-#define CONFIG_SYS_MMC_MAX_DEVICE	4
 
 /*
  * Miscellaneous configurable options
  */
 
-/* standalone support */
-#define CONFIG_STANDALONE_LOAD_ADDR	CONFIG_SYS_LOAD_ADDR
-
 /* FLASH and environment organization */
-
-#define CONFIG_SYS_MONITOR_LEN		(768 << 10)	/* 768 KiB */
 
 /*
  * We cannot use expressions here, because expressions won't be evaluated in
@@ -105,7 +88,7 @@
 #endif /* !CONFIG_ARM64 */
 #elif CONFIG_SUNXI_SRAM_ADDRESS == 0x20000
 #ifdef CONFIG_MACH_SUN50I_H616
-#define LOW_LEVEL_SRAM_STACK		0x58000
+#define LOW_LEVEL_SRAM_STACK		0x52a00		/* below FEL buffers */
 #else
 /* end of SRAM A2 on H6 for now */
 #define LOW_LEVEL_SRAM_STACK		0x00118000
@@ -135,7 +118,21 @@
 #define FDTOVERLAY_ADDR_R __stringify(SDRAM_OFFSET(FE00000))
 #define RAMDISK_ADDR_R    __stringify(SDRAM_OFFSET(FF00000))
 
-#elif defined(CONFIG_MACH_SUN8I_V3S)
+#elif (CONFIG_SUNXI_MINIMUM_DRAM_MB >= 256)
+/*
+ * 160M RAM (256M minimum minus 64MB heap + 32MB for u-boot, stack, fb, etc.
+ * 32M uncompressed kernel, 16M compressed kernel, 1M fdt,
+ * 1M script, 1M pxe, 1M dt overlay and the ramdisk at the end.
+ */
+#define BOOTM_SIZE        __stringify(0xa000000)
+#define KERNEL_ADDR_R     __stringify(SDRAM_OFFSET(2000000))
+#define FDT_ADDR_R        __stringify(SDRAM_OFFSET(3000000))
+#define SCRIPT_ADDR_R     __stringify(SDRAM_OFFSET(3100000))
+#define PXEFILE_ADDR_R    __stringify(SDRAM_OFFSET(3200000))
+#define FDTOVERLAY_ADDR_R __stringify(SDRAM_OFFSET(3300000))
+#define RAMDISK_ADDR_R    __stringify(SDRAM_OFFSET(3400000))
+
+#elif (CONFIG_SUNXI_MINIMUM_DRAM_MB >= 64)
 /*
  * 64M RAM minus 2MB heap + 16MB for u-boot, stack, fb, etc.
  * 16M uncompressed kernel, 8M compressed kernel, 1M fdt,
@@ -149,33 +146,22 @@
 #define FDTOVERLAY_ADDR_R __stringify(SDRAM_OFFSET(1B00000))
 #define RAMDISK_ADDR_R    __stringify(SDRAM_OFFSET(1C00000))
 
-#elif defined(CONFIG_MACH_SUNIV)
+#elif (CONFIG_SUNXI_MINIMUM_DRAM_MB >= 32)
 /*
- * 32M RAM minus 1MB heap + 8MB for u-boot, stack, fb, etc.
- * 8M uncompressed kernel, 4M compressed kernel, 512K fdt,
- * 512K script, 512K pxe and the ramdisk at the end.
+ * 32M RAM minus 2.5MB for u-boot, heap, stack, etc.
+ * 16M uncompressed kernel, 7M compressed kernel, 128K fdt, 64K script,
+ * 128K DT overlay, 128K PXE and the ramdisk in the rest (max. 5MB)
  */
 #define BOOTM_SIZE        __stringify(0x1700000)
-#define KERNEL_ADDR_R     __stringify(SDRAM_OFFSET(0500000))
-#define FDT_ADDR_R        __stringify(SDRAM_OFFSET(0C00000))
-#define SCRIPT_ADDR_R     __stringify(SDRAM_OFFSET(0C50000))
-#define PXEFILE_ADDR_R    __stringify(SDRAM_OFFSET(0D00000))
-#define FDTOVERLAY_ADDR_R __stringify(SDRAM_OFFSET(0D50000))
-#define RAMDISK_ADDR_R    __stringify(SDRAM_OFFSET(0D60000))
+#define KERNEL_ADDR_R     __stringify(SDRAM_OFFSET(1000000))
+#define FDT_ADDR_R        __stringify(SDRAM_OFFSET(1d50000))
+#define SCRIPT_ADDR_R     __stringify(SDRAM_OFFSET(1d40000))
+#define PXEFILE_ADDR_R    __stringify(SDRAM_OFFSET(1d00000))
+#define FDTOVERLAY_ADDR_R __stringify(SDRAM_OFFSET(1d20000))
+#define RAMDISK_ADDR_R    __stringify(SDRAM_OFFSET(1800000))
 
 #else
-/*
- * 160M RAM (256M minimum minus 64MB heap + 32MB for u-boot, stack, fb, etc.
- * 32M uncompressed kernel, 16M compressed kernel, 1M fdt,
- * 1M script, 1M pxe, 1M dt overlay and the ramdisk at the end.
- */
-#define BOOTM_SIZE        __stringify(0xa000000)
-#define KERNEL_ADDR_R     __stringify(SDRAM_OFFSET(2000000))
-#define FDT_ADDR_R        __stringify(SDRAM_OFFSET(3000000))
-#define SCRIPT_ADDR_R     __stringify(SDRAM_OFFSET(3100000))
-#define PXEFILE_ADDR_R    __stringify(SDRAM_OFFSET(3200000))
-#define FDTOVERLAY_ADDR_R __stringify(SDRAM_OFFSET(3300000))
-#define RAMDISK_ADDR_R    __stringify(SDRAM_OFFSET(3400000))
+#error Need at least 32MB of DRAM. Please adjust load addresses.
 #endif
 
 #define MEM_LAYOUT_ENV_SETTINGS \
@@ -298,7 +284,7 @@
 	"stdin=serial\0"
 #endif
 
-#ifdef CONFIG_DM_VIDEO
+#ifdef CONFIG_VIDEO
 #define CONSOLE_STDOUT_SETTINGS \
 	"stdout=serial,vidconsole\0" \
 	"stderr=serial,vidconsole\0"
@@ -332,7 +318,7 @@
 #define FDTFILE CONFIG_DEFAULT_DEVICE_TREE ".dtb"
 #endif
 
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#define CFG_EXTRA_ENV_SETTINGS \
 	CONSOLE_ENV_SETTINGS \
 	MEM_LAYOUT_ENV_SETTINGS \
 	MEM_LAYOUT_ENV_EXTRA_SETTINGS \

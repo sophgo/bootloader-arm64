@@ -165,6 +165,7 @@ enum {
  *		automatically when the device is removed / unbound
  * @dma_offset: Offset between the physical address space (CPU's) and the
  *		device's bus address space
+ * @iommu: IOMMU device associated with this device
  */
 struct udevice {
 	const struct driver *driver;
@@ -193,6 +194,9 @@ struct udevice {
 #endif
 #if CONFIG_IS_ENABLED(DM_DMA)
 	ulong dma_offset;
+#endif
+#if CONFIG_IS_ENABLED(IOMMU)
+	struct udevice *iommu;
 #endif
 };
 
@@ -253,7 +257,7 @@ static inline void dev_bic_flags(struct udevice *dev, u32 bic)
  * @dev:	device to check
  * Return: reference of the device's DT node
  */
-static inline ofnode dev_ofnode(const struct udevice *dev)
+static inline __attribute_const__ ofnode dev_ofnode(const struct udevice *dev)
 {
 #if CONFIG_IS_ENABLED(OF_REAL)
 	return dev->node_;
@@ -273,7 +277,7 @@ static inline ofnode dev_ofnode(const struct udevice *dev)
 #define dev_get_dma_offset(_dev)		0
 #endif
 
-static inline int dev_of_offset(const struct udevice *dev)
+static inline __attribute_const__ int dev_of_offset(const struct udevice *dev)
 {
 #if CONFIG_IS_ENABLED(OF_REAL)
 	return ofnode_to_offset(dev_ofnode(dev));
@@ -282,7 +286,7 @@ static inline int dev_of_offset(const struct udevice *dev)
 #endif
 }
 
-static inline bool dev_has_ofnode(const struct udevice *dev)
+static inline __attribute_const__ bool dev_has_ofnode(const struct udevice *dev)
 {
 #if CONFIG_IS_ENABLED(OF_REAL)
 	return ofnode_valid(dev_ofnode(dev));
@@ -1066,7 +1070,7 @@ static inline bool device_is_on_pci_bus(const struct udevice *dev)
  * sub-nodes and binds drivers for each node where a driver can be found.
  *
  * If this is called prior to relocation, only pre-relocation devices will be
- * bound (those marked with u-boot,dm-pre-reloc in the device tree, or where
+ * bound (those marked with bootph-all in the device tree, or where
  * the driver has the DM_FLAG_PRE_RELOC flag set). Otherwise, all devices will
  * be bound.
  *

@@ -17,17 +17,16 @@
 /* RAM */
 #define PHYS_SDRAM			DDR_CSD1_BASE_ADDR
 #define PHYS_SDRAM_SIZE			(SZ_4G)
-#define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM
+#define CFG_SYS_SDRAM_BASE		PHYS_SDRAM
 
-#define CONFIG_SYS_INIT_RAM_ADDR	0x40000000
-#define CONFIG_SYS_INIT_RAM_SIZE	0x200000
+#define CFG_SYS_INIT_RAM_ADDR	0x40000000
+#define CFG_SYS_INIT_RAM_SIZE	0x200000
 
 /* Board and environment settings */
-#define CONFIG_HOSTNAME			"kontron-mx8mm"
 
 #ifdef CONFIG_USB_EHCI_HCD
-#define CONFIG_MXC_USB_PORTSC		(PORT_PTS_UTMI | PORT_PTS_PTW)
-#define CONFIG_MXC_USB_FLAGS		0
+#define CFG_MXC_USB_PORTSC		(PORT_PTS_UTMI | PORT_PTS_PTW)
+#define CFG_MXC_USB_FLAGS		0
 #endif
 
 /* GUID for capsule updatable firmware image */
@@ -47,23 +46,9 @@
 
 #ifdef CONFIG_SPL_BUILD
 /* malloc f used before GD_FLG_FULL_MALLOC_INIT set */
-#define CONFIG_MALLOC_F_ADDR		0x930000
+#define CFG_MALLOC_F_ADDR		0x930000
 #endif
 
-#define ENV_MEM_LAYOUT_SETTINGS \
-	"loadaddr=" __stringify(CONFIG_SYS_LOAD_ADDR) "\0" \
-	"kernel_addr_r=0x42000000\0" \
-	"fdt_addr_r=0x48000000\0" \
-	"fdtoverlay_addr_r=0x49000000\0" \
-	"ramdisk_addr_r=0x48080000\0" \
-	"scriptaddr=0x40000000\0"\
-	"pxefile_addr_r=0x40100000\0"
-
-#define CONFIG_EXTRA_ENV_SETTINGS \
-	"dfu_alt_info=sf 0:0=flash-bin raw 0x400 0x1f0000\0" \
-	"bootdelay=3\0" \
-	"hostname=" CONFIG_HOSTNAME "\0" \
-	ENV_MEM_LAYOUT_SETTINGS \
-	BOOTENV
+#define CFG_EXTRA_ENV_SETTINGS BOOTENV
 
 #endif /* __KONTRON_MX8MM_CONFIG_H */

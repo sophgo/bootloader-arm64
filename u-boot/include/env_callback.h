@@ -14,20 +14,14 @@
 #define ENV_CALLBACK_VAR ".callbacks"
 
 /* Board configs can define additional static callback bindings */
-#ifndef CONFIG_ENV_CALLBACK_LIST_STATIC
-#define CONFIG_ENV_CALLBACK_LIST_STATIC
+#ifndef CFG_ENV_CALLBACK_LIST_STATIC
+#define CFG_ENV_CALLBACK_LIST_STATIC
 #endif
 
 #ifdef CONFIG_SILENT_CONSOLE
 #define SILENT_CALLBACK "silent:silent,"
 #else
 #define SILENT_CALLBACK
-#endif
-
-#ifdef CONFIG_SPLASHIMAGE_GUARD
-#define SPLASHIMAGE_CALLBACK "splashimage:splashimage,"
-#else
-#define SPLASHIMAGE_CALLBACK
 #endif
 
 #ifdef CONFIG_REGEX
@@ -57,6 +51,15 @@
 #define NET_CALLBACKS
 #endif
 
+#ifdef CONFIG_IPV6
+#define NET6_CALLBACKS \
+	"ip6addr:ip6addr," \
+	"serverip6:serverip6," \
+	"gatewayip6:gatewayip6,"
+#else
+#define NET6_CALLBACKS
+#endif
+
 #ifdef CONFIG_BOOTSTD
 #define BOOTSTD_CALLBACK	"bootmeths:bootmeths,"
 #else
@@ -71,13 +74,13 @@
 	ENV_DOT_ESCAPE ENV_FLAGS_VAR ":flags," \
 	"baudrate:baudrate," \
 	NET_CALLBACKS \
+	NET6_CALLBACKS \
 	BOOTSTD_CALLBACK \
 	"loadaddr:loadaddr," \
 	SILENT_CALLBACK \
-	SPLASHIMAGE_CALLBACK \
 	"stdin:console,stdout:console,stderr:console," \
 	"serial#:serialno," \
-	CONFIG_ENV_CALLBACK_LIST_STATIC
+	CFG_ENV_CALLBACK_LIST_STATIC
 
 #ifndef CONFIG_SPL_BUILD
 void env_callback_init(struct env_entry *var_entry);

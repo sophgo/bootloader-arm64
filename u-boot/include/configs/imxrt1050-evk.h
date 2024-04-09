@@ -18,8 +18,8 @@
 #define DMAMEM_BASE			(PHYS_SDRAM + PHYS_SDRAM_SIZE - \
 					 DMAMEM_SZ_ALL)
 
-#ifdef CONFIG_DM_VIDEO
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#ifdef CONFIG_VIDEO
+#define CFG_EXTRA_ENV_SETTINGS \
 		"stdin=serial\0" \
 		"stdout=serial,vidconsole\0" \
 		"stderr=serial,vidconsole\0"
@@ -29,6 +29,6 @@
  * Configuration of the external SDRAM memory
  */
 
-#define CONFIG_SYS_UBOOT_START		0x800023FD
+#define CFG_SYS_UBOOT_START		0x800023FD
 
 #endif /* __IMXRT1050_EVK_H */

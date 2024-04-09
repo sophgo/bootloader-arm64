@@ -13,14 +13,162 @@
 #include <log.h>
 #include <malloc.h>
 #include <net.h>
+#include <net6.h>
 #include <asm/eth.h>
 #include <dm/test.h>
 #include <dm/device-internal.h>
 #include <dm/uclass-internal.h>
 #include <test/test.h>
 #include <test/ut.h>
+#include <ndisc.h>
 
 #define DM_TEST_ETH_NUM		4
+
+#if IS_ENABLED(CONFIG_IPV6)
+static int dm_test_string_to_ip6(struct unit_test_state *uts)
+{
+	char *str;
+	struct test_ip6_pair {
+		char 		*string_addr;
+		struct in6_addr ip6_addr;
+	};
+
+	struct in6_addr ip6 = {0};
+
+	/* Correct statements */
+	struct test_ip6_pair test_suite[] = {
+		{"2001:db8::0:1234:1", {.s6_addr32[0] = 0xb80d0120,
+					.s6_addr32[1] = 0x00000000,
+					.s6_addr32[2] = 0x00000000,
+					.s6_addr32[3] = 0x01003412}},
+		{"2001:0db8:0000:0000:0000:0000:1234:0001",
+				       {.s6_addr32[0] = 0xb80d0120,
+					.s6_addr32[1] = 0x00000000,
+					.s6_addr32[2] = 0x00000000,
+					.s6_addr32[3] = 0x01003412}},
+		{"::1", 	       {.s6_addr32[0] = 0x00000000,
+					.s6_addr32[1] = 0x00000000,
+					.s6_addr32[2] = 0x00000000,
+					.s6_addr32[3] = 0x01000000}},
+		{"::ffff:192.168.1.1", {.s6_addr32[0] = 0x00000000,
+					.s6_addr32[1] = 0x00000000,
+					.s6_addr32[2] = 0xffff0000,
+					.s6_addr32[3] = 0x0101a8c0}},
+	};
+
+	for (int i = 0; i < ARRAY_SIZE(test_suite); ++i) {
+		ut_assertok(string_to_ip6(test_suite[i].string_addr,
+			    strlen(test_suite[i].string_addr), &ip6));
+		ut_asserteq_mem(&ip6, &test_suite[i].ip6_addr,
+				sizeof(struct in6_addr));
+	}
+
+	/* Incorrect statements */
+	str = "hello:world";
+	ut_assertok(!string_to_ip6(str, strlen(str), &ip6));
+	str = "2001:db8::0::0";
+	ut_assertok(!string_to_ip6(str, strlen(str), &ip6));
+	str = "2001:db8:192.168.1.1::1";
+	ut_assertok(!string_to_ip6(str, strlen(str), &ip6));
+	str = "192.168.1.1";
+	ut_assertok(!string_to_ip6(str, strlen(str), &ip6));
+
+	return 0;
+}
+DM_TEST(dm_test_string_to_ip6, 0);
+
+static int dm_test_csum_ipv6_magic(struct unit_test_state *uts)
+{
+	unsigned short csum = 0xbeef;
+	/* Predefined correct parameters */
+	unsigned short correct_csum = 0xd8ac;
+	struct in6_addr saddr = {.s6_addr32[0] = 0x000080fe,
+				 .s6_addr32[1] = 0x00000000,
+				 .s6_addr32[2] = 0xffe9f242,
+				 .s6_addr32[3] = 0xe8f66dfe};
+	struct in6_addr daddr = {.s6_addr32[0] = 0x000080fe,
+				 .s6_addr32[1] = 0x00000000,
+				 .s6_addr32[2] = 0xffd5b372,
+				 .s6_addr32[3] = 0x3ef692fe};
+	u16 len = 1460;
+	unsigned short proto = 17;
+	unsigned int head_csum = 0x91f0;
+
+	csum = csum_ipv6_magic(&saddr, &daddr, len, proto, head_csum);
+	ut_asserteq(csum, correct_csum);
+
+	/* Broke a parameter */
+	proto--;
+	csum = csum_ipv6_magic(&saddr, &daddr, len, proto, head_csum);
+	ut_assert(csum != correct_csum);
+
+	return 0;
+}
+DM_TEST(dm_test_csum_ipv6_magic, 0);
+
+static int dm_test_ip6_addr_in_subnet(struct unit_test_state *uts)
+{
+	struct in6_addr our = {.s6_addr32[0] = 0x000080fe,
+				 .s6_addr32[1] = 0x00000000,
+				 .s6_addr32[2] = 0xffe9f242,
+				 .s6_addr32[3] = 0xe8f66dfe};
+	struct in6_addr neigh1 = {.s6_addr32[0] = 0x000080fe,
+				 .s6_addr32[1] = 0x00000000,
+				 .s6_addr32[2] = 0xffd5b372,
+				 .s6_addr32[3] = 0x3ef692fe};
+	struct in6_addr neigh2 = {.s6_addr32[0] = 0x60480120,
+				 .s6_addr32[1] = 0x00006048,
+				 .s6_addr32[2] = 0x00000000,
+				 .s6_addr32[3] = 0x00008888};
+
+	/* in */
+	ut_assert(ip6_addr_in_subnet(&our, &neigh1, 64));
+	/* outside */
+	ut_assert(!ip6_addr_in_subnet(&our, &neigh2, 64));
+	ut_assert(!ip6_addr_in_subnet(&our, &neigh1, 128));
+
+	return 0;
+}
+DM_TEST(dm_test_ip6_addr_in_subnet, 0);
+
+static int dm_test_ip6_make_snma(struct unit_test_state *uts)
+{
+	struct in6_addr mult = {0};
+	struct in6_addr correct_addr = {
+				 .s6_addr32[0] = 0x000002ff,
+				 .s6_addr32[1] = 0x00000000,
+				 .s6_addr32[2] = 0x01000000,
+				 .s6_addr32[3] = 0xe8f66dff};
+	struct in6_addr addr = { .s6_addr32[0] = 0x000080fe,
+				 .s6_addr32[1] = 0x00000000,
+				 .s6_addr32[2] = 0xffe9f242,
+				 .s6_addr32[3] = 0xe8f66dfe};
+
+	ip6_make_snma(&mult, &addr);
+	ut_asserteq_mem(&mult, &correct_addr, sizeof(struct in6_addr));
+
+	return 0;
+}
+DM_TEST(dm_test_ip6_make_snma, 0);
+
+static int dm_test_ip6_make_lladdr(struct unit_test_state *uts)
+{
+	struct in6_addr generated_lladdr = {0};
+	struct in6_addr correct_lladdr = {
+				 .s6_addr32[0] = 0x000080fe,
+				 .s6_addr32[1] = 0x00000000,
+				 .s6_addr32[2] = 0xffabf33a,
+				 .s6_addr32[3] = 0xfbb352fe};
+	const unsigned char mac[6] = {0x38, 0xf3, 0xab, 0x52, 0xb3, 0xfb};
+
+	ip6_make_lladdr(&generated_lladdr, mac);
+	ut_asserteq_mem(&generated_lladdr, &correct_lladdr,
+			sizeof(struct in6_addr));
+
+	return 0;
+}
+DM_TEST(dm_test_ip6_make_lladdr, UT_TESTF_SCAN_FDT);
+#endif
 
 static int dm_test_eth(struct unit_test_state *uts)
 {
@@ -460,3 +608,90 @@ static int dm_test_eth_async_ping_reply(struct unit_test_state *uts)
 }
 
 DM_TEST(dm_test_eth_async_ping_reply, UT_TESTF_SCAN_FDT);
+
+#if IS_ENABLED(CONFIG_IPV6_ROUTER_DISCOVERY)
+
+static u8 ip6_ra_buf[] = {0x60, 0xf, 0xc5, 0x4a, 0x0, 0x38, 0x3a, 0xff, 0xfe,
+			  0x80, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x6, 0x85, 0xe6,
+			  0x29, 0x77, 0xcb, 0xc8, 0x53, 0xff, 0x2, 0x0, 0x0,
+			  0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+			  0x1, 0x86, 0x0, 0xdc, 0x90, 0x40, 0x80, 0x15, 0x18,
+			  0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x3, 0x4,
+			  0x40, 0xc0, 0x0, 0x0, 0x37, 0xdc, 0x0, 0x0, 0x37,
+			  0x78, 0x0, 0x0, 0x0, 0x0, 0x20, 0x1, 0xca, 0xfe, 0xca,
+			  0xfe, 0xca, 0xfe, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+			  0x0, 0x1, 0x1, 0x0, 0x15, 0x5d, 0xe2, 0x8a, 0x2};
+
+static int dm_test_validate_ra(struct unit_test_state *uts)
+{
+	struct ip6_hdr *ip6 = (struct ip6_hdr *)ip6_ra_buf;
+	struct icmp6hdr *icmp = (struct icmp6hdr *)(ip6 + 1);
+	__be16 temp = 0;
+
+	ut_assert(validate_ra(ip6) == true);
+
+	temp = ip6->payload_len;
+	ip6->payload_len = 15;
+	ut_assert(validate_ra(ip6) == false);
+	ip6->payload_len = temp;
+
+	temp = ip6->saddr.s6_addr16[0];
+	ip6->saddr.s6_addr16[0] = 0x2001;
+	ut_assert(validate_ra(ip6) == false);
+	ip6->saddr.s6_addr16[0] = temp;
+
+	temp = ip6->hop_limit;
+	ip6->hop_limit = 15;
+	ut_assert(validate_ra(ip6) == false);
+	ip6->hop_limit = temp;
+
+	temp = icmp->icmp6_code;
+	icmp->icmp6_code = 15;
+	ut_assert(validate_ra(ip6) == false);
+	icmp->icmp6_code = temp;
+
+	return 0;
+}
+
+DM_TEST(dm_test_validate_ra, 0);
+
+static int dm_test_process_ra(struct unit_test_state *uts)
+{
+	int len = sizeof(ip6_ra_buf);
+	struct ip6_hdr *ip6 = (struct ip6_hdr *)ip6_ra_buf;
+	struct icmp6hdr *icmp = (struct icmp6hdr *)(ip6 + 1);
+	struct ra_msg *msg = (struct ra_msg *)icmp;
+	unsigned char *option = msg->opt;
+	struct icmp6_ra_prefix_info *prefix =
+					(struct icmp6_ra_prefix_info *)option;
+	__be16 temp = 0;
+	unsigned char option_len = option[1];
+
+	ut_assert(process_ra(ip6, len) == 0);
+
+	temp = icmp->icmp6_rt_lifetime;
+	icmp->icmp6_rt_lifetime = 0;
+	ut_assert(process_ra(ip6, len) != 0);
+	icmp->icmp6_rt_lifetime = temp;
+
+	ut_assert(process_ra(ip6, 0) != 0);
+
+	option[1] = 0;
+	ut_assert(process_ra(ip6, len) != 0);
+	option[1] = option_len;
+
+	prefix->on_link = false;
+	ut_assert(process_ra(ip6, len) != 0);
+	prefix->on_link = true;
+
+	temp = prefix->prefix.s6_addr16[0];
+	prefix->prefix.s6_addr16[0] = 0x80fe;
+	ut_assert(process_ra(ip6, len) != 0);
+	prefix->prefix.s6_addr16[0] = temp;
+
+	return 0;
+}
+
+DM_TEST(dm_test_process_ra, 0);
+
+#endif

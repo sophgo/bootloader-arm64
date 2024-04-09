@@ -14,7 +14,7 @@ import sys
 from patman import checkpatch
 from patman import gitutil
 from patman import patchstream
-from patman import terminal
+from u_boot_pylib import terminal
 
 def setup():
     """Do required setup before doing anything"""
@@ -85,7 +85,7 @@ def check_patches(series, patch_files, run_checkpatch, verbose, use_tree):
     # Do a few checks on the series
     series.DoChecks()
 
-    # Check the patches, and run them through 'git am' just to be sure
+    # Check the patches
     if run_checkpatch:
         ok = checkpatch.check_patches(verbose, patch_files, use_tree)
     else:
@@ -94,8 +94,8 @@ def check_patches(series, patch_files, run_checkpatch, verbose, use_tree):
 
 
 def email_patches(col, series, cover_fname, patch_files, process_tags, its_a_go,
-                  ignore_bad_tags, add_maintainers, limit, dry_run, in_reply_to,
-                  thread, smtp_server):
+                  ignore_bad_tags, add_maintainers, get_maintainer_script, limit,
+                  dry_run, in_reply_to, thread, smtp_server):
     """Email patches to the recipients
 
     This emails out the patches and cover letter using 'git send-email'. Each
@@ -123,6 +123,8 @@ def email_patches(col, series, cover_fname, patch_files, process_tags, its_a_go,
         ignore_bad_tags (bool): True to just print a warning for unknown tags,
             False to halt with an error
         add_maintainers (bool): Run the get_maintainer.pl script for each patch
+        get_maintainer_script (str): The script used to retrieve which
+            maintainers to cc
         limit (int): Limit on the number of people that can be cc'd on a single
             patch or the cover letter (None if no limit)
         dry_run (bool): Don't actually email the patches, just print out what
@@ -134,7 +136,7 @@ def email_patches(col, series, cover_fname, patch_files, process_tags, its_a_go,
         smtp_server (str): SMTP server to use to send patches (None for default)
     """
     cc_file = series.MakeCcFile(process_tags, cover_fname, not ignore_bad_tags,
-                                add_maintainers, limit)
+                                add_maintainers, limit, get_maintainer_script)
 
     # Email the patches out (giving the user time to check / cancel)
     cmd = ''
@@ -174,8 +176,8 @@ def send(args):
     email_patches(
         col, series, cover_fname, patch_files, args.process_tags,
         its_a_go, args.ignore_bad_tags, args.add_maintainers,
-        args.limit, args.dry_run, args.in_reply_to, args.thread,
-        args.smtp_server)
+        args.get_maintainer_script, args.limit, args.dry_run,
+        args.in_reply_to, args.thread, args.smtp_server)
 
 def patchwork_status(branch, count, start, end, dest_branch, force,
                      show_comments, url):

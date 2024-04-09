@@ -15,7 +15,7 @@ ENABLE_SVE_FOR_NS		:= 0
 MULTI_CONSOLE_API		:= 1
 
 CRASH_REPORTING			:= 1
-HANDLE_EA_EL3_FIRST		:= 1
+HANDLE_EA_EL3_FIRST_NS		:= 1
 
 # This option gets enabled automatically if the TRUSTED_BOARD_BOOT
 # is set via root Makefile, but Renesas support Trusted-Boot without
@@ -140,5 +140,4 @@ BL31_SOURCES	+=	${RCAR_GIC_SOURCES}				\
 			drivers/arm/cci/cci.c
 
 include lib/xlat_tables_v2/xlat_tables.mk
-include drivers/auth/mbedtls/mbedtls_crypto.mk
 PLAT_BL_COMMON_SOURCES	+=	${XLAT_TABLES_LIB_SRCS}

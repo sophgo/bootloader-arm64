@@ -224,6 +224,11 @@ const struct rproc_att hostmap[] = {
 	{ 0x80000000, 0x80000000, 0x60000000 }, /* DDRC */
 	{ /* sentinel */ }
 };
+
+const struct rproc_att *imx_bootaux_get_hostmap(void)
+{
+	return hostmap;
+}
 #endif
 
 #if !CONFIG_IS_ENABLED(SKIP_LOWLEVEL_INIT)
@@ -447,7 +452,7 @@ int boot_mode_getprisec(void)
 void reset_misc(void)
 {
 #ifndef CONFIG_SPL_BUILD
-#if defined(CONFIG_VIDEO_MXS) && !defined(CONFIG_DM_VIDEO)
+#if defined(CONFIG_VIDEO_MXS) && !defined(CONFIG_VIDEO)
 	lcdif_power_down();
 #endif
 #endif

@@ -151,6 +151,8 @@ static uint64_t __unused __dead2 zynqmp_sgi7_irq(uint32_t id, uint32_t flags,
 				0xffffffff);
 	}
 
+	dsb();
+
 	spin_unlock(&inc_lock);
 
 	if (active_cores == 0) {
@@ -203,21 +205,21 @@ err:
  * Called from sip_svc_setup initialization function with the
  * rt_svc_init signature.
  */
-int pm_setup(void)
+int32_t pm_setup(void)
 {
-	int status, ret;
 
-	status = pm_ipi_init(primary_proc);
+	pm_ipi_init(primary_proc);
 
-	ret = pm_get_api_version(&pm_ctx.api_version);
+	pm_get_api_version(&pm_ctx.api_version);
 	if (pm_ctx.api_version < PM_VERSION) {
 		ERROR("BL31: Platform Management API version error. Expected: "
 		      "v%d.%d - Found: v%d.%d\n", PM_VERSION_MAJOR,
 		      PM_VERSION_MINOR, pm_ctx.api_version >> 16,
-		      pm_ctx.api_version & 0xFFFF);
+		      pm_ctx.api_version & 0xFFFFU);
 		return -EINVAL;
 	}
 
+	int32_t status = 0, ret = 0;
 #if ZYNQMP_WDT_RESTART
 	status = pm_wdt_restart_setup();
 	if (status)
@@ -255,17 +257,17 @@ int pm_setup(void)
  * function with rt_svc_handle signature
  */
 uint64_t pm_smc_handler(uint32_t smc_fid, uint64_t x1, uint64_t x2, uint64_t x3,
-			uint64_t x4, void *cookie, void *handle, uint64_t flags)
+			uint64_t x4, const void *cookie, void *handle, uint64_t flags)
 {
 	enum pm_ret_status ret;
 	uint32_t payload[PAYLOAD_ARG_CNT];
 
-	uint32_t pm_arg[4];
-	uint32_t result[PAYLOAD_ARG_CNT];
+	uint32_t pm_arg[5];
+	uint32_t result[PAYLOAD_ARG_CNT] = {0};
 	uint32_t api_id;
 
 	/* Handle case where PM wasn't initialized properly */
-	if (!pm_up)
+	if (pm_up == 0)
 		SMC_RET1(handle, SMC_UNK);
 
 	pm_arg[0] = (uint32_t)x1;
@@ -291,10 +293,10 @@ uint64_t pm_smc_handler(uint32_t smc_fid, uint64_t x1, uint64_t x2, uint64_t x3,
 	case PM_REQ_WAKEUP:
 	{
 		/* Use address flag is encoded in the 1st bit of the low-word */
-		unsigned int set_addr = pm_arg[1] & 0x1;
-		uint64_t address = (uint64_t)pm_arg[2] << 32;
+		uint32_t set_addr = pm_arg[1] & 0x1U;
+		uint64_t address = (uint64_t)pm_arg[2] << 32U;
 
-		address |= pm_arg[1] & (~0x1);
+		address |= pm_arg[1] & (~0x1U);
 		ret = pm_req_wakeup(pm_arg[0], set_addr, address,
 				    pm_arg[3]);
 		SMC_RET1(handle, (uint64_t)ret);
@@ -328,7 +330,7 @@ uint64_t pm_smc_handler(uint32_t smc_fid, uint64_t x1, uint64_t x2, uint64_t x3,
 	case PM_GET_API_VERSION:
 		/* Check is PM API version already verified */
 		if (pm_ctx.api_version >= PM_VERSION) {
-			if (!ipi_irq_flag) {
+			if (ipi_irq_flag == 0U) {
 				/*
 				 * Enable IPI IRQ
 				 * assume the rich OS is OK to handle callback IRQs now.
@@ -336,7 +338,7 @@ uint64_t pm_smc_handler(uint32_t smc_fid, uint64_t x1, uint64_t x2, uint64_t x3,
 				 * the GIC.
 				 */
 				pm_ipi_irq_enable(primary_proc);
-				ipi_irq_flag = 1;
+				ipi_irq_flag = 1U;
 			}
 			SMC_RET1(handle, (uint64_t)PM_RET_SUCCESS |
 				 ((uint64_t)pm_ctx.api_version << 32));
@@ -348,7 +350,7 @@ uint64_t pm_smc_handler(uint32_t smc_fid, uint64_t x1, uint64_t x2, uint64_t x3,
 
 	case PM_FPGA_GET_STATUS:
 	{
-		uint32_t value;
+		uint32_t value = 0;
 
 		ret = pm_fpga_get_status(&value);
 		SMC_RET1(handle, (uint64_t)ret | ((uint64_t)value) << 32);
@@ -366,7 +368,7 @@ uint64_t pm_smc_handler(uint32_t smc_fid, uint64_t x1, uint64_t x2, uint64_t x3,
 			 (uint64_t)result[2] | ((uint64_t)result[3] << 32));
 	case PM_IOCTL:
 	{
-		uint32_t value;
+		uint32_t value = 0;
 
 		ret = pm_ioctl(pm_arg[0], pm_arg[1], pm_arg[2],
 			       pm_arg[3], &value);
@@ -393,7 +395,7 @@ uint64_t pm_smc_handler(uint32_t smc_fid, uint64_t x1, uint64_t x2, uint64_t x3,
 
 	case PM_CLOCK_GETSTATE:
 	{
-		uint32_t value;
+		uint32_t value = 0;
 
 		ret = pm_clock_getstate(pm_arg[0], &value);
 		SMC_RET1(handle, (uint64_t)ret | ((uint64_t)value) << 32);
@@ -405,7 +407,7 @@ uint64_t pm_smc_handler(uint32_t smc_fid, uint64_t x1, uint64_t x2, uint64_t x3,
 
 	case PM_CLOCK_GETDIVIDER:
 	{
-		uint32_t value;
+		uint32_t value = 0;
 
 		ret = pm_clock_getdivider(pm_arg[0], &value);
 		SMC_RET1(handle, (uint64_t)ret | ((uint64_t)value) << 32);
@@ -419,7 +421,7 @@ uint64_t pm_smc_handler(uint32_t smc_fid, uint64_t x1, uint64_t x2, uint64_t x3,
 
 	case PM_CLOCK_GETRATE:
 	{
-		uint64_t value;
+		uint64_t value = 0;
 
 		ret = pm_clock_getrate(pm_arg[0], &value);
 		SMC_RET2(handle, (uint64_t)ret |
@@ -434,15 +436,15 @@ uint64_t pm_smc_handler(uint32_t smc_fid, uint64_t x1, uint64_t x2, uint64_t x3,
 
 	case PM_CLOCK_GETPARENT:
 	{
-		uint32_t value;
+		uint32_t value = 0;
 
 		ret = pm_clock_getparent(pm_arg[0], &value);
-		SMC_RET1(handle, (uint64_t)ret | ((uint64_t)value) << 32);
+		SMC_RET1(handle, (uint64_t)ret | ((uint64_t)value) << 32U);
 	}
 
 	case PM_GET_TRUSTZONE_VERSION:
 		SMC_RET1(handle, (uint64_t)PM_RET_SUCCESS |
-			 ((uint64_t)ZYNQMP_TZ_VERSION << 32));
+			 ((uint64_t)ZYNQMP_TZ_VERSION << 32U));
 
 	case PM_SET_SUSPEND_MODE:
 		ret = pm_set_suspend_mode(pm_arg[0]);
@@ -462,25 +464,25 @@ uint64_t pm_smc_handler(uint32_t smc_fid, uint64_t x1, uint64_t x2, uint64_t x3,
 	{
 		ret = pm_secure_image(pm_arg[0], pm_arg[1], pm_arg[2],
 				      pm_arg[3], &result[0]);
-		SMC_RET2(handle, (uint64_t)ret | ((uint64_t)result[0] << 32),
+		SMC_RET2(handle, (uint64_t)ret | ((uint64_t)result[0] << 32U),
 			 result[1]);
 	}
 
 	case PM_FPGA_READ:
 	{
-		uint32_t value;
+		uint32_t value = 0;
 
 		ret = pm_fpga_read(pm_arg[0], pm_arg[1], pm_arg[2], pm_arg[3],
 				   &value);
-		SMC_RET1(handle, (uint64_t)ret | ((uint64_t)value) << 32);
+		SMC_RET1(handle, (uint64_t)ret | ((uint64_t)value) << 32U);
 	}
 
 	case PM_SECURE_AES:
 	{
-		uint32_t value;
+		uint32_t value = 0;
 
 		ret = pm_aes_engine(pm_arg[0], pm_arg[1], &value);
-		SMC_RET1(handle, (uint64_t)ret | ((uint64_t)value) << 32);
+		SMC_RET1(handle, (uint64_t)ret | ((uint64_t)value) << 32U);
 	}
 
 	case PM_PLL_SET_PARAMETER:
@@ -489,10 +491,10 @@ uint64_t pm_smc_handler(uint32_t smc_fid, uint64_t x1, uint64_t x2, uint64_t x3,
 
 	case PM_PLL_GET_PARAMETER:
 	{
-		uint32_t value;
+		uint32_t value = 0;
 
 		ret = pm_pll_get_parameter(pm_arg[0], pm_arg[1], &value);
-		SMC_RET1(handle, (uint64_t)ret | ((uint64_t)value << 32));
+		SMC_RET1(handle, (uint64_t)ret | ((uint64_t)value << 32U));
 	}
 
 	case PM_PLL_SET_MODE:
@@ -501,27 +503,34 @@ uint64_t pm_smc_handler(uint32_t smc_fid, uint64_t x1, uint64_t x2, uint64_t x3,
 
 	case PM_PLL_GET_MODE:
 	{
-		uint32_t mode;
+		uint32_t mode = 0;
 
 		ret = pm_pll_get_mode(pm_arg[0], &mode);
-		SMC_RET1(handle, (uint64_t)ret | ((uint64_t)mode << 32));
+		SMC_RET1(handle, (uint64_t)ret | ((uint64_t)mode << 32U));
 	}
 
 	case PM_REGISTER_ACCESS:
 	{
-		uint32_t value;
+		uint32_t value = 0;
 
 		ret = pm_register_access(pm_arg[0], pm_arg[1], pm_arg[2],
 					 pm_arg[3], &value);
-		SMC_RET1(handle, (uint64_t)ret | ((uint64_t)value) << 32);
+		SMC_RET1(handle, (uint64_t)ret | ((uint64_t)value) << 32U);
 	}
 
 	case PM_EFUSE_ACCESS:
 	{
-		uint32_t value;
+		uint32_t value = 0;
 
+#if defined(ZYNQMP_SECURE_EFUSES)
+		if (is_caller_non_secure(flags)) {
+			SMC_RET1(handle,
+				 (((uint64_t)PM_RET_ERROR_NOT_ENABLED) << 32U) |
+				 (uint64_t)PM_RET_ERROR_ACCESS);
+		}
+#endif
 		ret = pm_efuse_access(pm_arg[0], pm_arg[1], &value);
-		SMC_RET1(handle, (uint64_t)ret | ((uint64_t)value) << 32);
+		SMC_RET1(handle, (uint64_t)ret | ((uint64_t)value) << 32U);
 	}
 
 	case PM_FPGA_GET_VERSION:
@@ -532,19 +541,19 @@ uint64_t pm_smc_handler(uint32_t smc_fid, uint64_t x1, uint64_t x2, uint64_t x3,
 		PM_PACK_PAYLOAD5(payload, smc_fid & FUNCID_NUM_MASK,
 				 pm_arg[0], pm_arg[1], pm_arg[2], pm_arg[3]);
 		ret = pm_ipi_send_sync(primary_proc, payload, ret_payload, 3U);
-		SMC_RET2(handle, (uint64_t)ret | (uint64_t)ret_payload[0] << 32,
-			 (uint64_t)ret_payload[1] | (uint64_t)ret_payload[2] << 32);
+		SMC_RET2(handle, (uint64_t)ret | (uint64_t)ret_payload[0] << 32U,
+			 (uint64_t)ret_payload[1] | (uint64_t)ret_payload[2] << 32U);
 	}
 
 	case PM_FEATURE_CHECK:
 	{
-		uint32_t version;
+		uint32_t version = 0;
 		uint32_t bit_mask[2] = {0};
 
 		ret = pm_feature_check(pm_arg[0], &version, bit_mask,
 				       ARRAY_SIZE(bit_mask));
-		SMC_RET2(handle, (uint64_t)ret | ((uint64_t)version << 32),
-			 (uint64_t)bit_mask[0] | ((uint64_t)bit_mask[1] << 32));
+		SMC_RET2(handle, (uint64_t)ret | ((uint64_t)version << 32U),
+			 (uint64_t)bit_mask[0] | ((uint64_t)bit_mask[1] << 32U));
 	}
 
 	default:
@@ -553,8 +562,8 @@ uint64_t pm_smc_handler(uint32_t smc_fid, uint64_t x1, uint64_t x2, uint64_t x3,
 				 pm_arg[2], pm_arg[3], pm_arg[4]);
 		ret = pm_ipi_send_sync(primary_proc, payload, result,
 				       PAYLOAD_ARG_CNT);
-		SMC_RET2(handle, (uint64_t)ret | ((uint64_t)result[0] << 32),
-			 (uint64_t)result[1] | ((uint64_t)result[2] << 32));
+		SMC_RET2(handle, (uint64_t)ret | ((uint64_t)result[0] << 32U),
+			 (uint64_t)result[1] | ((uint64_t)result[2] << 32U));
 	}
 }
 
@@ -575,7 +584,7 @@ uint64_t pm_smc_handler(uint32_t smc_fid, uint64_t x1, uint64_t x2, uint64_t x3,
  * function with rt_svc_handle signature
  */
 uint64_t em_smc_handler(uint32_t smc_fid, uint64_t x1, uint64_t x2, uint64_t x3,
-			uint64_t x4, void *cookie, void *handle, uint64_t flags)
+			uint64_t x4, const void *cookie, void *handle, uint64_t flags)
 {
 	enum pm_ret_status ret;
 
@@ -586,7 +595,7 @@ uint64_t em_smc_handler(uint32_t smc_fid, uint64_t x1, uint64_t x2, uint64_t x3,
 		uint32_t value;
 
 		ret = em_set_action(&value);
-		SMC_RET1(handle, (uint64_t)ret | ((uint64_t)value) << 32);
+		SMC_RET1(handle, (uint64_t)ret | ((uint64_t)value) << 32U);
 	}
 
 	case EM_REMOVE_ACTION:
@@ -594,7 +603,7 @@ uint64_t em_smc_handler(uint32_t smc_fid, uint64_t x1, uint64_t x2, uint64_t x3,
 		uint32_t value;
 
 		ret = em_remove_action(&value);
-		SMC_RET1(handle, (uint64_t)ret | ((uint64_t)value) << 32);
+		SMC_RET1(handle, (uint64_t)ret | ((uint64_t)value) << 32U);
 	}
 
 	case EM_SEND_ERRORS:
@@ -602,7 +611,7 @@ uint64_t em_smc_handler(uint32_t smc_fid, uint64_t x1, uint64_t x2, uint64_t x3,
 		uint32_t value;
 
 		ret = em_send_errors(&value);
-		SMC_RET1(handle, (uint64_t)ret | ((uint64_t)value) << 32);
+		SMC_RET1(handle, (uint64_t)ret | ((uint64_t)value) << 32U);
 	}
 
 	default:

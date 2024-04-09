@@ -5,7 +5,6 @@
 # Entry-type module for 'u-boot-tpl-nodtb.bin'
 #
 
-from binman import elf
 from binman.entry import Entry
 from binman.etype.blob import Entry_blob
 
@@ -22,9 +21,7 @@ class Entry_u_boot_tpl_nodtb(Entry_blob):
     expands to a section containing u-boot-tpl-dtb, u-boot-tpl-bss-pad and
     u-boot-tpl-dtb
 
-    TPL can access binman symbols at runtime. See:
-
-        'Access to binman entry offsets at run time (symbols)'
+    TPL can access binman symbols at runtime. See :ref:`binman_fdt`.
 
     in the binman README for more information.
 
@@ -32,11 +29,8 @@ class Entry_u_boot_tpl_nodtb(Entry_blob):
     binman uses that to look up symbols to write into the TPL binary.
     """
     def __init__(self, section, etype, node):
-        super().__init__(section, etype, node)
+        super().__init__(section, etype, node, auto_write_symbols=True)
         self.elf_fname = 'tpl/u-boot-tpl'
 
     def GetDefaultFilename(self):
         return 'tpl/u-boot-tpl-nodtb.bin'
-
-    def WriteSymbols(self, section):
-        elf.LookupAndWriteSymbols(self.elf_fname, self, section.GetImage())

@@ -360,7 +360,7 @@
 			status = "disabled";
 		};
 
-		ddr: ddr@5a003000{
+		ddr: ddr@5a003000 {
 			compatible = "st,stm32mp1-ddr";
 			reg = <0x5A003000 0x550 0x5A004000 0x234>;
 			clocks = <&rcc AXIDCG>,
@@ -487,6 +487,9 @@
 			ts_cal2: calib@5e {
 				reg = <0x5e 0x2>;
 			};
+			pkh_otp: pkh_otp@60 {
+				reg = <0x60 0x20>;
+			};
 			mac_addr: mac_addr@e4 {
 				reg = <0xe4 0x8>;
 				st,non-secure-otp;
@@ -497,8 +500,6 @@
 			compatible = "st,stm32-etzpc";
 			reg = <0x5C007000 0x400>;
 			clocks = <&rcc TZPC>;
-			status = "disabled";
-			secure-status = "okay";
 		};
 
 		stgen: stgen@5c008000 {
@@ -532,7 +533,7 @@
 		 * Break node order to solve dependency probe issue between
 		 * pinctrl and exti.
 		 */
-		pinctrl: pin-controller@50002000 {
+		pinctrl: pinctrl@50002000 {
 			#address-cells = <1>;
 			#size-cells = <1>;
 			compatible = "st,stm32mp157-pinctrl";
@@ -663,7 +664,7 @@
 			};
 		};
 
-		pinctrl_z: pin-controller-z@54004000 {
+		pinctrl_z: pinctrl@54004000 {
 			#address-cells = <1>;
 			#size-cells = <1>;
 			compatible = "st,stm32mp157-z-pinctrl";

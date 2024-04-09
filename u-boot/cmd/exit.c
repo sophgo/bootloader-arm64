@@ -10,17 +10,13 @@
 static int do_exit(struct cmd_tbl *cmdtp, int flag, int argc,
 		   char *const argv[])
 {
-#ifdef CONFIG_ARCH_BITMAIN
-	if (argc > 1)
-		return simple_strtol(argv[1], NULL, 10);
+	int r;
 
-	return -2;
-#else
+	r = 0;
 	if (argc > 1)
-		return dectoul(argv[1], NULL);
+		r = simple_strtoul(argv[1], NULL, 10);
 
-	return 0;
-#endif
+	return -r - 2;
 }
 
 U_BOOT_CMD(

@@ -55,7 +55,8 @@
 		"do;" \
 		"setenv overlaystring ${overlaystring}'#'${overlay};" \
 		"done;\0" \
-	"run_fit=bootm ${addr_fit}#conf-${fdtfile}${overlaystring}\0" \
+	"get_fit_config=setexpr name_fit_config gsub / _ conf-${fdtfile}\0" \
+	"run_fit=run get_fit_config; bootm ${addr_fit}#${name_fit_config}${overlaystring}\0" \
 
 /*
  * DDR information.  If the CONFIG_NR_DRAM_BANKS is not defined,
@@ -64,7 +65,7 @@
  * initial stack pointer in our SRAM. Otherwise, we can define
  * CONFIG_NR_DRAM_BANKS before including this file.
  */
-#define CONFIG_SYS_SDRAM_BASE		0x80000000
+#define CFG_SYS_SDRAM_BASE		0x80000000
 
 /* If DM_I2C, enable non-DM I2C support */
 
@@ -123,7 +124,7 @@
 /* General parts of the framework, required. */
 
 #ifdef CONFIG_MTD_RAW_NAND
-#define CONFIG_SYS_NAND_U_BOOT_START	CONFIG_SYS_TEXT_BASE
+#define CFG_SYS_NAND_U_BOOT_START	CONFIG_TEXT_BASE
 #endif
 #endif /* !CONFIG_NOR_BOOT */
 

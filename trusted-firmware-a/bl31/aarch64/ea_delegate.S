@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2018-2022, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2022, NVIDIA Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -84,10 +85,6 @@ func enter_lower_el_sync_ea
 	b	2f
 
 1:
-	/* Test for EA bit in the instruction syndrome */
-	mrs	x30, esr_el3
-	tbz	x30, #ESR_ISS_EABORT_EA_BIT, 3f
-
 	/*
 	 * Save general purpose and ARMv8.3-PAuth registers (if enabled).
 	 * If Secure Cycle Counter is not disabled in MDCR_EL3 when
@@ -114,7 +111,6 @@ func enter_lower_el_sync_ea
 	ldp	x2, x3, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X2]
 	ldp	x4, x5, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X4]
 
-3:
 	/* Synchronous exceptions other than the above are assumed to be EA */
 	ldr	x30, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_LR]
 	no_ret	report_unhandled_exception
@@ -199,23 +195,30 @@ endfunc delegate_sync_ea
  */
 func delegate_async_ea
 #if RAS_EXTENSION
+	/* Check Exception Class to ensure SError, as this function should
+	 * only be invoked for SError. If that is not the case, which implies
+	 * either an HW error or programming error, panic.
+	 */
+	ubfx	x2, x1, #ESR_EC_SHIFT, #ESR_EC_LENGTH
+	cmp	x2, EC_SERROR
+	b.ne	do_panic
 	/*
 	 * Check for Implementation Defined Syndrome. If so, skip checking
 	 * Uncontainable error type from the syndrome as the format is unknown.
 	 */
 	tbnz	x1, #SERROR_IDS_BIT, 1f
 
+	/* AET only valid when DFSC is 0x11 */
+	ubfx	x2, x1, #EABORT_DFSC_SHIFT, #EABORT_DFSC_WIDTH
+	cmp	x2, #DFSC_SERROR
+	b.ne	1f
+
 	/*
 	 * Check for Uncontainable error type. If so, route to the platform
 	 * fatal error handler rather than the generic EA one.
 	 */
-	ubfx	x2, x1, #EABORT_AET_SHIFT, #EABORT_AET_WIDTH
-	cmp	x2, #ERROR_STATUS_UET_UC
-	b.ne	1f
-
-	/* Check DFSC for SError type */
-	ubfx	x3, x1, #EABORT_DFSC_SHIFT, #EABORT_DFSC_WIDTH
-	cmp	x3, #DFSC_SERROR
+	ubfx	x3, x1, #EABORT_AET_SHIFT, #EABORT_AET_WIDTH
+	cmp	x3, #ERROR_STATUS_UET_UC
 	b.ne	1f
 
 	no_ret	plat_handle_uncontainable_ea

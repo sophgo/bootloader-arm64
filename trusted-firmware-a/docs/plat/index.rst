@@ -4,12 +4,10 @@ Platform Ports
 .. toctree::
    :maxdepth: 1
    :caption: Contents
-   :numbered:
    :hidden:
 
    allwinner
    arm/index
-   deprecated
    meson-axg
    meson-gxbb
    meson-gxl
@@ -21,6 +19,7 @@ Platform Ports
    marvell/index
    mt8183
    mt8186
+   mt8188
    mt8192
    mt8195
    nvidia-tegra
@@ -42,6 +41,7 @@ Platform Ports
    synquacer
    stm32mp1
    ti-k3
+   xilinx-versal-net
    xilinx-versal
    xilinx-zynqmp
    brcm-stingray
@@ -57,10 +57,26 @@ documentation associated with them.
    - Arm Neoverse N1 System Development Platform (N1SDP)
    - Arm Neoverse Reference Design N1 Edge (RD-N1-Edge) FVP
    - Arm Neoverse Reference Design E1 Edge (RD-E1-Edge) FVP
-   - Arm SGI-575 and SGM-775
-   - MediaTek MT6795 and MT8173 SoCs
-   - Arm Morello Platform
+   - Arm SGI-575
+   - MediaTek MT8173 SoCs
+
+Deprecated platforms
+--------------------
+
++----------------+----------------+--------------------+--------------------+
+|    Platform    |     Vendor     | Deprecated version |  Deleted version   |
++================+================+====================+====================+
+|    sgm775      |      Arm       |        2.5         |       2.7          |
++----------------+----------------+--------------------+--------------------+
+|    mt6795      |      MTK       |        2.5         |       2.7          |
++----------------+----------------+--------------------+--------------------+
+|    sgi575      |      Arm       |        2.8         |       3.0          |
++----------------+----------------+--------------------+--------------------+
+|    rdn1edge    |      Arm       |        2.8         |       3.0          |
++----------------+----------------+--------------------+--------------------+
+|    tc0         |      Arm       |        2.8         |       3.0          |
++----------------+----------------+--------------------+--------------------+
 
 --------------
 
-*Copyright (c) 2019-2020, Arm Limited. All rights reserved.*
+*Copyright (c) 2019-2022, Arm Limited. All rights reserved.*

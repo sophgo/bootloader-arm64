@@ -40,6 +40,7 @@ config SPL_SIZE_LIMIT
 	hex "Maximum size of SPL image"
 	default 0x11000 if ARCH_MX6 && !MX6_OCRAM_256KB
 	default 0x31000 if ARCH_MX6 && MX6_OCRAM_256KB
+	default 0x30000 if ARCH_MVEBU && ARMADA_32BIT
 	default 0x0
 	help
 	  Specifies the maximum length of the U-Boot SPL image.
@@ -80,6 +81,7 @@ config SPL_MAX_SIZE
 	default 0x10000 if ARCH_MX6 && !MX6_OCRAM_256KB
 	default 0x7fa0 if SUNXI_SRAM_ADDRESS = 0x10000
 	default 0x7fa0 if SUNXI_SRAM_ADDRESS = 0x20000 && !MACH_SUN50I_H616
+	default 0xbfa0 if MACH_SUN50I_H616
 	default 0x7000 if RCAR_GEN3
 	default 0x5fa0 if SUNXI_SRAM_ADDRESS = 0x0
 	default 0x10000 if ASPEED_AST2600
@@ -96,6 +98,7 @@ config SPL_PAD_TO
 	default 0x11000 if ARCH_MX7 || (ARCH_MX6 && !MX6_OCRAM_256KB)
 	default 0x10000 if ARCH_KEYSTONE
 	default 0x8000 if ARCH_SUNXI && !MACH_SUN50I_H616
+	default 0x0 if ARCH_MTMIPS
 	default TPL_MAX_SIZE if TPL_MAX_SIZE > SPL_MAX_SIZE
 	default SPL_MAX_SIZE
 	help
@@ -352,6 +355,11 @@ config SPL_STACK
 	default 0x946bb8 if ARCH_MX7
 	default 0x93ffb8 if ARCH_MX6 && MX6_OCRAM_256KB
 	default 0x91ffb8 if ARCH_MX6 && !MX6_OCRAM_256KB
+	default 0x118000 if MACH_SUN50I_H6
+	default 0x58000 if MACH_SUN50I_H616
+	default 0x54000 if MACH_SUN50I || MACH_SUN50I_H5
+	default 0x18000 if MACH_SUN9I
+	default 0x8000 if ARCH_SUNXI
 	help
 	  Address of the start of the stack SPL will use before SDRAM is
 	  initialized.
@@ -377,6 +385,7 @@ config SPL_STACK_R_ADDR
 config SPL_STACK_R_MALLOC_SIMPLE_LEN
 	depends on SPL_STACK_R && SPL_SYS_MALLOC_SIMPLE
 	hex "Size of malloc_simple heap after switching to DRAM SPL stack"
+	default 0x400000 if ARCH_K3 && ARM64
 	default 0x100000
 	help
 	  Specify the amount of the stack to use as memory pool for
@@ -683,7 +692,7 @@ config SPL_FS_FAT
 
 config SPL_FS_LOAD_PAYLOAD_NAME
 	string "File to load for U-Boot from the filesystem"
-	depends on SPL_FS_EXT4 || SPL_FS_FAT || SPL_FS_SQUASHFS
+	depends on SPL_FS_EXT4 || SPL_FS_FAT || SPL_FS_SQUASHFS || SPL_SEMIHOSTING
 	default "tispl.bin" if SYS_K3_SPL_ATF
 	default "u-boot.itb" if SPL_LOAD_FIT
 	default "u-boot.img"
@@ -789,10 +798,16 @@ config SPL_DM_MAILBOX
 	  this option to build the drivers in drivers/mailbox as part of
 	  SPL build.
 
+config SPL_MEMORY
+	bool "Support Memory controller drivers"
+	help
+	  Enable support for Memory Controller drivers within SPL.
+	  These devices provide Memory bus interface to various devices like
+	  SRAM, Ethernet adapters, FPGAs, etc.
+
 config SPL_MMC
 	bool "Support MMC"
 	depends on MMC
-	select HAVE_BLOCK_DEVICE
 	help
 	  Enable support for MMC (Multimedia Card) within SPL. This enables
 	  the MMC protocol implementation and allows any enabled drivers to
@@ -801,8 +816,17 @@ config SPL_MMC
 	  this option to build the drivers in drivers/mmc as part of an SPL
 	  build.
 
+config SYS_MMCSD_FS_BOOT
+	bool "MMC FS Boot mode"
+	depends on SPL_MMC
+	default y if !ARCH_MVEBU
+	help
+	  Enable MMC FS Boot mode. Partition is selected by option
+	  SYS_MMCSD_FS_BOOT_PARTITION.
+
 config SYS_MMCSD_FS_BOOT_PARTITION
 	int "MMC Boot Partition"
+	depends on SYS_MMCSD_FS_BOOT
 	default 1
 	help
 	  Partition on the MMC to load U-Boot from when the MMC is being
@@ -1218,6 +1242,11 @@ config SPL_SATA
 	  expense and power consumption. This enables loading from SATA
 	  using a configured device.
 
+config SYS_SATA_FAT_BOOT_PARTITION
+	int "Partition on the SATA disk to load U-Boot from"
+	depends on SPL_SATA && SPL_FS_FAT
+	default 1
+
 config SPL_SATA_RAW_U_BOOT_USE_SECTOR
 	bool "SATA raw mode: by sector"
 	depends on SPL_SATA
@@ -1318,7 +1347,6 @@ config SPL_THERMAL
 
 config SPL_USB_HOST
 	bool "Support USB host drivers"
-	select HAVE_BLOCK_DEVICE
 	help
 	  Enable access to USB (Universal Serial Bus) host devices so that
 	  SPL can load U-Boot from a connected USB peripheral, such as a USB
@@ -1329,7 +1357,7 @@ config SPL_USB_HOST
 
 config SPL_USB_STORAGE
 	bool "Support loading from USB"
-	depends on SPL_USB_HOST && !(BLK && !DM_USB)
+	depends on SPL_USB_HOST
 	help
 	  Enable support for USB devices in SPL. This allows use of USB
 	  devices such as hard drives and flash drivers for loading U-Boot.
@@ -1427,7 +1455,8 @@ config SPL_YMODEM_SUPPORT
 
 config SPL_ATF
 	bool "Support ARM Trusted Firmware"
-	depends on ARM64 && SPL_FIT
+	depends on ARM64
+	depends on SPL_LOAD_FIT && !SPL_FIT_IMAGE_TINY
 	help
 	  ATF(ARM Trusted Firmware) is a component for ARM AArch64 which
 	  is loaded by SPL (which is considered as BL2 in ATF terminology).
@@ -1467,6 +1496,7 @@ config SPL_AM33XX_ENABLE_RTC32K_OSC
 config SPL_OPTEE_IMAGE
 	bool "Support OP-TEE Trusted OS image in SPL"
 	depends on ARM
+	depends on SPL_LOAD_FIT || SPL_LOAD_FIT_FULL
 	help
 	  OP-TEE is an open source Trusted OS which is loaded by SPL.
 	  More detail at: https://github.com/OP-TEE/optee_os
@@ -1474,6 +1504,7 @@ config SPL_OPTEE_IMAGE
 config SPL_OPENSBI
 	bool "Support RISC-V OpenSBI"
 	depends on RISCV && SPL_RISCV_MMODE && RISCV_SMODE
+	depends on SPL_LOAD_FIT && !SPL_FIT_IMAGE_TINY
 	help
 	  OpenSBI is an open-source implementation of the RISC-V Supervisor Binary
 	  Interface (SBI) specification. U-Boot supports the OpenSBI FW_DYNAMIC

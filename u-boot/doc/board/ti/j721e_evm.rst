@@ -1,8 +1,8 @@
 .. SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
 .. sectionauthor:: Lokesh Vutla <lokeshvutla@ti.com>
 
-Texas Instruments K3 Platforms
-==============================
+J721E Platforms
+===============
 
 Introduction:
 -------------
@@ -142,7 +142,11 @@ Sources:
 	Tree: https://github.com/OP-TEE/optee_os.git
 	Branch: master
 
-4. U-Boot:
+4. DM Firmware:
+	Tree: git://git.ti.com/processor-firmware/ti-linux-firmware.git
+	Branch: ti-linux-firmware
+
+5. U-Boot:
 	Tree: https://source.denx.de/u-boot/u-boot
 	Branch: master
 
@@ -150,37 +154,37 @@ Build procedure:
 ----------------
 1. SYSFW:
 
-.. code-block:: text
+.. code-block:: bash
 
- $ make CROSS_COMPILE=arm-linux-gnueabihf-
+    make CROSS_COMPILE=arm-linux-gnueabihf- SOC=j721e
 
 2. ATF:
 
-.. code-block:: text
+.. code-block:: bash
 
- $ make CROSS_COMPILE=aarch64-linux-gnu- ARCH=aarch64 PLAT=k3 TARGET_BOARD=generic SPD=opteed
+    make CROSS_COMPILE=aarch64-linux-gnu- ARCH=aarch64 PLAT=k3 TARGET_BOARD=generic SPD=opteed
 
 3. OPTEE:
 
-.. code-block:: text
+.. code-block:: bash
 
- $ make PLATFORM=k3-j721e CFG_ARM64_core=y
+    make PLATFORM=k3-j721e CFG_ARM64_core=y
 
 4. U-Boot:
 
 * 4.1 R5:
 
-.. code-block:: text
+.. code-block:: bash
 
- $ make CROSS_COMPILE=arm-linux-gnueabihf- j721e_evm_r5_defconfig O=/tmp/r5
- $ make CROSS_COMPILE=arm-linux-gnueabihf- O=/tmp/r5
+    make CROSS_COMPILE=arm-linux-gnueabihf- j721e_evm_r5_defconfig O=build/r5
+    make CROSS_COMPILE=arm-linux-gnueabihf- O=build/r5
 
 * 4.2 A72:
 
-.. code-block:: text
+.. code-block:: bash
 
- $ make CROSS_COMPILE=aarch64-linux-gnu- j721e_evm_a72_defconfig O=/tmp/a72
- $ make CROSS_COMPILE=aarch64-linux-gnu- ATF=<path to ATF dir>/build/k3/generic/release/bl31.bin TEE=<path to OPTEE OS dir>/out/arm-plat-k3/core/tee-pager_v2.bin DM=<path to DM firmware image> O=/tmp/a72
+    make CROSS_COMPILE=aarch64-linux-gnu- j721e_evm_a72_defconfig O=build/a72
+    make CROSS_COMPILE=aarch64-linux-gnu- ATF=<ATF dir>/build/k3/generic/release/bl31.bin TEE=<OPTEE OS dir>/out/arm-plat-k3/core/tee-pager_v2.bin DM=<DM firmware>/ti-dm/j721e/ipc_echo_testb_mcu1_0_release_strip.xer5f O=build/a72
 
 Target Images
 --------------
@@ -263,6 +267,49 @@ Image formats:
                 | |    Secure config  | |
                 | +-------------------+ |
                 +-----------------------+
+
+R5 Memory Map:
+--------------
+
+.. list-table::
+   :widths: 16 16 16
+   :header-rows: 1
+
+   * - Region
+     - Start Address
+     - End Address
+
+   * - SPL
+     - 0x41c00000
+     - 0x41c40000
+
+   * - EMPTY
+     - 0x41c40000
+     - 0x41c81920
+
+   * - STACK
+     - 0x41c85920
+     - 0x41c81920
+
+   * - Global data
+     - 0x41c859f0
+     - 0x41c85920
+
+   * - Heap
+     - 0x41c859f0
+     - 0x41cf59f0
+
+   * - BSS
+     - 0x41cf59f0
+     - 0x41cff9f0
+
+   * - MCU Scratchpad
+     - 0x41cff9fc
+     - 0x41cffbfc
+
+   * - ROM DATA
+     - 0x41cffbfc
+     - 0x41cfffff
 
 OSPI:
 -----

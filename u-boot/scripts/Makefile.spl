@@ -114,6 +114,7 @@ libs-$(CONFIG_PARTITIONS) += disk/
 endif
 
 libs-y += drivers/
+libs-$(CONFIG_SPL_MEMORY) += drivers/memory/
 libs-$(CONFIG_SPL_USB_GADGET) += drivers/usb/dwc3/
 libs-$(CONFIG_SPL_USB_GADGET) += drivers/usb/cdns3/
 libs-y += dts/
@@ -489,7 +490,7 @@ endif
 
 # Rule to link u-boot-spl
 # May be overridden by arch/$(ARCH)/config.mk
-ifdef CONFIG_LTO
+ifeq ($(LTO_ENABLE),y)
 quiet_cmd_u-boot-spl ?= LTO     $@
       cmd_u-boot-spl ?= \
 	(									\
