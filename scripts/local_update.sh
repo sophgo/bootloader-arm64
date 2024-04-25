@@ -35,7 +35,7 @@ else
     # private ota :boot-recovery /data/ota/startup.sh\nprivate_update"
     echo -e "boot-recovery\n/DATA/ota" > /dev/mmcblk0p3
     echo "update success"
-
-    reboot
+    sync
+    reboot -f
 fi
 
