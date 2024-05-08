@@ -9,7 +9,7 @@ vol_val_ddr=$(($adc_val_ddr*1500/4096))
 # echo $vol_val_ddr
 gpio117_val=$(busybox devmem 0x27013050)
 # echo $gpio117_val
-if [ "$chip_value" = "0x00000011" || "$chip_value" = "0x000000f9" || "$chip_value" = "0x000000c1" ];then
+if [ "$chip_value" = "0x00000011" ];then
 	# echo "cv186ah chip"
     if [ "$((gpio117_val & 0x00200000))" -eq 0 ]; then
         if [ $vol_val_ddr -ge 0 ] && [ $vol_val_ddr -le 105 ];then
