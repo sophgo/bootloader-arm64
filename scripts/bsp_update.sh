@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo update BSP iamges, please do not power off board
+echo update BSP images, please do not power off board
 read -n 1 -s -r -p "Press any key to continue"
 echo
 echo

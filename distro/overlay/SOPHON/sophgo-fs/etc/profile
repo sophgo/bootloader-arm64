@@ -33,7 +33,6 @@ if [ -d /etc/profile.d ]; then
   unset i
 fi
 
-sudo /usr/sbin/ddrtest &
 
 export PATH=$PATH:/opt/sophon/libsophon-current/bin:/sbin
 export PYTHONPATH=/opt/sophon/libsophon-current/lib:$PYTHONPATH

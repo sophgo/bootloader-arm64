@@ -113,6 +113,7 @@ function install_prepackages()
 }
 
 
+/usr/sbin/usb_update.sh
 # enable /etc/ld.so.conf.d/system.conf
 ldconfig
 

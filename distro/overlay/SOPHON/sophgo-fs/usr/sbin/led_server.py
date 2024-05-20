@@ -22,16 +22,6 @@ console_handler.setFormatter(formatter_)
 logger.addHandler(file_handler)
 logger.addHandler(console_handler)
 
-# The key-value in this dict correspond to the pin and function for pinmux config
-pin_func_led = {'PWR_GPIO4': 'PWR_GPIO4',
-                'PWR_GPIO5': 'PWR_GPIO5',
-                'PWR_GPIO6': 'PWR_GPIO6'}
-
-# Gpio number of LEDs
-gpioNum_A2_STATUS_LED = 292
-gpioNum_A2_ALARM_LED = 293
-gpioNum_A2_SSD_ALARM_LED = 294
-
 # Flags representing LEDs status
 A2_STATUS_LED = 0
 A2_ALARM_LED = 0
@@ -44,69 +34,15 @@ a2_ALARM_LED_timer = 0
 a2_SSD_STATUS_LED_timer = 0
 a2_SSD_ALARM_LED_timer = 0
 
-def pinmux_config():
-    file = '/sbin/cvi_pinmux'
-    arg = f'[ -e {file} ]'
-    err, res = subprocess.getstatusoutput(arg)
-    if err != 0:
-        logger.error(f'{file} not exit! Config pinmux failed!')
-        return
-    arg = f'[ -x {file} ]'
-    err, res = subprocess.getstatusoutput(arg)
-    if err != 0:
-        err, res = subprocess.getstatusoutput(f'chmod +x {file}')
-        logger.info(f'chmod +x {file}')
-
-    for pin, func in pin_func_led.items():
-        a = f'cvi_pinmux -w {pin}/{func}'
-        err, res = subprocess.getstatusoutput(a)
-        if err != 0:
-            logger.error(f"Run '{a}' failed!")
-            return
-        else:
-            logger.info(a)
-
-    args = [f'echo {N} > /sys/class/gpio/export' for N in [
-        gpioNum_A2_STATUS_LED,
-        gpioNum_A2_ALARM_LED,
-        gpioNum_A2_SSD_ALARM_LED
-    ]]
-    for a in args:
-        err, res = subprocess.getstatusoutput(a)
-        if err != 0:
-            logger.error(f"Run '{a}' err! {res}")
-
-    args = [f'echo out > /sys/class/gpio/gpio{N}/direction' for N in [
-        gpioNum_A2_STATUS_LED,
-        gpioNum_A2_ALARM_LED,
-        gpioNum_A2_SSD_ALARM_LED
-    ]]
-    for a in args:
-        err, res = subprocess.getstatusoutput(a)
-        if err != 0:
-            logger.error(f"Run '{a}' err! {res}")
-
-    args = [f'echo {N} > /sys/class/gpio/unexport' for N in [
-        gpioNum_A2_STATUS_LED,
-        gpioNum_A2_ALARM_LED,
-        gpioNum_A2_SSD_ALARM_LED
-    ]]
-    for a in args:
-        err, res = subprocess.getstatusoutput(a)
-        if err != 0:
-            logger.error(f"Run '{a}' err! {res}")
-
+# The four LEDs controlled in this file correspond to the nodes in the DTS
+# with labels of status, error, sata\:green\:disk, and ssd_alarm.
 def set_A2_STATUS_LED(status):
     global A2_STATUS_LED
     if status in ['on', 'ON']:
-        cmds = [f'echo {gpioNum_A2_STATUS_LED} > /sys/class/gpio/export',
-                f'echo 1 > /sys/class/gpio/gpio{gpioNum_A2_STATUS_LED}/value',
-                f'echo {gpioNum_A2_STATUS_LED} > /sys/class/gpio/unexport']
+        cmds = ['echo 1 > /sys/class/leds/status/brightness']
         A2_STATUS_LED = 1
     elif status in ['off', 'OFF']:
-        cmds = [f'echo {gpioNum_A2_STATUS_LED} > /sys/class/gpio/export',
-                f'echo 0 > /sys/class/gpio/gpio{gpioNum_A2_STATUS_LED}/value',
-                f'echo {gpioNum_A2_STATUS_LED} > /sys/class/gpio/unexport']
+        cmds = ['echo 0 > /sys/class/leds/status/brightness']
         A2_STATUS_LED = 0
     else:
         return
@@ -119,14 +55,10 @@ def set_A2_STATUS_LED(status):
 def set_A2_ALARM_LED(status):
     global A2_ALARM_LED
     if status in ['on', 'ON']:
-        cmds = [f'echo {gpioNum_A2_ALARM_LED} > /sys/class/gpio/export',
-                f'echo 1 > /sys/class/gpio/gpio{gpioNum_A2_ALARM_LED}/value',
-                f'echo {gpioNum_A2_ALARM_LED} > /sys/class/gpio/unexport']
+        cmds = ['echo 1 > /sys/class/leds/error/brightness']
         A2_ALARM_LED = 1
     elif status in ['off', 'OFF']:
-        cmds = [f'echo {gpioNum_A2_ALARM_LED} > /sys/class/gpio/export',
-                f'echo 0 > /sys/class/gpio/gpio{gpioNum_A2_ALARM_LED}/value',
-                f'echo {gpioNum_A2_ALARM_LED} > /sys/class/gpio/unexport']
+        cmds = ['echo 0 > /sys/class/leds/error/brightness']
         A2_ALARM_LED = 0
     else:
         return
@@ -139,30 +71,26 @@ def set_A2_ALARM_LED(status):
 def set_A2_SSD_STATUS_LED(status):
     global A2_SSD_STATUS_LED
     if status in ['on', 'ON']:
-        # Notice than after executing this command, the LED light will not flash during SSD reading and writing
-        # cmd = 'sudo sh -c "echo 0 > /sys/class/leds/sata\:green\:disk/brightness"'
+        cmds = ['echo 0 > /sys/class/leds/sata\:green\:disk/brightness',
+               'echo disk-activity > /sys/class/leds/sata\:green\:disk/trigger']
         A2_SSD_STATUS_LED = 1
-        return
     elif status in ['off', 'OFF']:
-        cmd = 'echo 255 > /sys/class/leds/sata\:green\:disk/brightness'
+        cmds = ['echo 1 > /sys/class/leds/sata\:green\:disk/brightness']
         A2_SSD_STATUS_LED = 0
     else:
         return
-    err, res = subprocess.getstatusoutput(cmd)
-    if err != 0:
-        logger.error(f"Run '{cmd}' err! {res}")
+    for cmd in cmds:
+        err, res = subprocess.getstatusoutput(cmd)
+        if err != 0:
+            logger.error(f"Run '{cmd}' err! {res}")
 
 def set_A2_SSD_ALARM_LED(status):
     global A2_SSD_ALARM_LED
     if status in ['on', 'ON']:
-        cmds = [f'echo {gpioNum_A2_SSD_ALARM_LED} > /sys/class/gpio/export',
-                f'echo 1 > /sys/class/gpio/gpio{gpioNum_A2_SSD_ALARM_LED}/value',
-                f'echo {gpioNum_A2_SSD_ALARM_LED} > /sys/class/gpio/unexport']
+        cmds = ['echo 1 > /sys/class/leds/ssd_alarm/brightness']
         A2_SSD_ALARM_LED = 1
     elif status in ['off', 'OFF']:
-        cmds = [f'echo {gpioNum_A2_SSD_ALARM_LED} > /sys/class/gpio/export',
-                f'echo 0 > /sys/class/gpio/gpio{gpioNum_A2_SSD_ALARM_LED}/value',
-                f'echo {gpioNum_A2_SSD_ALARM_LED} > /sys/class/gpio/unexport']
+        cmds = ['echo 0 > /sys/class/leds/ssd_alarm/brightness']
         A2_SSD_ALARM_LED = 0
     else:
         return
@@ -253,7 +181,6 @@ def server():
     service.bind(("localhost", 3456))
     service.listen(6)
     logger.info('Led server start at 3456, system is ready, Set status led to green.')
-    pinmux_config()
     set_A2_STATUS_LED('on')
     set_A2_ALARM_LED('off')
 

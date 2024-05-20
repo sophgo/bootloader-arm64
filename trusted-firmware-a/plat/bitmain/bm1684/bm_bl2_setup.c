@@ -233,6 +233,7 @@ static int bm_get_board_info(void)
 	}
 #endif
 
+	NOTICE("DDR A-firmware 2023\n");
 	NOTICE("%s board type: %d/0x%x/0x%x\n",
 	       bm_get_chip_id() == CHIP_BM1684 ? "BM1684" : "BM1684X",
 	       type, mcu_type, hw_ver);
