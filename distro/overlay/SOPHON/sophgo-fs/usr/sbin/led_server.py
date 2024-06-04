@@ -11,7 +11,7 @@ from logging.handlers import RotatingFileHandler
 # The maximum size of log files is set to 1MB
 logger = logging.getLogger('led_server')
 logger.setLevel(logging.INFO)
-file_handler = RotatingFileHandler('led_server_run.log', maxBytes=int(1e6), backupCount=1)
+file_handler = RotatingFileHandler('/var/log/led_server_run.log', maxBytes=int(1e6), backupCount=1)
 file_handler.setLevel(logging.INFO)
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
