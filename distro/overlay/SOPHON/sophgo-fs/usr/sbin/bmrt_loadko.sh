@@ -190,41 +190,41 @@ function load_ethernet_ko()
 
 load_soph_base_ko
 load_soph_sys_ko
-load_soph_vpss_ko
-load_soph_dwa_ko
-load_soph_clock_cooling_ko
-load_soph_vc_drv_ko
-load_soph_rtc_ko
-load_soph_ive_ko
+#load_soph_vpss_ko
+#load_soph_dwa_ko
+#load_soph_clock_cooling_ko
+#load_soph_vc_drv_ko
+#load_soph_rtc_ko
+#load_soph_ive_ko
 echo load bmrt ko ...
 load_ko
-load_soph_2d_engine_ko
-load_soph_pwm_ko
-load_soph_saradc_ko
-load_soph_dpu_ko
-load_soph_stitch_ko
-load_soph_drm_ko
+#load_soph_2d_engine_ko
+#load_soph_pwm_ko
+#load_soph_saradc_ko
+#load_soph_dpu_ko
+#load_soph_stitch_ko
+#load_soph_drm_ko
 # load_g_serial_ko
 # load_usb_f_obex_ko
 # load_usb_f_serial_ko
-load_soph_ldc_ko
+#load_soph_ldc_ko
 load_ethernet_ko
 
 # modify permission for drivers
 echo "load.sh starting..."
 ./sbin/load.sh -d soph-base
 ./sbin/load.sh -d soph-sys
-./sbin/load.sh -d soph-tde0
-./sbin/load.sh -d soph-tde1
-./sbin/load.sh -d soph-vpss
-./sbin/load.sh -d soph_vc_dec
-./sbin/load.sh -d soph_vc_enc
+#./sbin/load.sh -d soph-tde0
+#./sbin/load.sh -d soph-tde1
+#./sbin/load.sh -d soph-vpss
+#./sbin/load.sh -d soph_vc_dec
+#./sbin/load.sh -d soph_vc_enc
 ./sbin/load.sh -p /dev/dri/ -d card0
-./sbin/load.sh -d soph-dpu
-./sbin/load.sh -d soph-dwa
-./sbin/load.sh -d soph-ive
-./sbin/load.sh -d soph-stitch
-./sbin/load.sh -d soph-ldc
+#./sbin/load.sh -d soph-dpu
+#./sbin/load.sh -d soph-dwa
+#./sbin/load.sh -d soph-ive
+#./sbin/load.sh -d soph-stitch
+#./sbin/load.sh -d soph-ldc
 ./sbin/load.sh -p /dev/snd/ -d controlC0
 ./sbin/load.sh -p /dev/snd/ -d controlC1
 ./sbin/load.sh -p /dev/snd/ -d controlC2
