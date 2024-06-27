@@ -44,12 +44,13 @@ CONFIG_OF_LIBFDT=y
 CONFIG_OF_CONTROL=y
 CONFIG_OF_SEPARATE=y
 CONFIG_DEFAULT_DEVICE_TREE="bitmain-bm1684-evb-v1.2"
-CONFIG_OF_LIST="bitmain-bm1684-cust-v1 bitmain-bm1684-se5-v2 bitmain-bm1684-sm5-v1 bitmain-bm1684-evb-v1.2 bitmain-bm1684-se6-ctrl bitmain-bm1684-se5-v1.1 bitmain-bm1684-sm5m bitmain-bm1684x-fpga bitmain-bm1684x-pld bitmain-bm1684x-evb-v0.0 bitmain-bm1684x-ep bitmain-bm1684x-sm7m-v0.0 bitmain-bm1684x-sm7-ctrl bitmain-bm1684x-sm7m-v0.0-cust-v1 bitmain-bm1684x-se7-v1 bitmain-bm1684x-sm7m-ctrl bitmain-bm1684x-sm7m-v1.0 bitmain-bm1684x-sm7m-v1.2 bitmain-bm1684x-sm7m-v1.0-ctrl"
+CONFIG_OF_LIST="bitmain-bm1684-cust-v1 bitmain-bm1684-se5-v2 bitmain-bm1684-sm5-v1 bitmain-bm1684-evb-v1.2 bitmain-bm1684-se6-ctrl bitmain-bm1684-se5-v1.1 bitmain-bm1684-sm5m bitmain-bm1684x-fpga bitmain-bm1684x-pld bitmain-bm1684x-evb-v0.0 bitmain-bm1684x-ep bitmain-bm1684x-sm7m-v0.0 bitmain-bm1684x-sm7-ctrl bitmain-bm1684x-sm7m-v0.0-cust-v1 bitmain-bm1684x-se7-v1 bitmain-bm1684x-sm7m-ctrl bitmain-bm1684x-sm7m-v1.0 bitmain-bm1684x-sm7m-v1.2 bitmain-bm1684x-sm7m-v1.0-ctrl bitmain-bm1684x-m2-cust02-v0.0 bitmain-bm1684x-sm7-cust-v1"
 CONFIG_SYS_NS16550=y
 CONFIG_BAUDRATE=115200
 CONFIG_PHY_BROADCOM=y
 CONFIG_PHY_MARVELL=y
 CONFIG_PHY_REALTEK=y
+CONFIG_PHY_MOTORCOMM=y
 # CONFIG_PHY_FIXED is not set
 CONFIG_NETDEVICES=y
 CONFIG_NET_RANDOM_ETHADDR=y

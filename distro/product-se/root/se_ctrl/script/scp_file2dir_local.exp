@@ -5,7 +5,7 @@ set PASSWD [lindex $argv 2]
 set FILENAME [lindex $argv 3]
 set DIRNAME [lindex $argv 4]
 
-set timeout 600
+set timeout 10
 #################### Color variable ####################
 set green "\033\[0;32m"
 set red "\033\[0;31m"

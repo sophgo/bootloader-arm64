@@ -1,6 +1,6 @@
 [Unit]
 Description=Sophon Device Detect Tools Service
-After=network.service
+After=network.target
 
 [Service]
 User=root

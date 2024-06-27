@@ -391,7 +391,7 @@ static uint32_t ddr_phy_enter_mission(uint32_t cfg_base, uint32_t ddr_index)
 
 static void ddr_pin_swap(uint32_t cfg_base, uint32_t ddr_index)
 {
-	uint32_t i;
+	uint32_t i, board;
 	struct dwc_reg_data *pin_swap[4];
 
 	if (bm_get_chip_id() == CHIP_BM1684) {
@@ -405,6 +405,14 @@ static void ddr_pin_swap(uint32_t cfg_base, uint32_t ddr_index)
 		pin_swap[2] = pin_swap_1684x_2;
 		pin_swap[3] = pin_swap_1684x_3;
 	}
+
+	board = mmio_read_32(BOARD_TYPE_REG);
+	if (board == BM1684X_M2_CUST02_V0_0) {
+		pin_swap[0] = pin_swap_1684x_m2_0;
+		pin_swap[1] = pin_swap_1684x_m2_1;
+		pin_swap[2] = pin_swap_1684x_m2_2;
+		pin_swap[3] = pin_swap_1684x_m2_3;
+	};
 
 	//0 pin swap
 	lpddr_print("phy pin swap\n");
@@ -874,6 +882,9 @@ void bm_ddr_init_asic(void)
 	case BM1684X_SE7_V2_0:
 	case BM1684X_SM7_AIRBOX:
 	case BM1684X_SM7M_V1_0_RB_CTRL:
+	case BM1684_SM5M_V3_3_TB:
+	case BM1684X_M2_CUST02_V0_0:
+	case BM1684X_SM7_CUST_V1:
 		rank = GROUP_RANK(RANK2, RANK2);
 		freq = FREQ_4000M;
 		break;

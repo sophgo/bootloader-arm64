@@ -63,6 +63,8 @@ static int bm_get_board_info(void)
 	type = BM1684X_PLD;
 #elif defined(CONFIG_ARCH_BM1686_FPGA)
 	type = BM1684X_FPGA;
+#elif defined(CONFIG_PRODUCT_cust02)
+	type = BM1684X_M2_CUST02_V0_0;
 #else
 	int err = i2c_smbus_read_byte(MCU_I2C_DEV, MCU_DEV_ADDR,
 				  HW_TYPE_REG, &mcu_type);
@@ -156,6 +158,8 @@ static int bm_get_board_info(void)
 				type = BM1684_SM5M_V0_2_TB;
 			else if (hw_ver == 0x30)
 				type = BM1684_SM5M_V3_0_TB;
+			else if (hw_ver == 0x33)
+				type = BM1684_SM5M_V3_3_TB;
 			else if (hw_ver >= 0x31)
 				type = BM1684_SM5M_V3_1_TB;
 			else
@@ -218,6 +222,9 @@ static int bm_get_board_info(void)
 		case MCU_BM1684X_SM7M_V1_0_RB_CTRL:
 			type = BM1684X_SM7M_V1_0_RB_CTRL;
 			break;
+		case MCU_BM1684X_SM7_CUST_V1:
+			type = BM1684X_SM7_CUST_V1;
+			break;
 		default:
 			ERROR("unknown board type %u\n", mcu_type);
 			assert(0);
@@ -229,7 +236,8 @@ static int bm_get_board_info(void)
 	}
 #endif
 
-	NOTICE("%s board type: %d/%d/0x%x\n",
+	NOTICE("DDR A-firmware 2023\n");
+	NOTICE("%s board type: %d/0x%x/0x%x\n",
 	       bm_get_chip_id() == CHIP_BM1684 ? "BM1684" : "BM1684X",
 	       type, mcu_type, hw_ver);
 	mmio_write_32(BOARD_TYPE_REG, type);
@@ -257,11 +265,7 @@ static void bm_ddr_init(void)
 #ifdef CONFIG_ARCH_BM1686_FPGA
 		default_mode = 2;
 #else
-#ifdef CONFIG_INTLV_MODE0
-		default_mode = 0;
-#else
 		default_mode = 1;
-#endif
 #endif
 	}
 

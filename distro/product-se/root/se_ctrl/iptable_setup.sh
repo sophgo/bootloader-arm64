@@ -5,10 +5,12 @@ wanname=$(ifconfig | grep enp | awk -F : 'NR==1{print $1}')
 
 wanip=$(ifconfig $wanname | grep "inet "|awk '{print $2}' )
 
-if [ "$wanip" = "" ]; then
-	sleep 10
-	wanip=$(ifconfig $wanname | grep "inet "|awk '{print $2}' )
-fi
+while  [ "$wanip" = "" ]
+do
+    sleep 2
+    wanip=$(ifconfig $wanname | grep "inet "|awk '{print $2}' )
+    echo $wanip
+done
 lan1ip=$(ifconfig eth0 | grep "inet "|awk '{print $2}'|awk -F . '{printf("%d.%d.%d.\n", $1,$2,$3)}' )
 lan2ip=$(ifconfig eth1 | grep "inet "|awk '{print $2}'|awk -F . '{printf("%d.%d.%d.\n", $1,$2,$3)}' )
 

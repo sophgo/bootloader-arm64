@@ -1,6 +1,6 @@
 [Unit]
 Description=Sophon Fan and Temperature Monitor Service for SE6
-After=network.service
+After=network.target
 Conflicts=bmSysMonitor.service
 
 [Service]

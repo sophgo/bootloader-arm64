@@ -292,6 +292,8 @@ static void __dead2 bm_system_off(void)
 		unsigned char ret = 0;
 		/* need unlock eeprom, then write poweroff flag */
 		NOTICE("board is se7 v1, send poweroff sign...\n");
+		ret |= i2c_smbus_write_byte(MCU_I2C_DEV, MCU_WDT_ADDR, WDT_ENABLE_REG, 0X00);
+		NOTICE("reset mcu watchdog ret is %d\n", ret);
 		for (const char *p = EEPROM_UNLOCK_CMD; *p; ++p) {
 			ret |= i2c_smbus_write_byte(MCU_I2C_DEV, MCU_DEV_ADDR, EEPROM_LOCK_REG, *p);
 		}

@@ -1,6 +1,6 @@
 [Unit]
 Description=Sophon ttyd Service
-After=network.target.service
+After=network.target
 
 [Service]
 User=root

@@ -1,6 +1,6 @@
 [Unit]
 Description=Sophon Lte Modem Manager Service
-After=network.target.service
+After=network.target
 
 [Service]
 User=root

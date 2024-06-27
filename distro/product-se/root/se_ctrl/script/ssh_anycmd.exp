@@ -1,6 +1,6 @@
 #!/usr/bin/expect -f
 
-set timeout 180
+set timeout 10
 set TARGET [lindex $argv 0]
 set USER [lindex $argv 1]
 set PASSWD [lindex $argv 2]

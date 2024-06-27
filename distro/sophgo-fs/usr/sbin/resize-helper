@@ -31,6 +31,7 @@ SGDISK=$(which sgdisk) || { echo "E: You must have sgdisk" && exit 1; }
 PARTED=$(which parted) || { echo "E: You must have parted" && exit 1; }
 PARTPROBE=$(which partprobe) || { echo "E: You must have partprobe" && exit 1; }
 RESIZE2FS=$(which resize2fs) || { echo "E: You must have resize2fs" && exit 1; }
+MOUNT=$(which mount) || { echo "E: You must have mount" && exit 1; }
 
 # find root device
 ROOT_DEVICE=$(findmnt --noheadings --output=SOURCE / | cut -d'[' -f1)
@@ -53,7 +54,8 @@ PART_TABLE_TYPE=$(udevadm info --query=property --name=${ROOT_DEVICE} | grep '^I
 DEVICE=$(udevadm info --query=path --name=${ROOT_DEVICE} | awk -F'/' '{print $(NF-1)}')
 DEVICE="/dev/${DEVICE}"
 # find the last partition
-LAST_DEVICE=$(ls ${DEVICE}p* | tail -1)
+# LAST_DEVICE=$(ls ${DEVICE}p* | tail -1)
+LAST_DEVICE=/dev/$(lsblk -o NAME ${DEVICE} | tail -n 1 | sed 's|└─||g')
 PART_ENTRY_NUMBER=$(udevadm info --query=property --name=${LAST_DEVICE} | grep '^ID_PART_ENTRY_NUMBER=' | cut -d'=' -f2)
 
 if [ "$PART_TABLE_TYPE" = "gpt" ]; then
@@ -61,6 +63,9 @@ if [ "$PART_TABLE_TYPE" = "gpt" ]; then
 	${PARTPROBE}
 fi
 echo -e "yes\n100%" | ${PARTED} ${DEVICE} ---pretend-input-tty unit % resizepart ${PART_ENTRY_NUMBER}
+if [[ "$?" != "0" ]]; then
+	echo -e "100%" | ${PARTED} ${DEVICE} ---pretend-input-tty unit % resizepart ${PART_ENTRY_NUMBER}
+fi
 ${PARTPROBE}
 ${RESIZE2FS} "${LAST_DEVICE}"
 
@@ -71,5 +76,14 @@ do
 	if [ "$LAST_DEVICE" = "$PART" ]; then
 		continue
 	fi
-        ${RESIZE2FS} "${PART}"
+	PART_RO_FLAG=$(${MOUNT} | grep "${PART}" | grep "ro," | wc -l)
+	if [[ "$PART_RO_FLAG" != "0" ]]; then
+		echo "remount ${PART} as rw"
+		${MOUNT} -o rw,remount "${PART}"
+	fi
+	${RESIZE2FS} "${PART}"
+	if [[ "$PART_RO_FLAG" != "0" ]]; then
+		echo "remount ${PART} as ro"
+		${MOUNT} -o ro,remount "${PART}"
+	fi
 done

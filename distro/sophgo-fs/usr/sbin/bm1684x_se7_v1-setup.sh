@@ -27,7 +27,9 @@ toggle USB20_5V_EN
 toggle WIFI_PWR_EN
 
 # reset sata power
+sleep 3
 toggle SATA_PWR_EN
+sleep 3
 
 # reset 4g pwr
 toggle 4G_PWR_SW
