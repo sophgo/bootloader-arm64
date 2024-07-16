@@ -1,0 +1,2 @@
+event=button[ /]restart
+action=/etc/acpi/restartbtn-acpi-support.sh

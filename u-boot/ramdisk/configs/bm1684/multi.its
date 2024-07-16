@@ -1,0 +1,1233 @@
+/*
+ * U-Boot uImage source file with multiple kernels, ramdisks and FDT blobs
+ */
+
+/dts-v1/;
+
+/ {
+	description = "Various kernels, ramdisks and FDT blobs";
+	#address-cells = <2>;
+
+	images {
+		kernel {
+			description = "sophon kernel";
+			data = /incbin/("./Image");
+			type = "kernel";
+			arch = "arm64";
+			os = "linux";
+			compression = "none";
+			load = <0x3 0x00280000>;
+			entry = <0x3 0x00280000>;
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		ramdisk {
+			description = "sophon ramdisk";
+			data = /incbin/("./rootfs.cpio");
+			type = "ramdisk";
+			arch = "arm64";
+			os = "linux";
+			compression = "none";
+			load = <0>;
+			entry = <0>;
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb4 {
+			description = "for BM1684 CUST V1.1";
+			data = /incbin/("./bm1684_cust_v1.1.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb5 {
+			description = "for SE5 V1.1";
+			data = /incbin/("./bm1684_se5_v1.1.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb5-mm0 {
+			description = "for SE5 V1.1, larger system memory";
+			data = /incbin/("./bm1684_se5_v1.1_mm0.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb5-mm1 {
+			description = "for SE5 V1.1, larger VPU heap";
+			data = /incbin/("./bm1684_se5_v1.1_mm1.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb5-mm2 {
+			description = "for SE5 V1.1, requested by cust01";
+			data = /incbin/("./bm1684_se5_v1.1_mm2.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb6 {
+			description = "for BM1684 EVB V1.2";
+			data = /incbin/("./bm1684_evb_v1.2.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb7 {
+			description = "for SM5 V1.1 @RB";
+			data = /incbin/("./bm1684_sm5_v1.1_rb.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb7-mm0 {
+			description = "for SM5 V1.1 @RB, larger system memory";
+			data = /incbin/("./bm1684_sm5_v1.1_rb_mm0.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb7-mm1 {
+			description = "for SM5 V1.1 @RB, larger VPU heap";
+			data = /incbin/("./bm1684_sm5_v1.1_rb_mm1.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb8 {
+			description = "for SE5 2+2 rank, 16G";
+			data = /incbin/("./bm1684_se5_v1.3.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb10 {
+			description = "for SM5M V0.0 @RB";
+			data = /incbin/("./bm1684_sm5m_v0.0_rb.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb11 {
+			description = "for SM5M V0.0 @TB";
+			data = /incbin/("./bm1684_sm5m_v0.0_tb.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb14 {
+			description = "for SM5M V0.1 @RB";
+			data = /incbin/("./bm1684_sm5m_v0.1_rb.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb14-mm0 {
+			description = "for SM5M V0.1 @RB, larger system memory";
+			data = /incbin/("./bm1684_sm5m_v0.1_rb_mm0.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb15 {
+			description = "for SM5M V0.1 @TB";
+			data = /incbin/("./bm1684_sm5m_v0.1_tb.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb17 {
+			description = "for SM5 V1.2 @RB";
+			data = /incbin/("./bm1684_sm5_v1.2_rb.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb18 {
+			description = "for SM5 V1.2 @TB";
+			data = /incbin/("./bm1684_sm5_v1.2_tb.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb19 {
+			description = "for SM5 V2.0 @TB";
+			data = /incbin/("./bm1684_sm5_v2.0_tb.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb20 {
+			description = "for SM5M V0.2 @RB";
+			data = /incbin/("./bm1684_sm5m_v0.2_rb.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb21 {
+			description = "for SM5M V0.2 @TB";
+			data = /incbin/("./bm1684_sm5m_v0.2_tb.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb22 {
+			description = "for SE5 V2.1";
+			data = /incbin/("./bm1684_se5_v2.1.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb23 {
+			description = "for SE5 V2.0";
+			data = /incbin/("./bm1684_se5_v2.0.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb26 {
+			description = "for SE5 V2.5";
+			data = /incbin/("./bm1684_se5_v2.5.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb27 {
+			description = "for SE6 control board";
+			data = /incbin/("./bm1684_se6_ctrl.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb30 {
+			description = "for SM5M V3.0 @RB";
+			data = /incbin/("./bm1684_sm5m_v3.0_rb.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb31 {
+			description = "for SM5M V3.0 @TB";
+			data = /incbin/("./bm1684_sm5m_v3.0_tb.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb33 {
+			description = "for BM1684 CUST V1.3";
+			data = /incbin/("./bm1684_cust_v1.3.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb34 {
+			description = "for BM1684 CUST V1.4";
+			data = /incbin/("./bm1684_cust_v1.4.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb35 {
+			description = "for SM5M V3.1 @RB";
+			data = /incbin/("./bm1684_sm5m_v3.1_rb.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb36 {
+			description = "for SM5M V3.1 @TB";
+			data = /incbin/("./bm1684_sm5m_v3.1_tb.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb37 {
+			description = "for SM5M V3.3 @TB";
+			data = /incbin/("./bm1684_sm5m_v3.3_tb.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb38 {
+			description = "for SC5 EP only mode";
+			data = /incbin/("./bm1684_sc5_ep.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb39 {
+			description = "for SC5 mix mode";
+			data = /incbin/("./bm1684_sc5_mix.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb40 {
+			description = "for SE5 V1.4 16G";
+			data = /incbin/("./bm1684_se5_v1.4.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb128 {
+			description = "for BM1684X Palladium";
+			data = /incbin/("./bm1684x_pld.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			/*
+			hash {
+				algo = "sha1";
+			};
+			*/
+		};
+
+		fdt-pcb129 {
+			description = "for BM1684X FPGA";
+			data = /incbin/("./bm1684x_fpga.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			/*
+			hash {
+				algo = "sha1";
+			};
+			*/
+		};
+
+		fdt-pcb130 {
+			description = "for BM1684X EVB V0.0";
+			data = /incbin/("./bm1684x_evb_v0.0.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb131 {
+			description = "for BM1684X EP mode";
+			data = /incbin/("./bm1684x_ep.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb133 {
+			description = "for BM1684X mix mode";
+			data = /incbin/("./bm1684x_mix.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb134 {
+			description = "for BM1684X SM7M V0.0_RB";
+			data = /incbin/("./bm1684x_sm7m_v0.0.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb134-mm0 {
+			description = "for BM1684X SM7M V0.0_RB, 3G system memory";
+			data = /incbin/("./bm1684x_sm7m_v0.0_mm0.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb135 {
+			description = "for BM1684X SM7 control board";
+			data = /incbin/("./bm1684x_sm7_ctrl.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb136 {
+			description = "for BM1684X SM7M V0.0 CUST V1";
+			data = /incbin/("./bm1684x_sm7m_v0.0_cust_v1.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb137 {
+			description = "for BM1684X SE7 V1";
+			data = /incbin/("./bm1684x_se7_v1.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb138 {
+			description = "for BM1684X SM7M RB control board";
+			data = /incbin/("./bm1684x_sm7m_v0.0_ctrl.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb139 {
+			description = "for BM1684X SM7M V1.0 board";
+			data = /incbin/("./bm1684x_sm7m_v1.0.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb140 {
+			description = "for BM1684X SM7M V1.2 board";
+			data = /incbin/("./bm1684x_sm7m_v1.2.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb141 {
+			description = "for BM1684X SE7 V2.0 board";
+			data = /incbin/("./bm1684x_se7_v2.0.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb142 {
+			description = "for BM1684X SM7 AIRBOX";
+			data = /incbin/("./bm1684x_sm7_airbox.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb143 {
+			description = "for BM1684X SM7 V0.0 SE8 CTRL";
+			data = /incbin/("./bm1684x_sm7m_v0.0_ctrl.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+
+		fdt-pcb144 {
+			description = "for BM1684X M.2 CUST02 V0.0";
+			data = /incbin/("./bm1684x_m2_cust02_v0.0.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+	};
+
+	configurations {
+		default = "config-pcb6";
+
+		config-pcb4 {
+			description = "for BM1684 CUST v1.1";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb4";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb5 {
+			description = "for SE5 V1.1";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb5";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb5-mm0 {
+			description = "for SE5 V1.1, larger system memory";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb5-mm0";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb5-mm1 {
+			description = "for SE5 V1.2, larger VPU heap";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb5-mm1";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb5-mm2 {
+			description = "for SE5 V1.2, requested by cust01";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb5-mm2";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb6 {
+			description = "for BM1684 EVB V1.2";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb6";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb7 {
+			description = "for SM5 V1.1 @RB";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb7";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb7-mm0 {
+			description = "for SM5 V1.1 @RB, larger system memory";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb7-mm0";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb7-mm1 {
+			description = "for SM5 V1.1 @RB, larger VPU heap";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb7-mm1";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb8 {
+			description = "for SE5 2+2 rank, 16G";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb8";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb10 {
+			description = "for SM5M V0.0 @RB";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb10";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb11 {
+			description = "for SM5M V0.0 @TB";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb11";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb14 {
+			description = "for SM5M V0.1 @RB";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb14";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb14-mm0 {
+			description = "for SM5M V0.1 @RB, larger system memory";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb14-mm0";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb15 {
+			description = "for SM5M V0.1 @TB";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb15";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb17 {
+			description = "for SM5 V1.2 @RB";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb17";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb18 {
+			description = "for SM5 V1.2 @TB";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb18";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb19 {
+			description = "for SM5 V2.0 @TB";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb19";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb20 {
+			description = "for SM5M V0.2 @RB";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb20";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb21 {
+			description = "for SM5M V0.2 @TB";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb21";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb22 {
+			description = "for SE5 V2.1";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb22";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb23 {
+			description = "for SE5 V2.0";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb23";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb26 {
+			description = "for SE5 V2.5";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb26";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb27 {
+			description = "for SE6 control board";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb27";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb30 {
+			description = "for SM5M V3.0 @RB";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb30";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb31 {
+			description = "for SM5M V3.0 @TB";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb31";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb33 {
+			description = "for BM1684 CUST V1.3";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb33";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb34 {
+			description = "for BM1684 CUST V1.4";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb34";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb35 {
+			description = "for SM5M V3.1 @RB";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb35";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb36 {
+			description = "for SM5M V3.1 @TB";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb36";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb37 {
+			description = "for SM5M V3.3 @TB";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb37";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb38 {
+			description = "for SC5 EP only mode";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb38";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb39 {
+			description = "for SC5 mix mode";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb39";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb40 {
+			description = "for SE5 V1.4 16G";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb40";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb128 {
+			description = "for BM1684X Palladium";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb128";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb129 {
+			description = "for BM1684X FPGA";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb129";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb130 {
+			description = "for BM1684X EVB V0.0";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb130";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb131 {
+			description = "for BM1684X EP mode";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb131";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb132 {
+			description = "for BM1684X SC7 HP300 backward compatibility";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb131";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb133 {
+			description = "for BM1684X mix mode";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb133";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb134 {
+			description = "for BM1684X SM7M V0.0 RB";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb134";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb134-mm0 {
+			description = "for BM1684X SM7M V0.0 RB, 3G system memory";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb134-mm0";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb135 {
+			description = "for BM1684X SM7 control board";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb135";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb136 {
+			description = "for BM1684X SM7M V0.0 CUST V1";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb136";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb137 {
+			description = "for BM1684X SE7";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb137";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb138 {
+			description = "for BM1684X SM7M RB control board";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb138";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb139 {
+			description = "for BM1684X SM7M V1.0 control board";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb139";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb140 {
+			description = "for BM1684X SM7M V1.2 control board";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb140";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb141 {
+			description = "for BM1684X SE7 V2.0 board";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb141";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb142 {
+			description = "for BM1684X SM7 AIRBOX";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb142";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb143 {
+			description = "for BM1684X SM7 V1.0 SE8 CTRL";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb143";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb144 {
+			description = "for BM1684X M.2 CUST02 V0.0";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb144";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+	};
+};

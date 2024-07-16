@@ -1,0 +1,17 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+buildroot-2019.08.2.tar.gz released Sat, 09 Nov 2019 22:30:38 +0100
+
+MD5:  d7cef5c0aede0b37ae43f55fb77412fd  buildroot-2019.08.2.tar.gz
+SHA1: cc5a73f0a8200fd610570746f2a095258ff5d94e  buildroot-2019.08.2.tar.gz
+
+To verify this signature, you can obtain my public key
+from http://uclibc.org/~jacmet/pubkey.gpg
+
+-----BEGIN PGP SIGNATURE-----
+
+iF0EARECAB0WIQSrB9gG0s50H7iG7lCwJbqLWcNjGQUCXccwAQAKCRCwJbqLWcNj
+GS2/AKCB+3S5rYQLrWNW3EdaYAp76w5d7gCfTi4hvD2Y70l8nzxsU+AgIl8WK+U=
+=MOEq
+-----END PGP SIGNATURE-----

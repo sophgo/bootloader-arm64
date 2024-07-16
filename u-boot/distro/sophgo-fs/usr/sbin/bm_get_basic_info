@@ -1,0 +1,23 @@
+#!/bin/bash
+
+hostname=$(hostname)
+uptimeInfo=$(uptime --pretty)
+
+chip=`cat /sys/class/thermal/thermal_zone0/temp`
+board=`cat /sys/class/thermal/thermal_zone1/temp`
+chip_temp=`expr $chip / 1000`
+board_temp=`expr $board / 1000`
+
+chip_sn=$(cat /sys/bus/i2c/devices/1-0017/information | grep "product sn" | awk -F \" '{print $4}')
+
+product_sn=$(cat /factory/OEMconfig.ini | grep "DEVICE_SN" | awk -F \= '{print $2}')
+
+echo "------------------------------------------------------------------------"
+echo "chip sn: $chip_sn"
+echo "device sn:$product_sn"
+echo "hostname: $hostname"
+echo "uptimeInfo: $uptimeInfo"
+echo "boardtemperature: $board_temp"
+echo "coretemperature: $chip_temp"
+echo "------------------------------------------------------------------------"
+

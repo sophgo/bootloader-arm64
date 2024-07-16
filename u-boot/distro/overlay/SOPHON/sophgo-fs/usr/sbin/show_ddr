@@ -1,0 +1,66 @@
+#! /bin/bash
+
+echo 1 > /sys/bus/iio/devices/iio:device0/in_voltage3_raw
+adc_val_ddr=$(cat /sys/bus/iio/devices/iio:device0/in_voltage3_raw)
+# echo $adc_val_ddr
+chip_value=$(busybox devmem 0x27102014)
+# echo $chip_value
+vol_val_ddr=$(($adc_val_ddr*1500/4096))
+# echo $vol_val_ddr
+gpio117_val=$(busybox devmem 0x27013050)
+# echo $gpio117_val
+if [ "$chip_value" = "0x00000011" || "$chip_value" = "0x000000f9" || "$chip_value" = "0x000000c1" ];then
+	# echo "cv186ah chip"
+    if [ "$((gpio117_val & 0x00200000))" -eq 0 ]; then
+        if [ $vol_val_ddr -ge 0 ] && [ $vol_val_ddr -le 105 ];then
+            echo "LP4 2R 1S  CHIP:cv186ah  SIZE:4GB  DDR_WIDTH:32bit"
+        elif [ $vol_val_ddr -ge 195 ] && [ $vol_val_ddr -le 405 ];then
+            echo "LP4 1R 2S  CHIP:cv186ah  SIZE:4GB  DDR_WIDTH:64bit"
+        elif [ $vol_val_ddr -ge 495 ] && [ $vol_val_ddr -le 705 ];then
+            echo "LP4 2R 2S  CHIP:cv186ah  SIZE:8GB  DDR_WIDTH:64bit"
+        elif [ $vol_val_ddr -ge 795 ] && [ $vol_val_ddr -le 1005 ];then
+            echo "LP4 1R 1S  CHIP:cv186ah  SIZE:2GB  DDR_WIDTH:32bit"
+        elif [ $vol_val_ddr -ge 1095 ] && [ $vol_val_ddr -le 1305 ];then
+            echo "LP4X 2R 2S  CHIP:cv186ah  SIZE:8GB  DDR_WIDTH:64bit"
+        elif [ $vol_val_ddr -ge 1395 ] && [ $vol_val_ddr -le 1500 ];then
+            echo "LP4X 1R 2S  CHIP:cv186ah  SIZE:4GB  DDR_WIDTH:64bit"
+        fi
+    else
+        if [ $vol_val_ddr -ge 0 ] && [ $vol_val_ddr -le 105 ];then
+            echo "DDR4 1R 2S  CHIP:cv186ah  SIZE:4GB  DDR_WIDTH:64bit"
+        elif [ $vol_val_ddr -ge 195 ] && [ $vol_val_ddr -le 405 ];then
+            echo "LP4X 1R 1S  CHIP:cv186ah  SIZE:2GB  DDR_WIDTH:32bit"
+        elif [ $vol_val_ddr -ge 495 ] && [ $vol_val_ddr -le 705 ];then
+            echo "DDR4 1R 1S  CHIP:cv186ah  SIZE:2GB  DDR_WIDTH:32bit"
+        elif [ $vol_val_ddr -ge 795 ] && [ $vol_val_ddr -le 1005 ];then
+            echo "LP4X 2R 1S  CHIP:cv186ah  SIZE:4GB  DDR_WIDTH:32bit"
+        fi
+    fi
+else
+	# echo "bm1688 chip"
+    if [ "$((gpio117_val & 0x00200000))" -eq 0 ];then
+        if [ $vol_val_ddr -ge 0 ] && [ $vol_val_ddr -le 105 ];then
+            echo "LP4 2R 2S  CHIP:bm1688  SIZE:8GB  DDR_WIDTH:64bit"
+        elif [ $vol_val_ddr -ge 195 ] && [ $vol_val_ddr -le 405 ];then
+            echo "LP4 2R 2S  CHIP:bm1688  SIZE:4GB  DDR_WIDTH:64bit"
+        elif [ $vol_val_ddr -ge 495 ] && [ $vol_val_ddr -le 705 ];then
+            echo "LP4 2R 1S  CHIP:bm1688  SIZE:4GB  DDR_WIDTH:32bit"
+        elif [ $vol_val_ddr -ge 795 ] && [ $vol_val_ddr -le 1005 ];then
+            echo "LP4 1R 1S  CHIP:bm1688  SIZE:2GB  DDR_WIDTH:32bit"
+        elif [ $vol_val_ddr -ge 1095 ] && [ $vol_val_ddr -le 1305 ];then
+            echo "LP4X 2R 2S  CHIP:bm1688  SIZE:8GB  DDR_WIDTH:64bit"
+        elif [ $vol_val_ddr -ge 1395 ] && [ $vol_val_ddr -le 1500 ];then
+            echo "LP4 1R 2S  CHIP:bm1688  SIZE:4GB  DDR_WIDTH:64bit"
+        fi
+    else
+        if [ $vol_val_ddr -ge 0 ] && [ $vol_val_ddr -le 105 ];then
+            echo "DDR4 1R 2S  CHIP:bm1688  SIZE:4GB  DDR_WIDTH:64bit"
+        elif [ $vol_val_ddr -ge 195 ] && [ $vol_val_ddr -le 405 ];then
+            echo "LP4X 1R 1S  CHIP:bm1688  SIZE:2GB  DDR_WIDTH:32bit"
+        elif [ $vol_val_ddr -ge 495 ] && [ $vol_val_ddr -le 705 ];then
+            echo "LP4 1R 1S  CHIP:bm1688  SIZE:2GB  DDR_WIDTH:32bit"
+        elif [ $vol_val_ddr -ge 795 ] && [ $vol_val_ddr -le 1005 ];then
+            echo "LP4 2R 1S  CHIP:bm1688  SIZE:4GB  DDR_WIDTH:32bit"
+        fi
+    fi
+fi

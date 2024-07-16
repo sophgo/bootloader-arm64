@@ -1,0 +1,25 @@
+#!/usr/bin/expect -f
+set TARGET [lindex $argv 0]
+set USER [lindex $argv 1]
+set PASSWD [lindex $argv 2]
+set FILENAME [lindex $argv 3]
+set DIRNAME [lindex $argv 4]
+
+set timeout 10
+#################### Color variable ####################
+set green "\033\[0;32m"
+set red "\033\[0;31m"
+
+spawn scp $FILENAME $USER@$TARGET:$DIRNAME
+expect {
+    "*yes/no"           {send "yes\r"; exp_continue}
+    "*password:"        {send "$PASSWD\r"}
+    "lost connection"   {puts "${red}ERROR: Lost connection"; exit 1 }
+    timeout             {puts "${red}ERROR: Timed out"; exit 1 }
+}
+expect "100%"
+sleep 1
+expect eof
+catch wait result
+exit [lindex $result 3]
+

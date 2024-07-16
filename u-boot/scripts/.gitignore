@@ -1,4 +1,2 @@
-#
-# Generated files
-#
-bin2c
+mk_gpt
+KERNEL_PATH.sh
