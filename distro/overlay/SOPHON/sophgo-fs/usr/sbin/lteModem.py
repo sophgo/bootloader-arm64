@@ -12,6 +12,7 @@ class serialCom():
     def __init__(self, ttyusb):
         self.ttyusb = ttyusb
         self.serial = serial.Serial(ttyusb, 115200, timeout=1)
+        print("Open serial ", ttyusb)
         self.intf = self.find_interface()
         self.rec_state = False
         self.send_state = True
@@ -196,6 +197,7 @@ class SAserialCom(serialCom):
         self.ttyusb = ttyusb
         self.mode = mode
         self.serial = serial.Serial(ttyusb, 115200, timeout=1)
+        print("Open serial ", ttyusb)
         self.rec_state = False
         self.send_state = True
 
@@ -350,21 +352,38 @@ def check_usb_mode(driver):
     err, output = subprocess.getstatusoutput(cmd)
     return output.strip()
 
-drivers = ['cdc_ether', 'cdc_ncm', 'rndis_host', 'wwan']
+def check_product(product):
+    cmd = f'lsusb | grep {product}'
+    err, output = subprocess.getstatusoutput(cmd)
+    return output.strip()
+
+drivers = ['cdc_ether', 'cdc_ncm', 'rndis_host', 'wwan', 'cdc_mbim']
+products = ['Fibocom', 'Quectel']
 
 if __name__ == '__main__':
     modes = [check_usb_mode(driver) for driver in drivers if check_usb_mode(driver)]
+    product = [check_product(product) for product in products if check_product(product)]
 
     mode_str = ''.join(modes)
+    pro_str = ''.join(product)
+    print(mode_str)
+    print(pro_str)
 
-    if 'cdc_ncm' in mode_str or 'rndis_host' in mode_str:
-        ser_obj = SAserialCom('/dev/ttyUSB0', mode_str)
-    elif 'cdc_ether' in mode_str:
-        ser_obj = SAserialCom('/dev/ttyUSB1', mode_str)
-    elif 'wwan' in mode_str:
-        ser_obj = serialCom('/dev/ttyUSB1')
-    else: # for quectel EC25
+    if 'Fibocom' in pro_str:
+        if 'cdc_ncm' in mode_str or 'rndis_host' in mode_str:
+            ser_obj = SAserialCom('/dev/ttyUSB0', mode_str)
+        elif 'cdc_ether' in mode_str:
+            ser_obj = SAserialCom('/dev/ttyUSB1', mode_str)
+        elif 'wwan' in mode_str:
+            ser_obj = serialCom('/dev/ttyUSB1')
+        else:
+            print("mode not support!")
+            exit
+    elif 'Quectel' in pro_str: # for quectel EC25
         ser_obj = serialCom('/dev/ttyUSB2')
+    else: 
+        print("product not support!")
+        exit
 
 
     ser_obj.start()
