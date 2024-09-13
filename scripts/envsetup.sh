@@ -9,7 +9,7 @@ CHIP=${CHIP:-bm1684}
 DEBUG=${DEBUG:-0} # now only for TFA
 DISTRO=${DISTRO:-focal} # focal = Ubuntu 20.04; kylinos
 KERNEL_VARIANT=${KERNEL_VARIANT:-normal} # normal; mininum
-PRODUCT=${PRODUCT:-} # se6; cust01
+PRODUCT=${PRODUCT:-} # se6; cust01; cust02
 
 if [ "$CHIP" == "qemu" ]; then
 	DEBUG=1
@@ -62,24 +62,22 @@ function build_tfa()
 	pushd $TFA_SRC_DIR
 
 	# clean fip tool as some options may changed
-	make PLAT=${PROJECT_NAME} DEBUG=${DEBUG} --no-print-directory clean
 	make PLAT=${PROJECT_NAME} DEBUG=${DEBUG} --no-print-directory -C $FIP_TOOL_DIR clean
 	# create a dummy u-boot binary for packing fip
 	touch $OUTPUT_DIR/u-boot.bin
 
 	if [ $DEBUG -eq 1 ] ; then
 		make -j$(nproc) PLAT=${PROJECT_NAME} \
-			DEBUG=1 CFLAGS='-O0 -g' \
+			DEBUG=1 CFLAGS="-O0 -g -DCONFIG_PRODUCT_${PRODUCT}" \
 			BL33=$OUTPUT_DIR/u-boot.bin all fip
 	else
 		make -j$(nproc) PLAT=${PROJECT_NAME} \
-			DEBUG=0 CFLAGS='-g' LOG_LEVEL=40 ENABLE_ASSERTIONS=1 \
+			DEBUG=0 CFLAGS="-g -DCONFIG_PRODUCT_${PRODUCT}" LOG_LEVEL=40 ENABLE_ASSERTIONS=1 \
 			BL33=$OUTPUT_DIR/u-boot.bin all fip
 	fi
 	ret=$?
 
 	popd
-
 	if [ $ret -ne 0 ]; then
 		echo "making TFA failed"
 		return $ret
@@ -100,32 +98,6 @@ function build_tfa()
     		dd if=fip.bin of=flash.bin seek=64 bs=4096 conv=notrunc
     		popd
 	fi
-
-	#This option is only available for bm1684x
-	if [ $DDR_INTLV_MODE ]; then
-		rm -f $OUTPUT_DIR/fip_intlv_mode*.bin
-		pushd $TFA_SRC_DIR
-		echo "genarate interleave mode 0 fip"
-		make PLAT=${PROJECT_NAME} DEBUG=${DEBUG} --no-print-directory clean
-		make PLAT=${PROJECT_NAME} DEBUG=${DEBUG} --no-print-directory -C $FIP_TOOL_DIR clean
-		make -j$(nproc) PLAT=${PROJECT_NAME} \
-			DEBUG=0 CFLAGS='-g -DCONFIG_INTLV_MODE0' LOG_LEVEL=40 ENABLE_ASSERTIONS=1 \
-			BL33=$OUTPUT_DIR/u-boot.bin all fip
-
-		ret=$?
-		popd
-		if [ $ret -ne 0 ]; then
-		    echo "making TFA failed"
-		    return $ret
-		fi
-		if [ $DDR_INTLV_MODE -eq 1 ]; then
-			cp $TFA_BUILD_DIR/fip.bin $OUTPUT_DIR/fip_intlv_mode0.bin
-		elif [ $DDR_INTLV_MODE -eq 0 ]; then
-			mv $OUTPUT_DIR/fip.bin $OUTPUT_DIR/fip_intlv_mode1.bin
-			cp $TFA_BUILD_DIR/fip.bin $OUTPUT_DIR/
-		fi
-	fi
-
 }
 
 function clean_tfa()
@@ -136,7 +108,7 @@ function clean_tfa()
 	popd
 
 	rm -f $OUTPUT_DIR/bl*.bin
-	rm -f $OUTPUT_DIR/fip*.bin
+	rm -f $OUTPUT_DIR/fip.bin
 	rm -f $OUTPUT_DIR/bl*.elf
 	rm -f $OUTPUT_DIR/bl*.dump
 	rm -f $OUTPUT_DIR/flash.bin
@@ -1139,9 +1111,9 @@ if [ "$os_release" = "Kylin" ]; then
 	usermod -a -G sudo linaro
 	chown linaro.linaro -R /home/linaro
 fi
-if [ -f /home/linaro/bsp-debs/sophgo-se6_*.deb  ]; then
+if [ -f /home/linaro/bsp-debs/sophgo-se_*.deb  ]; then
 	echo "install se6 deb"
-	dpkg -i /home/linaro/bsp-debs/sophgo-se6_*.deb
+	dpkg -i /home/linaro/bsp-debs/sophgo-se_*.deb
 else
 	if [ "$os_release" != "Kylin" ]; then
 		echo "not se6 and not kylin, try install hdmi and system deb"
@@ -1273,7 +1245,7 @@ function build_update()
 	fi
 	echo packing update image...
 	if [ $DISTRO == "kylinos" ]; then
-		if [ "$PRODUCT" == "se6" ] && [ "$UPDATE_TYPE" == "tftp" ]; then
+		if [ "$PRODUCT" == "se" ] && [ "$UPDATE_TYPE" == "tftp" ]; then
 			# se6 core board falls into here, it doesn't use kylinos
 			./bm_make_package.sh $UPDATE_TYPE ./partition32G.xml $OUTPUT_DIR
 		else
@@ -1289,12 +1261,12 @@ function build_update()
 	md5sum * > md5.txt
 	popd
 
-	if [ "$PRODUCT" == "se6" ] && [ "$UPDATE_TYPE" == "tftp" ]; then
+	if [ "$PRODUCT" == "se" ] && [ "$UPDATE_TYPE" == "tftp" ]; then
 		echo "packet tftp package and sdcard package for se6..."
 		echo $OUTPUT_DIR
 		rm -f $OUTPUT_DIR/opt.tgz
 		rm -f $OUTPUT_DIR/recovery.tgz
-		rm -rf $OUTPUT_DIR/se6_ctl_sdcard
+		rm -rf $OUTPUT_DIR/se_ctl_sdcard
 
 		# try not overwrite someone else's sdcard folder
 		if [ -d "$OUTPUT_DIR/sdcard" ];then
@@ -1315,9 +1287,9 @@ function build_update()
 		fi
 		popd
 
-		mv $OUTPUT_DIR/sdcard $OUTPUT_DIR/se6_ctl_sdcard
-		cp $SCRIPTS_DIR/local_update.sh $OUTPUT_DIR/se6_ctl_sdcard
-		pushd $OUTPUT_DIR/se6_ctl_sdcard
+		mv $OUTPUT_DIR/sdcard $OUTPUT_DIR/se_ctl_sdcard
+		cp $SCRIPTS_DIR/local_update.sh $OUTPUT_DIR/se_ctl_sdcard
+		pushd $OUTPUT_DIR/se_ctl_sdcard
 		md5sum * > md5.txt
 		popd
 		if [ -d "$OUTPUT_DIR/sdcard-bak" ];then

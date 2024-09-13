@@ -318,7 +318,7 @@ void bm_pcie_status_init(void)
 
 		mmio_setbits_32(BOOT_ARGS_REG, PCIE_EP_LINKED);
 	} else {
-		unsigned char pcie_check;
+		unsigned char pcie_check = 0x1;
 		int err = i2c_smbus_read_byte(MCU_I2C_DEV, MCU_DEV_ADDR,
 				  PCIE_CHECK_REG, &pcie_check);
 

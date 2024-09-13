@@ -756,4 +756,185 @@ static struct dwc_reg_data pin_swap_1684x_3[] = {
 	{0x0130a7, 0x7},	//byte3 Dq7LnSel,  phy-bit7 connect to dram-bit7
 };
 
+//pinswap for M.2 board, two 64bit DDR chips
+static struct dwc_reg_data pin_swap_1684x_m2_0[] = {
+	{0x020100, 0x0},	//MapCAA0toDfi,  connect phy-AC0 to dram-ac
+	{0x020101, 0x4},	//MapCAA1toDfi,  connect phy-AC1 to dram-ac
+	{0x020102, 0x3},	//MapCAA2toDfi,  connect phy-AC2 to dram-ac
+	{0x020103, 0x5},	//MapCAA3toDfi,  connect phy-AC3 to dram-ac
+	{0x020104, 0x1},	//MapCAA4toDfi,  connect phy-AC4 to dram-ac
+	{0x020105, 0x2},	//MapCAA5toDfi,  connect phy-AC5 to dram-ac
+
+	{0x0100a0, 0x2},	//byte0 Dq0LnSel,  phy-bit connect to dram-bit0
+	{0x0100a1, 0x1},	//byte0 Dq1LnSel,  phy-bit connect to dram-bit1
+	{0x0100a2, 0x6},	//byte0 Dq2LnSel,  phy-bit connect to dram-bit2
+	{0x0100a3, 0x5},	//byte0 Dq3LnSel,  phy-bit connect to dram-bit3
+	{0x0100a4, 0x3},	//byte0 Dq4LnSel,  phy-bit connect to dram-bit4
+	{0x0100a5, 0x7},	//byte0 Dq5LnSel,  phy-bit connect to dram-bit5
+	{0x0100a6, 0x0},	//byte0 Dq6LnSel,  phy-bit connect to dram-bit6
+	{0x0100a7, 0x4},	//byte0 Dq7LnSel,  phy-bit connect to dram-bit7
+
+	{0x0110a0, 0x6},	//byte1 Dq0LnSel,  phy-bit connect to dram-bit0
+	{0x0110a1, 0x4},	//byte1 Dq1LnSel,  phy-bit connect to dram-bit1
+	{0x0110a2, 0x1},	//byte1 Dq2LnSel,  phy-bit connect to dram-bit2
+	{0x0110a3, 0x2},	//byte1 Dq3LnSel,  phy-bit connect to dram-bit3
+	{0x0110a4, 0x5},	//byte1 Dq4LnSel,  phy-bit connect to dram-bit4
+	{0x0110a5, 0x0},	//byte1 Dq5LnSel,  phy-bit connect to dram-bit5
+	{0x0110a6, 0x3},	//byte1 Dq6LnSel,  phy-bit connect to dram-bit6
+	{0x0110a7, 0x7},	//byte1 Dq7LnSel,  phy-bit connect to dram-bit7
+
+	{0x0120a0, 0x2},	//byte2 Dq0LnSel,  phy-bit connect to dram-bit0
+	{0x0120a1, 0x0},	//byte2 Dq1LnSel,  phy-bit connect to dram-bit1
+	{0x0120a2, 0x4},	//byte2 Dq2LnSel,  phy-bit connect to dram-bit2
+	{0x0120a3, 0x6},	//byte2 Dq3LnSel,  phy-bit connect to dram-bit3
+	{0x0120a4, 0x7},	//byte2 Dq4LnSel,  phy-bit connect to dram-bit4
+	{0x0120a5, 0x3},	//byte2 Dq5LnSel,  phy-bit connect to dram-bit5
+	{0x0120a6, 0x1},	//byte2 Dq6LnSel,  phy-bit connect to dram-bit6
+	{0x0120a7, 0x5},	//byte2 Dq7LnSel,  phy-bit connect to dram-bit7
+
+	{0x0130a0, 0x0},	//byte3 Dq0LnSel,  phy-bit connect to dram-bit0
+	{0x0130a1, 0x2},	//byte3 Dq1LnSel,  phy-bit connect to dram-bit1
+	{0x0130a2, 0x3},	//byte3 Dq2LnSel,  phy-bit connect to dram-bit2
+	{0x0130a3, 0x1},	//byte3 Dq3LnSel,  phy-bit connect to dram-bit3
+	{0x0130a4, 0x6},	//byte3 Dq4LnSel,  phy-bit connect to dram-bit4
+	{0x0130a5, 0x5},	//byte3 Dq5LnSel,  phy-bit connect to dram-bit5
+	{0x0130a6, 0x7},	//byte3 Dq6LnSel,  phy-bit connect to dram-bit6
+	{0x0130a7, 0x4},	//byte3 Dq7LnSel,  phy-bit connect to dram-bit7
+};
+
+static struct dwc_reg_data pin_swap_1684x_m2_1[] = {
+	{0x020100, 0x3},	//MapCAA0toDfi,  connect phy-AC0 to dram-ac
+	{0x020101, 0x5},	//MapCAA1toDfi,  connect phy-AC1 to dram-ac
+	{0x020102, 0x2},	//MapCAA2toDfi,  connect phy-AC2 to dram-ac
+	{0x020103, 0x4},	//MapCAA3toDfi,  connect phy-AC3 to dram-ac
+	{0x020104, 0x1},	//MapCAA4toDfi,  connect phy-AC4 to dram-ac
+	{0x020105, 0x0},	//MapCAA5toDfi,  connect phy-AC5 to dram-ac
+
+	{0x0100a0, 0x3},	//byte0 Dq0LnSel,  phy-bit connect to dram-bit0
+	{0x0100a1, 0x6},	//byte0 Dq1LnSel,  phy-bit connect to dram-bit1
+	{0x0100a2, 0x4},	//byte0 Dq2LnSel,  phy-bit connect to dram-bit2
+	{0x0100a3, 0x1},	//byte0 Dq3LnSel,  phy-bit connect to dram-bit3
+	{0x0100a4, 0x0},	//byte0 Dq4LnSel,  phy-bit connect to dram-bit4
+	{0x0100a5, 0x2},	//byte0 Dq5LnSel,  phy-bit connect to dram-bit5
+	{0x0100a6, 0x7},	//byte0 Dq6LnSel,  phy-bit connect to dram-bit6
+	{0x0100a7, 0x5},	//byte0 Dq7LnSel,  phy-bit connect to dram-bit7
+
+	{0x0110a0, 0x2},	//byte1 Dq0LnSel,  phy-bit connect to dram-bit0
+	{0x0110a1, 0x4},	//byte1 Dq1LnSel,  phy-bit connect to dram-bit1
+	{0x0110a2, 0x0},	//byte1 Dq2LnSel,  phy-bit connect to dram-bit2
+	{0x0110a3, 0x3},	//byte1 Dq3LnSel,  phy-bit connect to dram-bit3
+	{0x0110a4, 0x7},	//byte1 Dq4LnSel,  phy-bit connect to dram-bit4
+	{0x0110a5, 0x1},	//byte1 Dq5LnSel,  phy-bit connect to dram-bit5
+	{0x0110a6, 0x6},	//byte1 Dq6LnSel,  phy-bit connect to dram-bit6
+	{0x0110a7, 0x5},	//byte1 Dq7LnSel,  phy-bit connect to dram-bit7
+
+	{0x0120a0, 0x6},	//byte2 Dq0LnSel,  phy-bit connect to dram-bit0
+	{0x0120a1, 0x7},	//byte2 Dq1LnSel,  phy-bit connect to dram-bit1
+	{0x0120a2, 0x0},	//byte2 Dq2LnSel,  phy-bit connect to dram-bit2
+	{0x0120a3, 0x5},	//byte2 Dq3LnSel,  phy-bit connect to dram-bit3
+	{0x0120a4, 0x3},	//byte2 Dq4LnSel,  phy-bit connect to dram-bit4
+	{0x0120a5, 0x4},	//byte2 Dq5LnSel,  phy-bit connect to dram-bit5
+	{0x0120a6, 0x1},	//byte2 Dq6LnSel,  phy-bit connect to dram-bit6
+	{0x0120a7, 0x2},	//byte2 Dq7LnSel,  phy-bit connect to dram-bit7
+
+	{0x0130a0, 0x1},	//byte3 Dq0LnSel,  phy-bit connect to dram-bit0
+	{0x0130a1, 0x3},	//byte3 Dq1LnSel,  phy-bit connect to dram-bit1
+	{0x0130a2, 0x2},	//byte3 Dq2LnSel,  phy-bit connect to dram-bit2
+	{0x0130a3, 0x0},	//byte3 Dq3LnSel,  phy-bit connect to dram-bit3
+	{0x0130a4, 0x4},	//byte3 Dq4LnSel,  phy-bit connect to dram-bit4
+	{0x0130a5, 0x6},	//byte3 Dq5LnSel,  phy-bit connect to dram-bit5
+	{0x0130a6, 0x5},	//byte3 Dq6LnSel,  phy-bit connect to dram-bit6
+	{0x0130a7, 0x7},	//byte3 Dq7LnSel,  phy-bit connect to dram-bit7
+};
+
+static struct dwc_reg_data pin_swap_1684x_m2_2[] = {
+	{0x020100, 0x0},	//MapCAA0toDfi,  connect phy-AC0 to dram-ac
+	{0x020101, 0x4},	//MapCAA1toDfi,  connect phy-AC1 to dram-ac
+	{0x020102, 0x3},	//MapCAA2toDfi,  connect phy-AC2 to dram-ac
+	{0x020103, 0x5},	//MapCAA3toDfi,  connect phy-AC3 to dram-ac
+	{0x020104, 0x1},	//MapCAA4toDfi,  connect phy-AC4 to dram-ac
+	{0x020105, 0x2},	//MapCAA5toDfi,  connect phy-AC5 to dram-ac
+
+	{0x0100a0, 0x5},	//byte0 Dq0LnSel,  phy-bit connect to dram-bit0
+	{0x0100a1, 0x6},	//byte0 Dq1LnSel,  phy-bit connect to dram-bit1
+	{0x0100a2, 0x7},	//byte0 Dq2LnSel,  phy-bit connect to dram-bit2
+	{0x0100a3, 0x1},	//byte0 Dq3LnSel,  phy-bit connect to dram-bit3
+	{0x0100a4, 0x0},	//byte0 Dq4LnSel,  phy-bit connect to dram-bit4
+	{0x0100a5, 0x4},	//byte0 Dq5LnSel,  phy-bit connect to dram-bit5
+	{0x0100a6, 0x2},	//byte0 Dq6LnSel,  phy-bit connect to dram-bit6
+	{0x0100a7, 0x3},	//byte0 Dq7LnSel,  phy-bit connect to dram-bit7
+
+	{0x0110a0, 0x4},	//byte1 Dq0LnSel,  phy-bit connect to dram-bit0
+	{0x0110a1, 0x5},	//byte1 Dq1LnSel,  phy-bit connect to dram-bit1
+	{0x0110a2, 0x1},	//byte1 Dq2LnSel,  phy-bit connect to dram-bit2
+	{0x0110a3, 0x2},	//byte1 Dq3LnSel,  phy-bit connect to dram-bit3
+	{0x0110a4, 0x6},	//byte1 Dq4LnSel,  phy-bit connect to dram-bit4
+	{0x0110a5, 0x7},	//byte1 Dq5LnSel,  phy-bit connect to dram-bit5
+	{0x0110a6, 0x3},	//byte1 Dq6LnSel,  phy-bit connect to dram-bit6
+	{0x0110a7, 0x0},	//byte1 Dq7LnSel,  phy-bit connect to dram-bit7
+
+	{0x0120a0, 0x7},	//byte2 Dq0LnSel,  phy-bit connect to dram-bit0
+	{0x0120a1, 0x1},	//byte2 Dq1LnSel,  phy-bit connect to dram-bit1
+	{0x0120a2, 0x2},	//byte2 Dq2LnSel,  phy-bit connect to dram-bit2
+	{0x0120a3, 0x6},	//byte2 Dq3LnSel,  phy-bit connect to dram-bit3
+	{0x0120a4, 0x4},	//byte2 Dq4LnSel,  phy-bit connect to dram-bit4
+	{0x0120a5, 0x5},	//byte2 Dq5LnSel,  phy-bit connect to dram-bit5
+	{0x0120a6, 0x3},	//byte2 Dq6LnSel,  phy-bit connect to dram-bit6
+	{0x0120a7, 0x0},	//byte2 Dq7LnSel,  phy-bit connect to dram-bit7
+
+	{0x0130a0, 0x7},	//byte3 Dq0LnSel,  phy-bit connect to dram-bit0
+	{0x0130a1, 0x2},	//byte3 Dq1LnSel,  phy-bit connect to dram-bit1
+	{0x0130a2, 0x3},	//byte3 Dq2LnSel,  phy-bit connect to dram-bit2
+	{0x0130a3, 0x0},	//byte3 Dq3LnSel,  phy-bit connect to dram-bit3
+	{0x0130a4, 0x1},	//byte3 Dq4LnSel,  phy-bit connect to dram-bit4
+	{0x0130a5, 0x4},	//byte3 Dq5LnSel,  phy-bit connect to dram-bit5
+	{0x0130a6, 0x5},	//byte3 Dq6LnSel,  phy-bit connect to dram-bit6
+	{0x0130a7, 0x6},	//byte3 Dq7LnSel,  phy-bit connect to dram-bit7
+};
+
+static struct dwc_reg_data pin_swap_1684x_m2_3[] = {
+	{0x020100, 0x5},	//MapCAA0toDfi,  connect phy-AC0 to dram-ac5
+	{0x020101, 0x3},	//MapCAA1toDfi,  connect phy-AC1 to dram-ac0
+	{0x020102, 0x2},	//MapCAA2toDfi,  connect phy-AC2 to dram-ac1
+	{0x020103, 0x4},	//MapCAA3toDfi,  connect phy-AC3 to dram-ac3
+	{0x020104, 0x1},	//MapCAA4toDfi,  connect phy-AC4 to dram-ac4
+	{0x020105, 0x0},	//MapCAA5toDfi,  connect phy-AC5 to dram-ac2
+
+	{0x0100a0, 0x3},	//byte0 Dq0LnSel,  phy-bit7 connect to dram-bit0
+	{0x0100a1, 0x6},	//byte0 Dq1LnSel,  phy-bit4 connect to dram-bit1
+	{0x0100a2, 0x4},	//byte0 Dq2LnSel,  phy-bit2 connect to dram-bit2
+	{0x0100a3, 0x1},	//byte0 Dq3LnSel,  phy-bit6 connect to dram-bit3
+	{0x0100a4, 0x0},	//byte0 Dq4LnSel,  phy-bit5 connect to dram-bit4
+	{0x0100a5, 0x2},	//byte0 Dq5LnSel,  phy-bit1 connect to dram-bit5
+	{0x0100a6, 0x5},	//byte0 Dq6LnSel,  phy-bit3 connect to dram-bit6
+	{0x0100a7, 0x7},	//byte0 Dq7LnSel,  phy-bit0 connect to dram-bit7
+
+	{0x0110a0, 0x3},	//byte1 Dq0LnSel,  phy-bit0 connect to dram-bit0
+	{0x0110a1, 0x0},	//byte1 Dq1LnSel,  phy-bit3 connect to dram-bit1
+	{0x0110a2, 0x4},	//byte1 Dq2LnSel,  phy-bit1 connect to dram-bit2
+	{0x0110a3, 0x2},	//byte1 Dq3LnSel,  phy-bit2 connect to dram-bit3
+	{0x0110a4, 0x5},	//byte1 Dq4LnSel,  phy-bit6 connect to dram-bit4
+	{0x0110a5, 0x6},	//byte1 Dq5LnSel,  phy-bit7 connect to dram-bit5
+	{0x0110a6, 0x1},	//byte1 Dq6LnSel,  phy-bit4 connect to dram-bit6
+	{0x0110a7, 0x7},	//byte1 Dq7LnSel,  phy-bit5 connect to dram-bit7
+
+	{0x0120a0, 0x2},	//byte2 Dq0LnSel,  phy-bit3 connect to dram-bit0
+	{0x0120a1, 0x1},	//byte2 Dq1LnSel,  phy-bit0 connect to dram-bit1
+	{0x0120a2, 0x7},	//byte2 Dq2LnSel,  phy-bit7 connect to dram-bit2
+	{0x0120a3, 0x6},	//byte2 Dq3LnSel,  phy-bit4 connect to dram-bit3
+	{0x0120a4, 0x0},	//byte2 Dq4LnSel,  phy-bit2 connect to dram-bit4
+	{0x0120a5, 0x3},	//byte2 Dq5LnSel,  phy-bit6 connect to dram-bit5
+	{0x0120a6, 0x5},	//byte2 Dq6LnSel,  phy-bit1 connect to dram-bit6
+	{0x0120a7, 0x4},	//byte2 Dq7LnSel,  phy-bit5 connect to dram-bit7
+
+	{0x0130a0, 0x7},	//byte3 Dq0LnSel,  phy-bit1 connect to dram-bit0
+	{0x0130a1, 0x3},	//byte3 Dq1LnSel,  phy-bit0 connect to dram-bit1
+	{0x0130a2, 0x0},	//byte3 Dq2LnSel,  phy-bit2 connect to dram-bit2
+	{0x0130a3, 0x2},	//byte3 Dq3LnSel,  phy-bit3 connect to dram-bit3
+	{0x0130a4, 0x4},	//byte3 Dq4LnSel,  phy-bit5 connect to dram-bit4
+	{0x0130a5, 0x5},	//byte3 Dq5LnSel,  phy-bit4 connect to dram-bit5
+	{0x0130a6, 0x6},	//byte3 Dq6LnSel,  phy-bit6 connect to dram-bit6
+	{0x0130a7, 0x1},	//byte3 Dq7LnSel,  phy-bit7 connect to dram-bit7
+};
+
 #endif

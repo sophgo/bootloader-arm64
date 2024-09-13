@@ -164,9 +164,9 @@ load_ko
 reset_module
 store_reset_reason
 install_prepackages
-if [ -f /root/se6_ctrl/se6_init.sh ]; then
-	source /root/se6_ctrl/se6_init.sh
-	se6_init
+if [ -f /root/se_ctrl/se_init.sh ]; then
+	source /root/se_ctrl/se_init.sh
+	se_init
 else
 	echo "not se6 product"
 	if [ -f /etc/systemd/system/multi-user.target.wants/bmSE6Monitor.service ]; then

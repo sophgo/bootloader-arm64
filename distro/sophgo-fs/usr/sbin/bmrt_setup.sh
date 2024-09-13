@@ -12,7 +12,7 @@ function reset_module()
 	fi
 
 	# reset lte module for missing 4g module
-	if [ ! -e /dev/ttyUSB1 ]; then
+	if [ ! -e /dev/ttyUSB1 ] && [ "$product" = "SE5" ]; then
 		sudo i2cset -y -f 1 0x6c 0x2 0x81
 		sleep 2
 		sudo i2cset -y -f 1 0x6c 0x2 0x01
@@ -127,9 +127,9 @@ reset_module
 store_reset_reason
 install_prepackages
 product=$(cat /sys/bus/i2c/devices/1-0017/information | grep model | awk -F \" '{print $4}')
-if [ -f /root/se6_ctrl/se6_init.sh ]; then
-	source /root/se6_ctrl/se6_init.sh
-	se6_init
+if [ -f /root/se_ctrl/se_init.sh ]; then
+	source /root/se_ctrl/se_init.sh
+	se_init
 elif [ "$product" = "SM7 AIRBOX" ]; then
 	echo "sm7 airbox product"
 		systemctl stop bmSE6Monitor.service

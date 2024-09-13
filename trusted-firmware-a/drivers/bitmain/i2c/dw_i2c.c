@@ -422,6 +422,9 @@ int i2c_init(struct i2c_info *info, int n)
 
 int i2c_xfer(int i2c, struct i2c_msg *msg, int nmsgs)
 {
+#ifdef CONFIG_PRODUCT_cust02
+	return 0;
+#endif
 	return designware_i2c_xfer((void *)&i2c_info[i2c].dev, msg, nmsgs);
 }
 

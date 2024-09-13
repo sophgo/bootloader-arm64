@@ -1,6 +1,6 @@
 #!/bin/bash
 period=40000
-cur_rate=40000
+cur_rate=39999
 
 # $1: target_rate
 ctrl_fan_slowly()
@@ -57,7 +57,8 @@ do
 	fi
 	echo "$cur_rate" > /sys/class/pwm/pwmchip0/pwm0/duty_cycle
 
-	echo "set fan duty cycle is: $(expr $cur_rate / 400 )%; control board t : $chip_t "
+	echo "set fan duty cycle is: $(expr $cur_rate / 400 + 1)%; control board t : $chip_t "
 
 	sleep 2
 done
+

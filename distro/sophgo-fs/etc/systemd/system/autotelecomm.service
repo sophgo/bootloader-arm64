@@ -1,0 +1,14 @@
+[Unit]
+Description=Auto dial service
+After=network.target.service
+
+[Service]
+User=root
+ExecStart=/usr/bin/python3 -u /usr/sbin/autotelecomm_scripts/mobile_communications.py
+ExecReload=/bin/kill -HUP $MAINPID
+WorkingDirectory=/usr/sbin/
+KillMode=control-group
+Restart=always
+RestartPreventExitStatus=200
+Type=simple
+RestartSec=1

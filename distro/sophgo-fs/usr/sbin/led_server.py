@@ -152,7 +152,7 @@ def server():
                         if fan_timer != 0 and fan_timer.is_alive() == True:
                             print('already led running!!')
                         else:
-                            err,result=subprocess.getstatusoutput(cmd)
+                            time.sleep(1)
                             fan_timer = threading.Timer(1, fan_led,["0.5"])
                             fan_timer.start()
 

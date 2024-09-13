@@ -246,6 +246,13 @@
 			compatible = "bitmain,bm16xx-wdt";
 			reg = <0x69>;
 		};
+
+		tca6416: tca6416@6c {
+			compatible = "ti,tca6416";
+			reg = <0x6c>;
+			gpio-controller;
+			#gpio-cells = <2>;
+		};
 	};
 
 	i2c2: i2c@5001E000 {
@@ -269,10 +276,25 @@
 		compatible = "snps,dwc-qos-ethernet-4.10";
 		reg = <0x0 0x50108000  0x0 0x4000>;
 		reg-names = "mac";
-		phy-mode = "rgmii-txid";
+		phy-mode = "rgmii-id";
 		phy-reset-gpios = <&port0a 29 GPIO_ACTIVE_HIGH>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&rgmii0_grp1>;
+		phy-handle = <&phy0>;
+		mdio {
+			#address-cells = <0x1>;
+			#size-cells = <0x0>;
+			compatible = "snps,dwmac-mdio";
+			phy0: phy@0 {
+				compatible = "ethernet-phy-ieee802.3-c22";
+				device_type = "ethernet-phy";
+				rx-internal-delay-ps = <750>;
+				led0_config = <0x7>;
+				led1_config = <0x19f0>;
+				led2_config = <0x0>;
+				reg = <0x0>;
+			};
+		};
 	};
 
 	ethernet1: ethernet@5010C000 {
@@ -359,6 +381,20 @@
 			bitmain,pin-mux = <1>;
 			bitmain,pin-drv = <8>;
 			bootph-all;
+		};
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		error {
+			label = "error";
+			gpios = <&tca6416 4 0>;
+			default-state = "on";
+		};
+		status {
+			label = "status";
+			gpios = <&tca6416 11 0>;
+			default-state = "off";
 		};
 	};
 };

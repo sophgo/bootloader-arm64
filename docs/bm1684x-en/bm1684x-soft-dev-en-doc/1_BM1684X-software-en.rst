@@ -5,7 +5,7 @@ Preface
 Document Overview
 -------------------
 
-This document provided a detailed introduction of |Product| series AI computing module (development board included), such as: appearance features, application scenarios, device parameters data, electrical characteristics, supporting software and using environment, so that device users and developers could get a full picture of our products ( |Product| series AI computing module).Developers and device users can carry out installation, debugging, deployment, maintenance and other works by following this manual.
+This document provided a detailed introduction of |Product| series Intelligent computing module (development board included), such as: appearance features, application scenarios, device parameters data, electrical characteristics, supporting software and using environment, so that device users and developers could get a full picture of our products ( |Product| series Intelligent computing module).Developers and device users can carry out installation, debugging, deployment, maintenance and other works by following this manual.
 
 Target Readers
 ---------------
@@ -52,9 +52,6 @@ Abbreviations
 --------------
 
 +-----------------+----------------------------+
-| BMDNN           | BM Deep Neural Network     |
-|                 | library                    |
-+-----------------+----------------------------+
 | JPU             | JPEG Process Unit          |
 +-----------------+----------------------------+
 | VPP             | Video Post Process         |
@@ -93,7 +90,7 @@ Hardware Cognitive
 Board Instructions
 ------------------------
 
-|Product| The AI computing modele refers to a board that includes core components such as: BM1684X, LPDDR4X, eMMC.Shown in the feature below.
+|Product| The Intelligent computing module refers to a board that includes core components such as: BM1684X, LPDDR4X, eMMC.Shown in the feature below.
 
 |Product| EVB front
 
@@ -402,7 +399,7 @@ eMMC Partition
 ||                       ||                ||            || read-write section      |
 +------------------------+-----------------+-------------+--------------------------+
 || /dev/mmcblk0p6        || /opt           || EXT4       || Driver and runtime      |
-||                       ||                ||            || enviorment of bmnnsdk2  |
+||                       ||                ||            || enviorment of sdk       |
 +------------------------+-----------------+-------------+--------------------------+
 || /dev/mmcblk0p7        || /data          || EXT4       || User data and SOPHON    |
 ||                       ||                ||            || pre-install software    |
@@ -601,9 +598,9 @@ It is 38.745 Celsius degree.
 
 The thermal framework for Linux will use this temperature for management:
 
-1. Ordinary version module: when the temperature rises to 85 degrees, the TPU frequency will drop to 80% and the CPU frequency will be downconverted to 1.15GHz; when the temperature drops back to 80 degrees, the TPU frequency will return to 100% and the CPU frequency will return to 2.3GHz; when the temperature rises to 90 degrees, the TPU frequency will drop to the lowest gear; when the temperature rises to 95 degrees, it will automatically shut down.
+1. Ordinary version module: when the temperature rises to 85 degrees, the NPU frequency will drop to 80% and the CPU frequency will be downconverted to 1.15GHz; when the temperature drops back to 80 degrees, the NPU frequency will return to 100% and the CPU frequency will return to 2.3GHz; when the temperature rises to 90 degrees, the NPU frequency will drop to the lowest gear; when the temperature rises to 95 degrees, it will automatically shut down.
 
-2. Wide temperature version module: when the temperature rises to 95 degrees, the TPU frequency will drop to 80% and the CPU frequency will be downconverted to 1.15GHz; when the temperature drops back to 90 degrees, the TPU frequency will return to 100% and the CPU frequency will return to 2.3GHz; when the temperature rises to 105 degrees, the TPU frequency will drop to the lowest gear; when the temperature rises to 110 degrees, it will automatically shut down.
+2. Wide temperature version module: when the temperature rises to 95 degrees, the NPU frequency will drop to 80% and the CPU frequency will be downconverted to 1.15GHz; when the temperature drops back to 90 degrees, the NPU frequency will return to 100% and the CPU frequency will return to 2.3GHz; when the temperature rises to 105 degrees, the NPU frequency will drop to the lowest gear; when the temperature rises to 110 degrees, it will automatically shut down.
 
 In addition, the off-chip MCU uses this temperature as a final insurance mechanism:
 
@@ -649,7 +646,7 @@ Return:
       ISL68127 output voltage: 749mV
       ISL68127 output current: 2700mA
       ISL68127 temperature 1: 59°C
-      ISL68127 output power: 2W → TPU power consumption
+      ISL68127 output power: 2W → NPU power consumption
       ISL68127 switch to output 1, ret=0
       ISL68127 output voltage: 898mV
       ISL68127 output current: 2900mA
@@ -806,15 +803,8 @@ You can check usage of every part by doing this:
       [1] vpp heap size:3221225472 bytes, used:0 bytes        usage rate:0%, memory usage peak 0 bytes
 
    As above, there are usually 3 ION
-   heaps (i.e., the three reserved memory areas), as the names suggest, are for TPU, VPU, and VPP use. The above example only prints the beginning of each heap usage information
+   heaps (i.e., the three reserved memory areas), as the names suggest, are for NPU, VPU, and VPP use. The above example only prints the beginning of each heap usage information
    Address and size information of each piece of buffer would be shown if you concatenate the whole summary file.
-
-Sophon SDK3 Introduction
-==========================
-
-For a detailed description and sample code of Sophon SDK3, please see the following link:
-
-   https://sophgo-doc.gitbook.io/sophonsdk3/
 
 
 System Customize
@@ -822,7 +812,6 @@ System Customize
 
 |Product| base board could be designed on your own, so it is convenient for you to customize kernel, Ubuntu 20.04 system and generate your own SD card or tftp flushing package by using BSP SDK provided by us,
 
-See FAQ for download. Because the core board of |Product| is a finished product, the bootloader is not opened, if you need to customize it, please contact with our technical support.
 If you just want to deploy your own business software and do not involve hardware modifications, then for decoupling reasons, it is recommended that you package your business software into a deb installer.
 
 For example, you can include your business software executable, dependency libraries, boot-up services, etc.
@@ -835,7 +824,7 @@ Refer to Debian \ `offical document <https://wiki.debian.org/Packaging/Intro>`__
 File Structure
 ---------------
 
-The SBP SDK contains two parts, please refer to the CHAPTER 7 section for the download address, one part is the source file published on the gitee website,
+The SOPHONSDK contains two parts, please download from https://github.com/sophgo, one part is the source file published on the github website,
 and the other part is binary files which will not changed basically.
 To avoid affecting git efficiency, is published through Baidu Net Disk.
 Merge two parts of files by following the description in README.md of the source file, you will see the following file structure.
@@ -849,15 +838,13 @@ Merge two parts of files by following the description in README.md of the source
       │   ├── trusted-firmware-a → TF-A Source Code
       │   ├── u-boot → u-boot Source Code
       │   └── ramdisk
-      │       └── build → cpio file of ramdisk and u-boot script
-      ├── debian
-      │   ├── distro_focal_20220328.tgz → Ubuntu 20.04 base package
-      │   └── overlay → Modified files for Ubuntu 20.04
+      │   │   └── build → cpio file of ramdisk and u-boot script
+      │   └── distro → Ubuntu 20.04 customized package
+      ├── distro
+      │   └── distro_focal.tgz → Ubuntu 20.04 base package
       ├── gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu → Cross-compilation tool chain
-      ├── linux-bitmain → kernel source code
-      └── install
-          └── soc_bm1684
-              └── opt.tgz → bmnnsdk2 runtime
+      └── linux-arm64 → kernel source code
+
 
 Cross-compilation
 -------------------
@@ -912,20 +899,20 @@ The compiled results of the kernel are in the following path:
 
    ::
 
-      linux-bitmain/build/bm1684/normal
+      linux-arm64/build/bm1684/normal
 
 The compiled ko can be found at the following path:
 
    ::
 
-      linux-bitmain/build/bm1684/normal/modules/lib/modules/5.4.202-bm1684/kernel
+      linux-arm64/build/bm1684/normal/modules/lib/modules/5.4.202-bm1684/kernel
 
 Contents are identical in two different path, and has wrapped into flushing package.
 
 The compiled linux-header installation package which is used to compile the kernel module on the board, could be found in the following path:
    ::
 
-      linux-bitmain/build/bm1684/normal/bm1684_asic/linux-dev
+      linux-arm64/build/bm1684/normal/bm1684_asic/linux-dev
 
 The default is already typed into the refresh package, i.e. the /home/linaro/linux-dev directory on the board.
 
@@ -934,13 +921,13 @@ Modify Kernel
 
 Kernel configuration file located at:
 
-   linux-bitmain/arch/arm64/configs/bitmain_bm1684_normal_defconfig
+   linux-arm64/arch/arm64/configs/bitmain_bm1684_normal_defconfig
 
 Attention:  Modifying the kernel config may cause your kernel to be incompatible with the driver files we distributed via binary way, such as: bmtpu.ko, vpu.ko and jpu.ko at /opt/sophon/libsophon-current/data/.
 
 Standard |Product| uses device tree file in:
 
-   linux-bitmain/arch/arm64/boot/dts/bitmain/bm1684x_evb_v0.0.dts
+   linux-arm64/arch/arm64/boot/dts/bitmain/bm1684x_evb_v0.0.dts
 
 Execute after modification:
 
@@ -986,9 +973,9 @@ Modify Ubuntu 20.04
 
 The genertion process of Ubuntu 20.04 system is as follow:
 
-1. debian/distro_focal_lite_20211018.tgz is a pure base package from Ubuntu offical website, debian/distro_focal_20220328.tgz is the base package modified by us.
+1. distro/distro_focal.tgz is a pure base package from Ubuntu offical website, debian/distro_focal_20220328.tgz is the base package modified by us.
 
-2. debian/overlay/soc_bm1684_asic_newos includes |Product| changes to base package, will overwrite the path of the same name to the base package.
+2. bootloader-arm64/distro/overlay includes |Product| changes to base package, will overwrite the path of the same name to the base package.
 
 3. Update ko and other files into it while compiling kernel.
 
