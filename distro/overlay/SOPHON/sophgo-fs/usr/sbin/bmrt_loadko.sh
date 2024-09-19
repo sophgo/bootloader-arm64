@@ -196,6 +196,19 @@ function load_spacc_ko()
 	fi
 }
 
+function load_80211_ko()
+{
+        echo load cfg80211.ko ...
+        if [ -f /mnt/system/ko/cfg80211.ko ]; then
+                insmod /mnt/system/ko/cfg80211.ko
+        fi
+        echo load mac80211.ko ...
+        if [ -f /mnt/system/ko/mac80211.ko ]; then
+                insmod /mnt/system/ko/mac80211.ko
+        fi
+}
+
+load_80211_ko
 load_soph_base_ko
 load_soph_sys_ko
 load_soph_vpss_ko
@@ -247,6 +260,20 @@ echo "load.sh starting..."
 for file in $(find /dev/ -name video*);do
 	file_name=${file##*/}
 	./sbin/load.sh -d $file_name
+done
+
+for((i=0;i<=7;i++));do
+	cmd="/sys/class/net/eth0/queues/rx-$i/rps_cpus"
+	if [ -f $cmd ]; then
+		echo f > $cmd
+		echo 2048 > /sys/class/net/eth0/queues/rx-$i/rps_flow_cnt
+	fi
+
+	cmd="/sys/class/net/eth1/queues/rx-$i/rps_cpus"
+	if [ -f $cmd ]; then
+		echo f > $cmd
+		echo 2048 > /sys/class/net/eth1/queues/rx-$i/rps_flow_cnt
+	fi
 done
 
 exit 0

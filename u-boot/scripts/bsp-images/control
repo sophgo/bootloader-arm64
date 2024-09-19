@@ -1,7 +1,0 @@
-Package: sophgo-bsp-images
-Source: sophgo-bsp-images
-Version: 2.6.0
-Architecture: arm64
-Maintainer: sophgo
-Priority: optional
-Description: This is a collection of BSP images for Sophgo SoCs.

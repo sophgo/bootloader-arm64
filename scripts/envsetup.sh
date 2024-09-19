@@ -723,7 +723,9 @@ echo "admin:admin" | chpasswd
 usermod -a -G sudo admin
 
 apt install -y software-properties-common
+add-apt-repository "deb http://ports.ubuntu.com/ubuntu-ports focal-security main"
 add-apt-repository universe
+apt update
 
 DEBIAN_FRONTEND=noninteractive apt install -y \
 irqbalance kexec-tools busybox i2c-tools \
@@ -735,7 +737,11 @@ parted gdisk vim sysstat minicom atop u-boot-tools tree \
 memtester rng-tools psmisc gawk automake pkg-config bc \
 rsync lsof cmake dnsutils python3-dev nginx python3-pip \
 acpid curl dnsutils linux-tools-generic libgflags-dev \
-expect libgoogle-glog-dev libboost-all-dev
+expect libgoogle-glog-dev libboost-all-dev libev4 \
+libev-dev libncurses5-dev libncurses5 libncurses-dev \
+libtinfo5 telnet
+
+apt upgrade -y
 
 apt clean
 
@@ -1072,6 +1078,16 @@ function build_rootp()
 	sudo rm -rf $OUTPUT_DIR/rootfs
 	rm -f $OUTPUT_DIR/rootfs.tgz
 	mkdir $OUTPUT_DIR/rootfs
+
+	echo check distro file md5
+	FILE_MD5=$(md5sum "$DISTRO_BASE_PKT" | awk '{ print $1 }')
+	TARGET_MD5="8d4d62fb53c5f7ae697f371dd0cbdea9"
+	if [ "$FILE_MD5" != "$TARGET_MD5" ]; then
+		echo Error: MD5 checksum does not match.
+		return
+	else
+		echo MD5 checksum matches.
+	fi
 
 	echo copy distro rootfs files from ${DISTRO_BASE_PKT}...
 	zcat $DISTRO_BASE_PKT | sudo tar -C $OUTPUT_DIR/rootfs -x -f -

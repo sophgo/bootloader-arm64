@@ -4,9 +4,9 @@ sdkv=$(sudo busybox devmem 0x27101024)
 sdkv=$((sdkv & 0xff))
 
 if [[ $sdkv -eq 193 ]] || [[ $sdkv -eq 249 ]];then
-        echo 'SophonSDK(CV186AH) 1.7'
+        echo "SophonSDK(CV186AH) $(dpkg -l | grep sophon-soc-libsophon | awk 'NR == 1 {printf "%s\n", $3}')"
 else
-        echo 'SophonSDK(BM1688) 1.7'
+        echo "SophonSDK(BM1688) $(dpkg -l | grep sophon-soc-libsophon | awk 'NR == 1 {printf "%s\n", $3}')"
 fi
 
 

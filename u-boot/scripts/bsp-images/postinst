@@ -1,7 +1,0 @@
-#!/bin/bash
-
-if [ -e "/dev/bm-top" ]; then
-	flash_update -i /boot/spi_flash.bin -b 0x6000000
-else
-	echo skip flash update
-fi

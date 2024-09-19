@@ -1,7 +1,12 @@
 Build
 ========
 
-1. download toolchain and Ubuntu base from http://219.142.246.77:65000/sharing/5ajzpas1H
+1. download toolchain and Ubuntu base
+```bash
+python3 -m pip install dfss -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade
+python3 -m dfss --dflag=gcc_linaro_6.3.1
+python3 -m dfss --dflag=distro_focal
+```
 2. put them on the same level of bootloader-arm64 and linux-arm64, then unzip toolchain,
    no need to unzip distro, now you get the following folders:
    .
