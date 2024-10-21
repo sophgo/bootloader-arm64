@@ -1,7 +1,13 @@
 #!/bin/bash
 
-sdkv=$(sudo busybox devmem 0x27101024)
+if [ "$EUID" -ne 0 ]; then
+  echo "Please run this script with root privileges."
+  exit 1
+fi
+
+sdkv=$(sudo busybox devmem 0x27102014)
 sdkv=$((sdkv & 0xff))
+chip=$(cat /factory/OEMconfig.ini | grep "CHIP =" | awk -F= '{print $2}' | sed 's/^ *//')
 
 if [[ $sdkv -eq 193 ]] || [[ $sdkv -eq 249 ]];then
         echo "SophonSDK(CV186AH) $(dpkg -l | grep sophon-soc-libsophon | awk 'NR == 1 {printf "%s\n", $3}')"
