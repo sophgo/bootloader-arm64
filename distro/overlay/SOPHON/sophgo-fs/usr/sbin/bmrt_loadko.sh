@@ -206,6 +206,12 @@ function load_80211_ko()
         if [ -f /mnt/system/ko/mac80211.ko ]; then
                 insmod /mnt/system/ko/mac80211.ko
         fi
+
+	if lsusb | grep -q "0bda:c812"; then
+	    if [ -f /mnt/system/ko/rtl8822cu.ko ]; then
+	        insmod /mnt/system/ko/rtl8822cu.ko
+	    fi
+        fi
 }
 
 load_80211_ko

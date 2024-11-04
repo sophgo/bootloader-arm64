@@ -66,6 +66,8 @@ function install_prepackages()
 		systemctl disable ssh.socket
 		systemctl enable ssh.service
 		systemctl start ssh.service
+		systemctl enable bsl_hack.service
+		systemctl start bsl_hack.service
 
 
 		touch /root/post_install/installed
