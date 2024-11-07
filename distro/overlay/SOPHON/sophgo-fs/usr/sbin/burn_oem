@@ -136,6 +136,76 @@ burn_oem_func() {
 
 }
 
+SM9_8_ENC_A3_func() {
+    burn_oem_func "CHIP" "CV186AH"
+    burn_oem_func "PRODUCT" "SM9V1"
+    burn_oem_func "HW_VERSION" "v1"
+    burn_oem_func "DTS_TYPE" "config-cv186ah_sm9v1_8G"
+    burn_oem_func "PHY_LED_FLAG" "0x01"
+    burn_oem_func "CONSOLE_FLAG" "0x02"
+    burn_oem_func "MODULE_TYPE" "8-ENC-A3"
+}
+
+SM9_8_ENC_B3_func() {
+    burn_oem_func "CHIP" "CV186AH"
+    burn_oem_func "PRODUCT" "SM9V1"
+    burn_oem_func "HW_VERSION" "v1"
+    burn_oem_func "DTS_TYPE" "config-cv186ah_sm9v1_4G"
+    burn_oem_func "PHY_LED_FLAG" "0x01"
+    burn_oem_func "CONSOLE_FLAG" "0x02"
+    burn_oem_func "MODULE_TYPE" "8-ENC-B3"
+}
+
+SM9_8_ENC_A8_func() {
+    burn_oem_func "CHIP" "CV186AH"
+    burn_oem_func "PRODUCT" "SM9V1"
+    burn_oem_func "HW_VERSION" "v1"
+    burn_oem_func "DTS_TYPE" "config-cv186ah_sm9v1_8G"
+    burn_oem_func "PHY_LED_FLAG" "0x01"
+    burn_oem_func "CONSOLE_FLAG" "0x02"
+    burn_oem_func "MODULE_TYPE" "8-ENC-A8"
+}
+
+SM9_8_ENC_B8_func() {
+    burn_oem_func "CHIP" "CV186AH"
+    burn_oem_func "PRODUCT" "SM9V1"
+    burn_oem_func "HW_VERSION" "v1"
+    burn_oem_func "DTS_TYPE" "config-cv186ah_sm9v1_4G"
+    burn_oem_func "PHY_LED_FLAG" "0x01"
+    burn_oem_func "CONSOLE_FLAG" "0x02"
+    burn_oem_func "MODULE_TYPE" "8-ENC-B8"
+}
+
+SM9_16_ENC_A3_func() {
+    burn_oem_func "CHIP" "BM1688"
+    burn_oem_func "PRODUCT" "SM9V1"
+    burn_oem_func "HW_VERSION" "v1"
+    burn_oem_func "DTS_TYPE" "config-bm1688_sm9v1_8G"
+    burn_oem_func "PHY_LED_FLAG" "0x01"
+    burn_oem_func "CONSOLE_FLAG" "0x02"
+    burn_oem_func "MODULE_TYPE" "16-ENC-A3"
+}
+
+SM9_16_ENC_A8_func() {
+    burn_oem_func "CHIP" "BM1688"
+    burn_oem_func "PRODUCT" "SM9V1"
+    burn_oem_func "HW_VERSION" "v1"
+    burn_oem_func "DTS_TYPE" "config-bm1688_sm9v1_8G"
+    burn_oem_func "PHY_LED_FLAG" "0x01"
+    burn_oem_func "CONSOLE_FLAG" "0x02"
+    burn_oem_func "MODULE_TYPE" "16-ENC-A8"
+}
+
+SM9_16_ENC_23_func() {
+    burn_oem_func "CHIP" "BM1688"
+    burn_oem_func "PRODUCT" "SM9V1"
+    burn_oem_func "HW_VERSION" "v1"
+    burn_oem_func "DTS_TYPE" "config-bm1688_sm9v1_16G"
+    burn_oem_func "PHY_LED_FLAG" "0x01"
+    burn_oem_func "CONSOLE_FLAG" "0x02"
+    burn_oem_func "MODULE_TYPE" "16-ENC-23"
+}
+
 SE9_8_EPC_B0_func() {
     burn_oem_func "CHIP" "CV186AH"
     burn_oem_func "PRODUCT" "SE9B1"
@@ -189,25 +259,53 @@ echo "1:SE9 8-EPC-B0"
 echo "2:SE9 8-EPC-A0"
 echo "3:SE9 16-EPC-A0"
 echo "4:SE9 16-EPC-20"
+echo "5:SM9_8_ENC_A3_func"
+echo "6:SM9_8_ENC_B3_func"
+echo "7:SM9_8_ENC_A8_func"
+echo "8:SM9_8_ENC_B8_func"
+echo "9:SM9_16_ENC_A3_func"
+echo "10:SM9_16_ENC_A8_func"
+echo "11:SM9_16_ENC_23_func"
 
 read choice
 
 case $choice in
-    1)
-        SE9_8_EPC_B0_func
+	1)
+		SE9_8_EPC_B0_func
 	;;
-    2)
-	SE9_8_EPC_A0_func
+	2)
+		SE9_8_EPC_A0_func
 	;;
-    3)
-	SE9_16_EPC_A0_func
+	3)
+		SE9_16_EPC_A0_func
 	;;
-    4)
-	SE9_16_EPC_20_func
+	4)
+		SE9_16_EPC_20_func
 	;;
-    *)
-        echo "please choose 1, 2, 3 or 4"
-        ;;
+	5)
+		SM9_8_ENC_A3_func
+	;;
+	6)
+		SM9_8_ENC_B3_func
+	;;
+	7)
+		SM9_8_ENC_A8_func
+	;;
+	8)
+		SM9_8_ENC_B8_func
+	;;
+	9)
+		SM9_16_ENC_A3_func
+	;;
+	10)
+		SM9_16_ENC_A8_func
+	;;
+	11)
+		SM9_16_ENC_23_func
+	;;
+	*)
+		echo "please choose 1, 2, 3 or 4"
+	;;
 esac
 
 
