@@ -50,6 +50,16 @@ aging_flag=$(xxd -p aging_flag.bin)
 echo "AGING_FLAG = 0x$aging_flag" >> $OEM_file
 rm -f aging_flag.bin
 
+dd if=/dev/mmcblk0boot1 of=console_flag.bin count=1 bs=1 skip=130
+console_flag=$(xxd -p console_flag.bin)
+echo "CONSOLE_FLAG = 0x$console_flag" >> $OEM_file
+rm -f console_flag.bin
+
+dd if=/dev/mmcblk0boot1 of=phy_led_flag.bin count=1 bs=1 skip=131
+phy_led_flag=$(xxd -p phy_led_flag.bin)
+echo "PHY_LED_FLAG = 0x$phy_led_flag" >> $OEM_file
+rm -f phy_led_flag.bin
+
 dd if=/dev/mmcblk0boot1 of=vender.bin count=16 bs=1 skip=144
 vender=$(xxd -p vender.bin | xxd -r -p && echo '')
 echo "VENDER = $vender" >> $OEM_file

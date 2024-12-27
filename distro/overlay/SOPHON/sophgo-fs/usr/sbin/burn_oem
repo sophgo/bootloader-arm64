@@ -1,0 +1,314 @@
+#!/bin/bash
+date
+#sudo ./burn_oen.sh
+
+# if [ $# -ne 2 ]; then
+# 	echo "Please enter both the name and value of oem information"
+# 	echo " For examle: ./burn_oem.sh CHIP CV186AH"
+# 	echo "QA_FAIL_OEM"
+# 	exit 1
+# else
+# 	name=$1
+# 	value=$2
+# fi
+
+burn_oem_func() {
+    local name=$1
+    local value=$2
+
+    if [ $name == "SN0" ]; then
+	w_value=$value
+	addr=0
+	count=32
+	type="str"
+    elif [ $name == "SN1" ]; then
+        w_value=$value
+        addr=32
+        count=32
+        type="str"
+    elif [ $name == "MAC0" ]; then
+        w_value=${value#0x}
+        addr=64
+        count=16
+        type="hex"
+    elif [ $name == "MAC1" ]; then
+        w_value=${value#0x}
+        addr=80
+        count=16
+        type="hex"
+    elif [ $name == "PRODUCT_TYPE" ]; then
+        w_value=${value#0x}
+        addr=96
+        count=16
+        type="hex"
+    elif [ $name == "MODULE_TYPE" ]; then
+        w_value=$value
+        addr=112
+        count=16
+        type="str"
+    elif [ $name == "INTERFACE_FLAG" ]; then
+        w_value=${value#0x}
+        addr=128
+        count=1
+        type="hex"
+    elif [ $name == "AGING_FLAG" ]; then
+        w_value=${value#0x}
+        addr=129
+        count=1
+        type="hex"
+    elif [ $name == "CONSOLE_FLAG" ]; then
+        w_value=${value#0x}
+        addr=130
+        count=1
+        type="hex"
+    elif [ $name == "PHY_LED_FLAG" ]; then
+        w_value=${value#0x}
+        addr=131
+        count=1
+        type="hex"
+    elif [ $name == "VENDER" ]; then
+        w_value=$value
+        addr=144
+        count=16
+        type="str"
+    elif [ $name == "DTS_TYPE" ]; then
+        w_value=$value
+        addr=160
+        count=32
+        type="str"
+    elif [ $name == "HW_VERSION" ]; then
+        w_value=$value
+        addr=192
+        count=16
+        type="str"
+    elif [ $name == "PRODUCT" ]; then
+        w_value=$value
+        addr=208
+        count=16
+        type="str"
+    elif [ $name == "CHIP" ]; then
+        w_value=$value
+        addr=224
+        count=16
+        type="str"
+    else
+        echo "This script does not support burning this information: $name"
+        echo "QA_FAIL_OEM"
+        exit 1
+    fi
+
+    echo "name: $name"
+    echo "value: $value"
+
+    echo 0 > /sys/block/mmcblk0boot1/force_ro
+    if [ $? -ne 0 ]; then
+        echo "Unlock force_ro failed"
+        echo "QA_FAIL_OEM"
+        exit 1
+    fi
+
+    echo $w_value > ${name}.txt
+    if [ $type == "str" ]; then
+        input_file=${name}.txt
+    elif [ $type == "hex" ]; then
+        xxd -p -u -r ${name}.txt > ${name}.bin
+        input_file=${name}.bin
+    fi
+
+    dd if=/dev/zero of=/dev/mmcblk0boot1 count=$count bs=1 seek=$addr
+    if [ $? -ne 0 ]; then
+        echo "Erase $name failed"
+        echo "QA_FAIL_OEM"
+        exit 1
+    fi
+
+    dd if=$input_file of=/dev/mmcblk0boot1 count=$count bs=1 seek=$addr
+    if [ $? -ne 0 ]; then
+        echo "Burn $name failed"
+        echo "QA_FAIL_OEM"
+        exit 1
+    fi
+    echo "start rm -rf"
+    echo  $input_file
+    rm -rf $input_file ${name}.txt
+
+    echo 1 > /sys/block/mmcblk0boot1/force_ro
+
+}
+
+SM9_8_ENC_A3_func() {
+    burn_oem_func "CHIP" "CV186AH"
+    burn_oem_func "PRODUCT" "SM9V1"
+    burn_oem_func "HW_VERSION" "v1"
+    burn_oem_func "DTS_TYPE" "config-cv186ah_sm9v1_8G"
+    burn_oem_func "PHY_LED_FLAG" "0x01"
+    burn_oem_func "CONSOLE_FLAG" "0x02"
+    burn_oem_func "MODULE_TYPE" "8-ENC-A3"
+}
+
+SM9_8_ENC_B3_func() {
+    burn_oem_func "CHIP" "CV186AH"
+    burn_oem_func "PRODUCT" "SM9V1"
+    burn_oem_func "HW_VERSION" "v1"
+    burn_oem_func "DTS_TYPE" "config-cv186ah_sm9v1_4G"
+    burn_oem_func "PHY_LED_FLAG" "0x01"
+    burn_oem_func "CONSOLE_FLAG" "0x02"
+    burn_oem_func "MODULE_TYPE" "8-ENC-B3"
+}
+
+SM9_8_ENC_A8_func() {
+    burn_oem_func "CHIP" "CV186AH"
+    burn_oem_func "PRODUCT" "SM9V1"
+    burn_oem_func "HW_VERSION" "v1"
+    burn_oem_func "DTS_TYPE" "config-cv186ah_sm9v1_8G"
+    burn_oem_func "PHY_LED_FLAG" "0x01"
+    burn_oem_func "CONSOLE_FLAG" "0x02"
+    burn_oem_func "MODULE_TYPE" "8-ENC-A8"
+}
+
+SM9_8_ENC_B8_func() {
+    burn_oem_func "CHIP" "CV186AH"
+    burn_oem_func "PRODUCT" "SM9V1"
+    burn_oem_func "HW_VERSION" "v1"
+    burn_oem_func "DTS_TYPE" "config-cv186ah_sm9v1_4G"
+    burn_oem_func "PHY_LED_FLAG" "0x01"
+    burn_oem_func "CONSOLE_FLAG" "0x02"
+    burn_oem_func "MODULE_TYPE" "8-ENC-B8"
+}
+
+SM9_16_ENC_A3_func() {
+    burn_oem_func "CHIP" "BM1688"
+    burn_oem_func "PRODUCT" "SM9V1"
+    burn_oem_func "HW_VERSION" "v1"
+    burn_oem_func "DTS_TYPE" "config-bm1688_sm9v1_8G"
+    burn_oem_func "PHY_LED_FLAG" "0x01"
+    burn_oem_func "CONSOLE_FLAG" "0x02"
+    burn_oem_func "MODULE_TYPE" "16-ENC-A3"
+}
+
+SM9_16_ENC_A8_func() {
+    burn_oem_func "CHIP" "BM1688"
+    burn_oem_func "PRODUCT" "SM9V1"
+    burn_oem_func "HW_VERSION" "v1"
+    burn_oem_func "DTS_TYPE" "config-bm1688_sm9v1_8G"
+    burn_oem_func "PHY_LED_FLAG" "0x01"
+    burn_oem_func "CONSOLE_FLAG" "0x02"
+    burn_oem_func "MODULE_TYPE" "16-ENC-A8"
+}
+
+SM9_16_ENC_23_func() {
+    burn_oem_func "CHIP" "BM1688"
+    burn_oem_func "PRODUCT" "SM9V1"
+    burn_oem_func "HW_VERSION" "v1"
+    burn_oem_func "DTS_TYPE" "config-bm1688_sm9v1_16G"
+    burn_oem_func "PHY_LED_FLAG" "0x01"
+    burn_oem_func "CONSOLE_FLAG" "0x02"
+    burn_oem_func "MODULE_TYPE" "16-ENC-23"
+}
+
+SE9_8_EPC_B0_func() {
+    burn_oem_func "CHIP" "CV186AH"
+    burn_oem_func "PRODUCT" "SE9B1"
+    burn_oem_func "HW_VERSION" "v1"
+    burn_oem_func "DTS_TYPE" "config-cv186ah_se9b1_4G"
+    burn_oem_func "PHY_LED_FLAG" "0x01"
+    burn_oem_func "CONSOLE_FLAG" "0x02"
+    burn_oem_func "INTERFACE_FLAG" "0x01"
+    burn_oem_func "MODULE_TYPE" "8-EPC-B0"
+    burn_oem_func "PRODUCT_TYPE" "0x10"
+}
+
+SE9_8_EPC_A0_func(){
+    burn_oem_func "CHIP" "CV186AH"
+    burn_oem_func "PRODUCT" "SE9B1"
+    burn_oem_func "HW_VERSION" "v1"
+    burn_oem_func "DTS_TYPE" "config-cv186ah_se9b1_8G"
+    burn_oem_func "PHY_LED_FLAG" "0x01"
+    burn_oem_func "CONSOLE_FLAG" "0x02"
+    burn_oem_func "INTERFACE_FLAG" "0x01"
+    burn_oem_func "MODULE_TYPE" "8-EPC-A0"
+    burn_oem_func "PRODUCT_TYPE" "0x11"
+}
+
+SE9_16_EPC_A0_func(){
+    burn_oem_func "CHIP" "BM1688"
+    burn_oem_func "PRODUCT" "SE9B1"
+    burn_oem_func "HW_VERSION" "v1"
+    burn_oem_func "DTS_TYPE" "config-bm1688_se9b1_8G"
+    burn_oem_func "PHY_LED_FLAG" "0x01"
+    burn_oem_func "CONSOLE_FLAG" "0x02"
+    burn_oem_func "INTERFACE_FLAG" "0x01"
+    burn_oem_func "MODULE_TYPE" "16-EPC-A0"
+    burn_oem_func "PRODUCT_TYPE" "0x12"
+}
+
+SE9_16_EPC_20_func(){
+    burn_oem_func "CHIP" "BM1688"
+    burn_oem_func "PRODUCT" "SE9B1"
+    burn_oem_func "HW_VERSION" "v1"
+    burn_oem_func "DTS_TYPE" "config-bm1688_se9b1_16G"
+    burn_oem_func "PHY_LED_FLAG" "0x01"
+    burn_oem_func "CONSOLE_FLAG" "0x02"
+    burn_oem_func "INTERFACE_FLAG" "0x01"
+    burn_oem_func "MODULE_TYPE" "16-EPC-20"
+    burn_oem_func "PRODUCT_TYPE" "0x13"
+}
+
+echo "Please select the device model"
+echo "1:SE9 8-EPC-B0"
+echo "2:SE9 8-EPC-A0"
+echo "3:SE9 16-EPC-A0"
+echo "4:SE9 16-EPC-20"
+echo "5:SM9_8_ENC_A3_func"
+echo "6:SM9_8_ENC_B3_func"
+echo "7:SM9_8_ENC_A8_func"
+echo "8:SM9_8_ENC_B8_func"
+echo "9:SM9_16_ENC_A3_func"
+echo "10:SM9_16_ENC_A8_func"
+echo "11:SM9_16_ENC_23_func"
+
+read choice
+
+case $choice in
+	1)
+		SE9_8_EPC_B0_func
+	;;
+	2)
+		SE9_8_EPC_A0_func
+	;;
+	3)
+		SE9_16_EPC_A0_func
+	;;
+	4)
+		SE9_16_EPC_20_func
+	;;
+	5)
+		SM9_8_ENC_A3_func
+	;;
+	6)
+		SM9_8_ENC_B3_func
+	;;
+	7)
+		SM9_8_ENC_A8_func
+	;;
+	8)
+		SM9_8_ENC_B8_func
+	;;
+	9)
+		SM9_16_ENC_A3_func
+	;;
+	10)
+		SM9_16_ENC_A8_func
+	;;
+	11)
+		SM9_16_ENC_23_func
+	;;
+	*)
+		echo "please choose 1, 2, 3 or 4"
+	;;
+esac
+
+
+
+date
+echo "QA_PASS_OEM"

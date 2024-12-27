@@ -4,6 +4,7 @@ rm -rf /media/root-rw/*
 #rm -rf /media/root-rw/overlay
 
 #tar -zxf /media/root-ro/root/rootfs_rw.tgz -m -C /media/root-rw/
+tar -zxf /media/root-rw/.rootfs_rw.tgz -m -C /media/root-rw/
 
 #mkdir -p /media/root-rw/overlay/var/log
 

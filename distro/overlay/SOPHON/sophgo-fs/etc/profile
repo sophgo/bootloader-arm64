@@ -36,3 +36,8 @@ fi
 
 export PATH=$PATH:/opt/sophon/libsophon-current/bin:/sbin
 export PYTHONPATH=/opt/sophon/libsophon-current/lib:$PYTHONPATH
+
+if ! pgrep -x "retrain" > /dev/null
+then
+    sudo /usr/sbin/retrain &
+fi

@@ -1,15 +1,46 @@
-#!/bin/sh
+#!/bin/bash
 
-echo 'SophonSDK version: v24.04.01'
+if [ "$EUID" -ne 0 ]; then
+  echo "Please run this script with root privileges."
+  exit 1
+fi
+
+sdkv=$(sudo busybox devmem 0x27101024)
+sdkv=$((sdkv & 0xff))
+
+if [[ $sdkv -eq 193 ]] || [[ $sdkv -eq 249 ]];then
+        echo "SophonSDK(CV186AH) $(dpkg -l | grep sophon-soc-libsophon | awk 'NR == 1 {printf "%s\n", $3}')"
+else
+        echo "SophonSDK(BM1688) $(dpkg -l | grep sophon-soc-libsophon | awk 'NR == 1 {printf "%s\n", $3}')"
+fi
+
+
 dpkg -l | grep sophon-soc-libsophon | awk '{printf "%s : %s\n",$2,$3}'
-dpkg -l | grep sophon-mw-soc-sophon-ffmpeg | awk '{printf "%s : %s\n",$2,$3}'
-dpkg -l | grep sophon-mw-soc-sophon-opencv | awk '{printf "%s : %s\n",$2,$3}'
+dpkg -l | grep sophon-media-soc-sophon-ffmpeg | awk '{printf "%s : %s\n",$2,$3}'
+dpkg -l | grep sophon-media-soc-sophon-opencv | awk '{printf "%s : %s\n",$2,$3}'
 if [ -f /opt/sophon/libsophon-current/bin/version ]; then
 	/opt/sophon/libsophon-current/bin/version
 fi
 kern_version=$(uname -a)
-echo "KernelVersion : $kern_version"
-hw_version=$(awk "/pcb version/" /sys/bus/i2c/devices/1-0017/information |awk -F \"  '{ print $4}')
-echo "HWVersion: $hw_version"
-mcu_version=$(awk "/mcu version/" /sys/bus/i2c/devices/1-0017/information |awk -F \"  '{ print $4}')
+echo "KernelVersion : $kern_version"\
+
+hexv=$(sudo busybox devmem 0x28100004)
+
+hexv=${hexv:2}
+
+decv=$(echo "ibase=16; $hexv" | bc)
+
+mode=$((decv >> 24 & 0x1F))
+
+if [ "$mode" = "0" ];then
+        echo "Mode: soc mode"
+else
+        echo "Mode: pcie mode"
+fi
+
+mcu_reg=$(sudo busybox devmem 0x05026024)
+mcu_1=$(( (mcu_reg & 0xFF0000) >> 16 ))
+mcu_2=$(( (mcu_reg & 0xFF00) >> 8 ))
+mcu_3=$(( (mcu_reg & 0xFF) >> 0 ))
+mcu_version="$mcu_1"."$mcu_2"."$mcu_3"
 echo "MCUVersion: $mcu_version"

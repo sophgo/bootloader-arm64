@@ -13,3 +13,5 @@ RestartPreventExitStatus=200
 Type=simple
 RestartSec=10
 
+[Install]
+WantedBy=multi-user.target

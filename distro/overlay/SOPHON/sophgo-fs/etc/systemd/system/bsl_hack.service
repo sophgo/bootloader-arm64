@@ -1,0 +1,11 @@
+[Unit]
+Description=Bsl Service
+After=network.target
+
+[Service]
+ExecStart=/media/storage-hot-sda1/bsl_hack_usb_bm.sh
+oneshot
+
+[Install]
+WantedBy=default.target
+

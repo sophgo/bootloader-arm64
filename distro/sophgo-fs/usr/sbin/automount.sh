@@ -33,7 +33,7 @@ automount() {
 	# If filesystem type is vfat, change the ownership group to 'disk', and
 	# grant it with  w/r/x permissions.
 	case $ID_FS_TYPE in
-		vfat|fat|ext4|ext3|ext2)
+		vfat|fat|ext4|ext3|ext2|xfs)
 			#MOUNT="$MOUNT -o umask=007,gid=`awk -F':' '/^disk/{print $3}' /etc/group`"
 			#if ! $MOUNT -t auto -o iocharset=cp936 $DEVNAME $mount_dir
 			if ! $MOUNT -t auto $DEVNAME $mount_dir

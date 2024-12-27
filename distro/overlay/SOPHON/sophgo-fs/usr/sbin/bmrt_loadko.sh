@@ -188,43 +188,101 @@ function load_ethernet_ko()
         fi
 }
 
+function load_spacc_ko()
+{
+	echo load spacc ko ...
+	if [ -f /mnt/system/ko/sophon_spacc.ko ]; then
+		insmod /mnt/system/ko/sophon_spacc.ko
+	fi
+}
+
+function load_80211_ko()
+{
+        echo load cfg80211.ko ...
+        if [ -f /mnt/system/ko/cfg80211.ko ]; then
+                insmod /mnt/system/ko/cfg80211.ko
+        fi
+        echo load mac80211.ko ...
+        if [ -f /mnt/system/ko/mac80211.ko ]; then
+                insmod /mnt/system/ko/mac80211.ko
+        fi
+
+	if lsusb | grep -q "0bda:c812"; then
+	    if [ -f /mnt/system/ko/rtl8822cu.ko ]; then
+	        insmod /mnt/system/ko/rtl8822cu.ko
+	    fi
+        fi
+}
+
+function load_wifi_ko()
+{
+	echo load aic8800 wifi ko ...
+	if lsusb | grep -q "a69c:8d80"; then
+		if [ -f /mnt/system/ko/aic_load_fw.ko ]; then
+			insmod /mnt/system/ko/aic_load_fw.ko
+		fi
+		sleep 1
+		if [ -f /mnt/system/ko/aic8800_fdrv.ko ]; then
+			insmod /mnt/system/ko/aic8800_fdrv.ko
+		fi
+		sleep 1
+		if [ -f /mnt/system/ko/aic_btusb.ko ]; then
+			insmod /mnt/system/ko/aic_btusb.ko
+		fi
+	fi
+
+	if lsusb | grep -q "0bda:c812"; then
+		if [ -f /mnt/system/ko/rtl8822cu.ko ]; then
+			insmod /mnt/system/ko/rtl8822cu.ko
+		fi
+	fi
+}
+
+if [ -e /etc/init/P99boottime ]; then
+	/etc/init/P99boottime start
+fi
+
+load_80211_ko
 load_soph_base_ko
 load_soph_sys_ko
-#load_soph_vpss_ko
-#load_soph_dwa_ko
-#load_soph_clock_cooling_ko
-#load_soph_vc_drv_ko
-#load_soph_rtc_ko
-#load_soph_ive_ko
+load_soph_vpss_ko
+load_soph_dwa_ko
+load_soph_clock_cooling_ko
+load_soph_vc_drv_ko
+load_soph_rtc_ko
+load_soph_ive_ko
 echo load bmrt ko ...
 load_ko
-#load_soph_2d_engine_ko
-#load_soph_pwm_ko
-#load_soph_saradc_ko
-#load_soph_dpu_ko
-#load_soph_stitch_ko
-#load_soph_drm_ko
+load_soph_2d_engine_ko
+load_soph_pwm_ko
+load_soph_saradc_ko
+load_soph_dpu_ko
+load_soph_stitch_ko
+load_soph_drm_ko
 # load_g_serial_ko
 # load_usb_f_obex_ko
 # load_usb_f_serial_ko
-#load_soph_ldc_ko
+load_soph_ldc_ko
 load_ethernet_ko
+load_spacc_ko
+load_wifi_ko
 
 # modify permission for drivers
 echo "load.sh starting..."
 ./sbin/load.sh -d soph-base
 ./sbin/load.sh -d soph-sys
-#./sbin/load.sh -d soph-tde0
-#./sbin/load.sh -d soph-tde1
-#./sbin/load.sh -d soph-vpss
-#./sbin/load.sh -d soph_vc_dec
-#./sbin/load.sh -d soph_vc_enc
+./sbin/load.sh -d soph-tde0
+./sbin/load.sh -d soph-tde1
+./sbin/load.sh -d soph-vpss
+./sbin/load.sh -d soph_vc_dec
+./sbin/load.sh -d soph_vc_enc
 ./sbin/load.sh -p /dev/dri/ -d card0
-#./sbin/load.sh -d soph-dpu
-#./sbin/load.sh -d soph-dwa
-#./sbin/load.sh -d soph-ive
-#./sbin/load.sh -d soph-stitch
-#./sbin/load.sh -d soph-ldc
+./sbin/load.sh -d soph-dpu
+./sbin/load.sh -d soph-dwa
+./sbin/load.sh -d soph-ive
+./sbin/load.sh -d soph-stitch
+./sbin/load.sh -d soph-ldc
+./sbin/load.sh -d spacc
 ./sbin/load.sh -p /dev/snd/ -d controlC0
 ./sbin/load.sh -p /dev/snd/ -d controlC1
 ./sbin/load.sh -p /dev/snd/ -d controlC2
@@ -237,6 +295,20 @@ echo "load.sh starting..."
 for file in $(find /dev/ -name video*);do
 	file_name=${file##*/}
 	./sbin/load.sh -d $file_name
+done
+
+for((i=0;i<=7;i++));do
+	cmd="/sys/class/net/eth0/queues/rx-$i/rps_cpus"
+	if [ -f $cmd ]; then
+		echo f > $cmd
+		echo 2048 > /sys/class/net/eth0/queues/rx-$i/rps_flow_cnt
+	fi
+
+	cmd="/sys/class/net/eth1/queues/rx-$i/rps_cpus"
+	if [ -f $cmd ]; then
+		echo f > $cmd
+		echo 2048 > /sys/class/net/eth1/queues/rx-$i/rps_flow_cnt
+	fi
 done
 
 exit 0

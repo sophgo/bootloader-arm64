@@ -2,9 +2,9 @@
 
 cur_ver=$(uname -r)
 echo ${cur_ver}
-if [ -e /home/linaro/bsp-debs/linux-headers-${cur_ver}.deb ]; then
+if [ -e /home/linaro/bsp-debs/linux-headers_${cur_ver}.deb ]; then
 	if [ -d /lib/modules/${cur_ver} ]; then
-		sudo dpkg -i /home/linaro/bsp-debs/linux-headers-${cur_ver}.deb
+		sudo dpkg -i /home/linaro/bsp-debs/linux-headers_${cur_ver}.deb
 		sudo mkdir -p /usr/src/linux-headers-${cur_ver}/tools/include/tools
 		sudo cp /home/linaro/bsp-debs/*.h  /usr/src/linux-headers-${cur_ver}/tools/include/tools
 		cd /usr/src/linux-headers-${cur_ver}

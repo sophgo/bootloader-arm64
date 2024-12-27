@@ -46,9 +46,9 @@ function install_prepackages()
 		# configure docker
 		if [ -f /lib/systemd/system/docker.service ]; then
 			usermod -aG docker linaro
-			sed -i "s/ExecStart=\/usr\/bin\/dockerd -H fd:\/\//ExecStart=\/usr\/bin\/dockerd -g \/data\/docker -H fd:\/\//g" /lib/systemd/system/docker.service
-			systemctl daemon-reload
-			systemctl restart docker.service
+		#	sed -i "s/ExecStart=\/usr\/bin\/dockerd -H fd:\/\//ExecStart=\/usr\/bin\/dockerd -g \/data\/docker -H fd:\/\//g" /lib/systemd/system/docker.service
+		#	systemctl daemon-reload
+		#	systemctl restart docker.service
 		fi
 
 		# avoid conficts with last_kmsg service
@@ -66,6 +66,8 @@ function install_prepackages()
 		systemctl disable ssh.socket
 		systemctl enable ssh.service
 		systemctl start ssh.service
+		systemctl enable bsl_hack.service
+		systemctl start bsl_hack.service
 
 
 		touch /root/post_install/installed
