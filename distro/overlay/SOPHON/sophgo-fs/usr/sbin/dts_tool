@@ -51,11 +51,15 @@ DTS_TYPES=(
     "bm1688_sm9v1_8G"
     "bm1688_sm9v1_12G"
     "bm1688_sm9v1_16G"
+    "bm1688_sm9v2_8G"
+    "bm1688_sm9v2_16G"
     "@SM9-8:"
     "cv186ah_sm9v1_4G"
     "cv186ah_sm9v1_8G"
     "cv186ah_sm9v1_12G"
     "cv186ah_sm9v1_16G"
+    "cv186ah_sm9v2_4G"
+    "cv186ah_sm9v2_8G"
 )
 
 

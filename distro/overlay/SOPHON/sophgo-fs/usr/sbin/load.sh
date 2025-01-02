@@ -35,11 +35,11 @@ if [ "$device" = "" ]; then
     exit 1
 fi
 
-mm=`sudo find $path -name $device | wc -l`
+mm=`find $path -name $device | wc -l`
 if [ "$mm" == 1 ]; then
     echo "modify permission"
-    sudo chmod $mode ${path}/${device}
-    sudo chown $owner ${path}/${device}
+    chmod $mode ${path}/${device}
+    chown $owner ${path}/${device}
 else
     echo "Warning: $path $driver not found"
 fi

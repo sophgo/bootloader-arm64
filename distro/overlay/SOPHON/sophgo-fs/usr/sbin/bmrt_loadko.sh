@@ -2,7 +2,7 @@
 function load_ko()
 {
 	if [ -f /opt/sophon/libsophon-current/data/bmtpu.ko ]; then
-		sudo mkdir -p /lib/firmware
+		mkdir -p /lib/firmware
 		ln -s /opt/sophon/libsophon-current/data/bm1688_firmware0.bin \
 			/lib/firmware/bm1688_firmware0.bin
 		ln -s /opt/sophon/libsophon-current/data/bm1688_firmware1.bin \
@@ -18,17 +18,17 @@ function load_ko()
 
 	if [ -f /opt/sophon/libsophon-current/data/load.sh ]; then
 		pushd /opt/sophon/libsophon-current/data
-		sudo chmod +x load.sh
-		sudo chmod +x unload.sh
-		sudo ./load.sh
+		chmod +x load.sh
+		chmod +x unload.sh
+		./load.sh
 		popd
 	fi
 
 	if [ -f /opt/sophon/libsophon-current/data/load_jpu.sh ]; then
 		pushd /opt/sophon/libsophon-current/data
-		sudo chmod +x load_jpu.sh
-		sudo chmod +x unload_jpu.sh
-		sudo ./load_jpu.sh
+		chmod +x load_jpu.sh
+		chmod +x unload_jpu.sh
+		./load_jpu.sh
 		popd
 	fi
 }
