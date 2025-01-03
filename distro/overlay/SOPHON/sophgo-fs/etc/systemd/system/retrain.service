@@ -1,0 +1,9 @@
+[Unit]
+Description=ddr retrain
+
+[Service]
+User=root
+ExecStart=/usr/sbin/ddrtest
+
+[Install]
+WantedBy=multi-user.target

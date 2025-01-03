@@ -37,3 +37,5 @@ fi
 export PATH=$PATH:/opt/sophon/libsophon-current/bin:/sbin
 export PYTHONPATH=/opt/sophon/libsophon-current/lib:$PYTHONPATH
 
+sudo systemctl daemon-reload
+sudo systemctl enable retrain.service
