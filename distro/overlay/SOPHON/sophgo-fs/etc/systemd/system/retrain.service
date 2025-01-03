@@ -2,8 +2,11 @@
 Description=ddr retrain
 
 [Service]
+ExecStart=/usr/sbin/retrain
+Restart=always
 User=root
-ExecStart=/usr/sbin/ddrtest
+Group=root
 
 [Install]
 WantedBy=multi-user.target
+
