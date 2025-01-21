@@ -297,18 +297,4 @@ for file in $(find /dev/ -name video*);do
 	./sbin/load.sh -d $file_name
 done
 
-for((i=0;i<=7;i++));do
-	cmd="/sys/class/net/eth0/queues/rx-$i/rps_cpus"
-	if [ -f $cmd ]; then
-		echo f > $cmd
-		echo 2048 > /sys/class/net/eth0/queues/rx-$i/rps_flow_cnt
-	fi
-
-	cmd="/sys/class/net/eth1/queues/rx-$i/rps_cpus"
-	if [ -f $cmd ]; then
-		echo f > $cmd
-		echo 2048 > /sys/class/net/eth1/queues/rx-$i/rps_flow_cnt
-	fi
-done
-
 exit 0

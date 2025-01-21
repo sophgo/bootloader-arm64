@@ -113,3 +113,8 @@ else
 
 fi
 
+if [ -f "/etc/systemd/system/retrain.service" ]; then
+	systemctl enable retrain.service
+	systemctl start retrain.service
+fi
+
