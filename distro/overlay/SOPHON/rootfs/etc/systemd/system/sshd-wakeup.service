@@ -1,0 +1,10 @@
+[Unit]
+Description=Start SSH Daemon on Wakeup
+After=suspend.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/systemctl start sshd
+
+[Install]
+WantedBy=suspend.target
