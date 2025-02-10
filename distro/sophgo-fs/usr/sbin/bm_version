@@ -1,6 +1,6 @@
 #!/bin/sh
 
-echo 'SophonSDK version: v23.09 LTS-SP3'
+echo 'SophonSDK version: v23.09 LTS-SP4'
 dpkg -l | grep sophon-soc-libsophon | awk '{printf "%s : %s\n",$2,$3}'
 dpkg -l | grep sophon-mw-soc-sophon-ffmpeg | awk '{printf "%s : %s\n",$2,$3}'
 dpkg -l | grep sophon-mw-soc-sophon-opencv | awk '{printf "%s : %s\n",$2,$3}'

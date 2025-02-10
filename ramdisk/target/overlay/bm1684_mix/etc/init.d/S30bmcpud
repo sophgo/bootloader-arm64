@@ -12,8 +12,8 @@ start() {
         printf "Starting bmcpu: "
         insmod /usr/bm/bmtpu.ko
         cd /usr/bm
-        ./load_vpu.sh
-        ./load_jpu.sh
+        ./load.sh
+        bash ./load_jpu.sh
         cd /
         mdev -s
         /usr/bm/bmcpu &
