@@ -1,8 +1,7 @@
 Build
 ========
 
-1. download toolchain and Ubuntu base from https://pan.baidu.com/s/1hzYI-gW5fiw6ilFkCdj1ZA 
-code：etzs
+1. download toolchain and Ubuntu base from https://pan.baidu.com/s/1zhEQ0vlh8ehDKOdm279wcg code: bth5
 2. put them on the same level of bootloader-arm64 and linux-arm64, then unzip toolchain,
    no need to unzip distro, now you get the following folders:
    .
