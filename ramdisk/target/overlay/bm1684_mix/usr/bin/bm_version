@@ -1,0 +1,13 @@
+#!/bin/sh
+
+echo 'SophonSDK version: LTS SP4'
+echo 'sophon-soc-libsophon : 0.5.1'
+echo 'sophon-soc-libsophon-dev : 0.5.1'
+echo 'sophon-mw-soc-sophon-ffmpeg : 0.12.0'
+echo 'sophon-mw-soc-sophon-opencv : 0.12.0'
+if [ -f /opt/sophon/libsophon-current/bin/version ]; then
+        /opt/sophon/libsophon-current/bin/version
+fi
+kern_version=$(uname -a)
+echo "KernelVersion : $kern_version"
+

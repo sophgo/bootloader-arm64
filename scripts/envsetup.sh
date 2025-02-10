@@ -1118,7 +1118,6 @@ else
 	if [ "$os_release" != "Kylin" ]; then
 		echo "not se6 and not kylin, try install hdmi and system deb"
 		dpkg -i /home/linaro/bsp-debs/sophgo-hdmi_*.deb
-		dpkg -i /home/linaro/bsp-debs/sophgo-system_*.deb
 	fi
 fi
 

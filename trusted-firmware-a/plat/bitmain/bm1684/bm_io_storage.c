@@ -21,7 +21,7 @@
 #include <lib/fatfs/ff.h>
 #include <drivers/delay_timer.h>
 #include <drivers/bitmain/bm_sd.h>
-
+#include <drivers/bitmain/i2c.h>  // to read temprature
 #include "bm_common.h"
 
 /* IO devices */
@@ -220,6 +220,50 @@ static void setup_io_dev(void)
 	(void)io_result;
 }
 
+void tmp451_read_temprature(uint8_t *local, uint8_t *remote)
+{
+	uint8_t l = 0, r = 0;
+
+	i2c_smbus_write_byte(0, 0x4c, 9, 0x80);	   // range 0 - 127
+	i2c_smbus_write_byte(0, 0x4c, 0x11, 0x00); // offset 0
+	i2c_smbus_read_byte(0, 0x4c, 1, &r);
+	*remote = r & 0x7f;
+	i2c_smbus_read_byte(0, 0x4c, 0, &l);
+	*local = l & 0x7f;
+}
+
+inline uint16_t swap_endian_16(uint16_t raw)
+{
+	return (raw << 8) | (raw >> 8);
+}
+
+void update_registers_for_mcu(void)
+{
+	static struct bm_sc7pro_sbus_regs_t regs;
+	uint8_t remote_temp, local_temp;
+
+	regs.reserved_a[0] += 1;
+	if (mmio_read_32(BM1684X_DRIVER_PROBE_FLAG) == 1) {
+		NOTICE("driver active now, skip\n");
+		return; /* driver installed, nothing to do */
+	}
+	/* read temprature from iic and write to sram */
+	tmp451_read_temprature(&local_temp, &remote_temp);
+	NOTICE("read iic remote temp %d, local temp %d\n", remote_temp, local_temp);
+	regs.board_temp = local_temp;
+	regs.chip_temp = remote_temp;
+	regs.fan_speed = 0xff;
+	regs.board_power = 0xff;
+	regs.vendor_id_device = swap_endian_16(BM1684X_DEVICE_ID);
+	regs.vendor_id_vendor = swap_endian_16(BM1684X_VENDOR_ID);
+	regs.firmware_ver_chip = swap_endian_16(0xdead);
+	regs.firmware_ver_major = 0xbe;
+	regs.firmware_ver_minor = 0xef;
+	for (int i = 0; i < sizeof(regs) / 4; i++) {
+		mmio_write_32(BM1684X_SMBUS_REG_BASE + i * 4, ((uint32_t *)&regs)[i]);
+	}
+}
+
 void bm_locate_next_image(void)
 {
 #ifdef IMAGE_BL1
@@ -319,6 +363,11 @@ setup:
 		NOTICE("Waiting for FIP in position\n");
 		bm_wdt_stop();
 		while (1) {
+			/* if driver was not installed, we update smbus registers so bmc can
+			 * still read board temprature and other stuff
+			 */
+			update_registers_for_mcu();
+
 			if (mmio_read_32(BOOT_ARGS_REG) & FIP_LOADED) {
 				NOTICE("FIP is in position\n");
 				mmio_clrbits_32(BOOT_ARGS_REG, FIP_LOADED);

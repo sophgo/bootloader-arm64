@@ -1,5 +1,16 @@
 #!/bin/bash
 
+# No  TPU     VPU     CPU     VTPU
+# S0: 950     800     2300    880
+# S1: 712.5   800     2300    740
+# S2: 500     640     1800    740
+# S3: 25      640     1800    620
+
+# S0: T>=85 => S1
+# S1: T<=80 => S0, T>=90 => S2
+# S2: T<=85 => S1, T>=100 => S3
+# S3: T<=95 => S2, T>=105 => POWER OFF
+
 function temp_scan()
 {
     stage=0
@@ -91,7 +102,7 @@ function temp_scan()
                 fi
                 ;;
             1)
-                if [ $max_t -ge 95 ];then
+                if [ $max_t -ge 90 ];then
                     stage=2
                     set_stage_2_up
                 elif [ $max_t -le 80 ];then
@@ -102,10 +113,10 @@ function temp_scan()
                 fi
                 ;;
             2)
-                if [ $max_t -ge 105 ];then
+                if [ $max_t -ge 100 ];then
                     stage=3
                     set_stage_3_up
-                elif [ $max_t -le 90 ];then
+                elif [ $max_t -le 85 ];then
                     stage=1
                     set_stage_1_down
                 else
@@ -113,7 +124,7 @@ function temp_scan()
                 fi
                 ;;
             3)
-                if [ $max_t -le 100 ];then
+                if [ $max_t -le 95 ];then
                     stage=2
                     set_stage_2_down
                 else

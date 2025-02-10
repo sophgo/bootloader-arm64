@@ -13,6 +13,8 @@
 #define DISK_PART_TABLE_ADDR	0x600000
 #define BUFFER_SIZE		1024
 
+#define PACK_B_PART
+
 enum {
 	CHIP_UNKNOWN = 0,
 	CHIP_BM1684,
@@ -273,6 +275,7 @@ int main(int argc, char **argv)
 		write(fd_spi, &zero_byte, 1);
 	stat("./bl1.bin", &fd_statbuf);
 	printf("offset=0x%x, bl1.bin 0x%lx\n", offset, fd_statbuf.st_size);
+	lseek(fd_bl1, 0, SEEK_SET);
 	for (i = 0; i < fd_statbuf.st_size; i++) {
 		read(fd_bl1, &raw_byte, 1);
 		write(fd_spi, &raw_byte, 1);
@@ -290,6 +293,7 @@ int main(int argc, char **argv)
 		write(fd_spi, &zero_byte, 1);
 	stat("./fip.bin", &fd_statbuf);
 	printf("offset=0x%x, fip.bin 0x%lx\n", offset, fd_statbuf.st_size);
+	lseek(fd_fip, 0, SEEK_SET);
 	for (i = 0; i < fd_statbuf.st_size; i++) {
 		read(fd_fip, &raw_byte, 1);
 		write(fd_spi, &raw_byte, 1);

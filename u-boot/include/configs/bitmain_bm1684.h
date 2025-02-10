@@ -160,7 +160,8 @@ enum {
 	"boot_scripts=boot.scr.emmc boot.scr.sd boot.scr\0"				\
 	"grubcmd=load mmc 1:3 ${fdt_addr_r} /boot/${dtb_name};"			\
 		"load mmc 1:1 ${kernel_addr_r} /EFI/ubuntu/grubaa64.efi;"		\
-		"bootefi ${kernel_addr_r} ${fdt_addr_r}\0"
+		"bootefi ${kernel_addr_r} ${fdt_addr_r}\0"			\
+	"UBOOT_ENV_SUPPORT_OTA_ENABLE=1\0"
 
 #undef CONFIG_BOOTCOMMAND
 #if USE_GRUB
@@ -230,6 +231,16 @@ enum {
 /* FAT_ENV_INTERFACE="mmc", moved to defconfig file */
 /* FAT_ENV_DEVICE_AND_PART="0:1", moved to defconfig file */
 /* FAT_ENV_FILE="uboot.env", moved to defconfig file */
+#elif defined(CONFIG_ENV_IS_IN_MMC)
+/*
+ * u-boot env to emmc0boot0 0x0 -> 0x100000
+ *
+ * CONFIG_SYS_MMC_ENV_DEV=0
+ * CONFIG_SYS_MMC_ENV_PART=1
+ * CONFIG_ENV_OFFSET=0x0
+ * CONFIG_ENV_SIZE=0x100000
+ *
+ */
 #else
 #error env location not specified
 #endif
