@@ -6,12 +6,6 @@ SCRIPT=$(readlink -f "$0")
 SCRIPT_DIR=$(dirname "$SCRIPT")
 temp_alarm_file=${SCRIPT_DIR}/temp_alarm
 
-# init 
-count=0          # timer
-press_time=0     # duration time
-is_pressed=0     
-gpio_prev_value=1  
-
 # 0 for fist run this script
 # 1 for ssd normal state
 # 2 for ssd not present
@@ -102,38 +96,6 @@ while true; do
         busybox devmem 0x0502601c 32 $(($(busybox devmem 0x0502601c) &~ 0x2))
         /etc/acpi/restorebtn-acpi-support.sh
     fi
-    # get gpio value
-    gpio_value=$(cat "$gpio_file")
 
-    # check gpio value
-    if [ "$gpio_value" -eq 0 ]; then
-        if [ "$is_pressed" -eq 0 ]; then
-            # button pressed time
-            press_time=$(date +%s)
-            is_pressed=1
-        fi
-    else
-        if [ "$is_pressed" -eq 1 ]; then
-            # button released time
-            release_time=$(date +%s)
-            duration=$((release_time - press_time))
-
-            if [ "$duration" -le 3 ]; then
-				echo "Recovery press donw about 3 seconds. power off system..."
-				count_3sec=0
-				i2cset -f -y 11 0x50 0xAA 0xAA
-            elif [ "$duration" -gt 12 ]; then
-                echo "Recovery press donw over 12 seconds. Restoring factory settings..."
-				/etc/acpi/restorebtn-acpi-support.sh				
-				if [ $? -eq 0 ]; then
-					echo run ok!
-					count_12sec=0
-					i2cset -f -y 11 0x50 0xAA 0xBB
-				fi				
-            fi
-            is_pressed=0
-            press_time=0
-        fi
-    fi
     sleep 1
 done
