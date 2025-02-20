@@ -1,0 +1,10 @@
+[Unit]
+Description=Disconnect SSH before sleep
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/pkill sshd
+
+[Install]
+WantedBy=sleep.target
+

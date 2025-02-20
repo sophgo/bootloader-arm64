@@ -1,0 +1,8 @@
+/dev/mmcblk1p1	/boot		vfat	rw				0	1
+/dev/mmcblk1p2	/recovery		vfat	rw				0	1
+# /dev/mmcblk1p3	/env       ext4 defaults			0	0
+# /dev/mmcblk1p5	/misc       ext4 defaults			0	0
+/dev/mmcblk1p6	/media/root-ro	ext4	ro,errors=remount-ro,noauto	0	0
+/dev/mmcblk1p7	/media/root-rw  ext4	defaults			0	0
+/media/root-ro	/		overlay	lowerdir=/media/root-ro,upperdir=/media/root-rw/overlay,workdir=/media/root-rw/overlay-workdir	0	0
+/dev/mmcblk1p8	/data           ext4	defaults			0	0

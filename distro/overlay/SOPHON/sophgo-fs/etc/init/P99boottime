@@ -1,0 +1,80 @@
+#!/bin/sh
+${CVI_SHOPTS}
+
+# from fsbl/plat/mars/include/platform_def.h
+# struct _time_records { ... }
+
+fields="
+bl2_start
+ddr_init_start
+ddr_init_end
+blmcu_start
+bl31_start
+bl32_start
+uboot_start
+uboot_cmd_start
+kernel_decompress_start
+kernel_start
+kernel_run_init_start
+NONE
+"
+
+fields=$(echo $fields)
+
+TIME_RECORDS_ADDR=0x25050010
+TIME_RECORDS_SIZE=$((2 * 12))
+
+OUTPUT=/tmp/boottime
+
+case "$1" in
+  start)
+	echo > "$OUTPUT"
+
+	for i in $(seq 0 4 $((TIME_RECORDS_SIZE - 4))); do
+        	addr=$((TIME_RECORDS_ADDR + i))
+        	ts=$(busybox devmem $addr 32)
+       		# printf "0x%08x=0x%08x\n" "$a" "$ts"
+
+        	t0=$((ts & 0xffff))
+        	t1=$((ts >> 16))
+
+        	f0="${fields%% *}"
+        	fields="${fields#* }"
+        	f1="${fields%% *}"
+        	fields="${fields#* }"
+
+        	eval "${f0}=${t0}"
+        	eval "${f1}=${t1}"
+
+        	{
+                	echo "${f0}=${t0}ms"
+                	echo "${f1}=${t1}ms"
+        	} >> "$OUTPUT"
+	done
+
+	{
+		uname -a
+		echo "ROM elapsed time: ${bl2_start} milliseconds"
+		echo "DDR init elapsed time: $((ddr_init_end - ddr_init_start)) milliseconds"
+		echo "BLmcu run at: ${blmcu_start} milliseconds"
+		echo "BL31 run at: ${bl31_start} milliseconds"
+		echo "BL32 run at: ${bl32_start} milliseconds"
+		echo "U-boot run at: ${uboot_start} milliseconds"
+		echo "Kernel decompress start at: ${kernel_decompress_start} milliseconds"
+		echo "Kernel run at: ${kernel_start} milliseconds"
+		echo "Init process run at: ${kernel_run_init_start} milliseconds"
+		echo "Kernel uptime: $(awk '{print $1}' /proc/uptime) seconds"
+		echo "Total boottime: ?"
+	} >> "$OUTPUT"
+
+	;;
+  stop)
+        ;;
+  restart|reload)
+        ;;
+  *)
+        echo "Usage: $0 {start|stop|restart}"
+        exit 1
+esac
+
+exit $?

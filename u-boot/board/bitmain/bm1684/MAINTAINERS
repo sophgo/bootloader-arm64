@@ -1,6 +1,0 @@
-BM1684 BOARD
-M:	Xiao Wang <xiao.wang@sophgo.com>
-S:	Maintained
-F:	board/bitmain/bm1684
-F:	include/configs/bitmain_bm1684_asic.h
-F:	configs/bitmain_bm1684_asic_defconfig

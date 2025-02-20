@@ -2,7 +2,7 @@
 function load_ko()
 {
 	if [ -f /opt/sophon/libsophon-current/data/bmtpu.ko ]; then
-		sudo mkdir -p /lib/firmware
+		mkdir -p /lib/firmware
 		ln -s /opt/sophon/libsophon-current/data/bm1688_firmware0.bin \
 			/lib/firmware/bm1688_firmware0.bin
 		ln -s /opt/sophon/libsophon-current/data/bm1688_firmware1.bin \
@@ -18,17 +18,17 @@ function load_ko()
 
 	if [ -f /opt/sophon/libsophon-current/data/load.sh ]; then
 		pushd /opt/sophon/libsophon-current/data
-		sudo chmod +x load.sh
-		sudo chmod +x unload.sh
-		sudo ./load.sh
+		chmod +x load.sh
+		chmod +x unload.sh
+		./load.sh
 		popd
 	fi
 
 	if [ -f /opt/sophon/libsophon-current/data/load_jpu.sh ]; then
 		pushd /opt/sophon/libsophon-current/data
-		sudo chmod +x load_jpu.sh
-		sudo chmod +x unload_jpu.sh
-		sudo ./load_jpu.sh
+		chmod +x load_jpu.sh
+		chmod +x unload_jpu.sh
+		./load_jpu.sh
 		popd
 	fi
 }
@@ -214,6 +214,34 @@ function load_80211_ko()
         fi
 }
 
+function load_wifi_ko()
+{
+	echo load aic8800 wifi ko ...
+	if lsusb | grep -q "a69c:8d80"; then
+		if [ -f /mnt/system/ko/aic_load_fw.ko ]; then
+			insmod /mnt/system/ko/aic_load_fw.ko
+		fi
+		sleep 1
+		if [ -f /mnt/system/ko/aic8800_fdrv.ko ]; then
+			insmod /mnt/system/ko/aic8800_fdrv.ko
+		fi
+		sleep 1
+		if [ -f /mnt/system/ko/aic_btusb.ko ]; then
+			insmod /mnt/system/ko/aic_btusb.ko
+		fi
+	fi
+
+	if lsusb | grep -q "0bda:c812"; then
+		if [ -f /mnt/system/ko/rtl8822cu.ko ]; then
+			insmod /mnt/system/ko/rtl8822cu.ko
+		fi
+	fi
+}
+
+if [ -e /etc/init/P99boottime ]; then
+	/etc/init/P99boottime start
+fi
+
 load_80211_ko
 load_soph_base_ko
 load_soph_sys_ko
@@ -237,6 +265,7 @@ load_soph_drm_ko
 load_soph_ldc_ko
 load_ethernet_ko
 load_spacc_ko
+load_wifi_ko
 
 # modify permission for drivers
 echo "load.sh starting..."
@@ -266,20 +295,6 @@ echo "load.sh starting..."
 for file in $(find /dev/ -name video*);do
 	file_name=${file##*/}
 	./sbin/load.sh -d $file_name
-done
-
-for((i=0;i<=7;i++));do
-	cmd="/sys/class/net/eth0/queues/rx-$i/rps_cpus"
-	if [ -f $cmd ]; then
-		echo f > $cmd
-		echo 2048 > /sys/class/net/eth0/queues/rx-$i/rps_flow_cnt
-	fi
-
-	cmd="/sys/class/net/eth1/queues/rx-$i/rps_cpus"
-	if [ -f $cmd ]; then
-		echo f > $cmd
-		echo 2048 > /sys/class/net/eth1/queues/rx-$i/rps_flow_cnt
-	fi
 done
 
 exit 0

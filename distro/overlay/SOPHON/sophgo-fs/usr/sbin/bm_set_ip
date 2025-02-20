@@ -1,12 +1,35 @@
 #!/bin/bash
 
+# restoring default netplan configuration
+restore_netplan() {
+	NETPLAN_FILE="/etc/netplan/01-netcfg.yaml"
+	DEFAULT_FILE="/etc/netplan/01-netcfg.yaml.bak"
 
-if [ $# -lt 4  ] ; then
-	echo "bm_set_ip net_device ip netmask gateway dns"
-	echo "eg: bm_set_ip eth0 192.168.1.100 255.255.255.0 192.168.1.1 192.168.1.1"
-	echo "gateway and dns allow empty. pls follow below example"
-	echo "eg: bm_set_ip eth0 192.168.1.100 255.255.255.0 '' '' "
-	exit -1
+    if [ -f "$DEFAULT_FILE" ]; then
+        echo "Restoring default netplan configuration..."
+        sudo cp "$DEFAULT_FILE" "$NETPLAN_FILE"
+		sudo sync
+        sudo netplan apply
+        echo "Default netplan configuration restored."
+    else
+        echo "No found. Cannot restore default configuration."
+    fi
+}
+
+if [ $1 == "default" ]; then
+	restore_netplan
+	exit 0
+else
+	if [ $# -lt 4  ] ; then
+		echo "bm_set_ip net_device ip netmask gateway dns to to_netmask via table rule_from rule_from_mask rule_to rule_to_mask"
+		echo "eg: bm_set_ip eth0 192.168.1.100 255.255.255.0 192.168.1.1 192.168.1.1 192.168.2.0 255.255.255.0 192.168.1.1"
+		echo "gateway and dns allow empty. pls follow below example"
+		echo "eg: bm_set_ip eth0 192.168.1.100 255.255.255.0 '' '' "
+		ech0 "Restoring default netplan configuration"
+		echo "eg: bm_set_ip default "
+		echo " to: destination network, via: next hop address, table: Routing Table ID, rule_from/rule_to: routing-policy"
+		exit -1
+	fi
 fi
 
 
@@ -18,24 +41,48 @@ if [ $netmask = "0.0.0.0" ]; then
 fi
 gateway=$4
 dns=$5
-shortMask=0
-mask1=$(echo $netmask |awk -F . '{printf("%d\n", $1)}')
-mask2=$(echo $netmask |awk -F . '{printf("%d\n", $2)}')
-mask3=$(echo $netmask |awk -F . '{printf("%d\n", $3)}')
-mask4=$(echo $netmask |awk -F . '{printf("%d\n", $4)}')
-maskArray=($mask1 $mask2 $mask3 $mask4)
-for(( i=0;i<${#maskArray[@]};i++)) do
-        echo ${maskArray[$i]}
-        if [ "${maskArray[$i]}" = "255" ];then
-                shortMask=`expr $shortMask + 8`
-        else
-                lastBin=$(echo "obase=2; ${maskArray[$i]}" | bc)
-                last=$(echo $lastBin |grep -o '1' |wc -l)
-                shortMask=`expr $shortMask + $last`
-                break;
-        fi
-done
 
+to_net=$6
+to_netmask=$7
+via=$8
+table=$9
+rule_from=${10}
+rule_from_mask=${11}
+rule_to=${12}
+rule_to_mask=${13}
+
+# Function: Convert netmask to CIDR format
+netmask_to_cidr() {
+    local netmask=$1
+    local shortMask=0
+    local maskArray=()
+
+    # Split netmask into an array
+    local mask1=$(echo $netmask | awk -F . '{printf("%d\n", $1)}')
+    local mask2=$(echo $netmask | awk -F . '{printf("%d\n", $2)}')
+    local mask3=$(echo $netmask | awk -F . '{printf("%d\n", $3)}')
+    local mask4=$(echo $netmask | awk -F . '{printf("%d\n", $4)}')
+    maskArray=($mask1 $mask2 $mask3 $mask4)
+
+    # Calculate CIDR prefix length
+    for (( i=0; i<${#maskArray[@]}; i++ )); do
+        if [ "${maskArray[$i]}" = "255" ]; then
+            shortMask=$((shortMask + 8))
+        else
+            local lastBin=$(echo "obase=2; ${maskArray[$i]}" | bc)
+            local last=$(echo $lastBin | grep -o '1' | wc -l)
+            shortMask=$((shortMask + last))
+            break
+        fi
+    done
+
+    echo $shortMask
+}
+
+shortMask=$(netmask_to_cidr $netmask)
+to_shortMask=$(netmask_to_cidr $to_netmask)
+rule_from_shortMask=$(netmask_to_cidr $rule_from_mask)
+rule_to_shortMask=$(netmask_to_cidr $rule_to_mask)
 
 is_ubuntu=$(cat /etc/os-release | grep Ubuntu |wc -l)
 is_kylinos=$(cat /etc/os-release | grep kylinos |wc -l)
@@ -47,13 +94,19 @@ if [ $is_ubuntu -gt 1 ];then
 	eth_num=$(grep -inr "$device:" $device_path | awk -F : '{print $1}')
 	num=$(($eth_num+5))
 	if [ ! $eth_num = "" ];then
-		for ((i=1; i<=6; i++))
+		for ((i=1; i<=15; i++))
 		do
 			num=$(($eth_num+$i))
 			c_str=$(sed -n "${num}p" $device_path | awk -F : '{print$1}')
 			echo $c_str
 			if [[ $c_str =~ "dhcp" ]] || [[ $c_str =~ "addresses" ]] || [[ $c_str =~ "gateway4" ]] || [[ $c_str =~ "nameservers" ]] || [[ $c_str =~ "optional" ]];then
 				d_str="${num}d"
+			elif [[ $c_str =~ "routes" ]]; then
+				d_str="$(($num+3))d"
+				i=$(($i+3))
+			elif [[ $c_str =~ "routing-policy" ]]; then
+				d_str="$(($num+4))d"
+				i=$(($i+4))
 			else
 				break;
 			fi
@@ -66,11 +119,34 @@ if [ $is_ubuntu -gt 1 ];then
 	echo "                ${device}:" | sudo tee -a $device_path
 	echo "                        dhcp4: no" | sudo tee -a  $device_path
 	echo "                        addresses: [${ip}/${shortMask}]" | sudo tee -a  $device_path
-        if [ "$gateway" != "" ] && [[ "$device" == "enp3s0" || "$device" == "enp4s0" || "$device" == "eth0" ]];then
+        if [ "$gateway" != "" ] && [[ "$device" == "enp3s0" || "$device" == "enp4s0" || "$device" == "eth0" || "$device" == "eth1" ]];then
                 echo "                        gateway4: $gateway" | sudo tee -a  $device_path
         fi
 	echo "                        nameservers:" | sudo tee -a  $device_path
 	echo "                                addresses: [${dns}]" | sudo tee -a  $device_path
+		if [ "$to_net" != "" ] && [ "$to_netmask" != "" ] && [ "$via" != "" ]; then
+                echo "                        routes:" | sudo tee -a  $device_path
+				echo "                                - to: ${to_net}/${to_shortMask}" | sudo tee -a  $device_path
+				echo "                                  via: ${via}" | sudo tee -a  $device_path
+				echo "                                  table: ${table}" | sudo tee -a  $device_path
+        fi
+		if [ "$rule_to" != "" ] || [ "$rule_from" != "" ]; then
+                echo "                        routing-policy:" | sudo tee -a  $device_path
+        fi
+		if [ "$rule_to" != "" ] && [ "$rule_to_mask" != "" ]; then
+                echo "                                - to: ${rule_to}/${rule_to_shortMask}" | sudo tee -a  $device_path
+				echo "                                  table: ${table}" | sudo tee -a  $device_path
+		elif [ "$rule_to" != "" ] && [ "$rule_to_mask" == "" ]; then
+				echo "                                - to: ${rule_to}" | sudo tee -a  $device_path
+				echo "                                  table: ${table}" | sudo tee -a  $device_path
+        fi
+		if [ "$rule_from" != "" ] && [ "$rule_from_mask" != "" ]; then
+                echo "                                - from: ${rule_from}/${rule_from_shortMask}" | sudo tee -a  $device_path
+				echo "                                  table: ${table}" | sudo tee -a  $device_path
+		elif [ "$rule_from" != "" ] && [ "$rule_from_mask" == "" ]; then
+				echo "                                - from: ${rule_from}" | sudo tee -a  $device_path
+				echo "                                  table: ${table}" | sudo tee -a  $device_path
+        fi
 	echo "                        optional: yes" | sudo tee -a  $device_path
 	if [ "$dns" != "" ];then
 	        sudo sed -i "s/^nameserver .*/nameserver $dns/" /etc/resolv.conf

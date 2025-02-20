@@ -66,6 +66,8 @@ function install_prepackages()
 		systemctl disable ssh.socket
 		systemctl enable ssh.service
 		systemctl start ssh.service
+		systemctl enable sshd-suspend.service
+		systemctl enable sshd-wakeup.service
 		systemctl enable bsl_hack.service
 		systemctl start bsl_hack.service
 
@@ -111,5 +113,10 @@ else
 		systemctl start bmSysMonitor.service
 	fi
 
+fi
+
+if [ -f "/etc/systemd/system/retrain.service" ]; then
+	systemctl enable retrain.service
+	systemctl start retrain.service
 fi
 

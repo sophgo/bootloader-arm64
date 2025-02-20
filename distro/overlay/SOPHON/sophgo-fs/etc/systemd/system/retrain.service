@@ -1,0 +1,12 @@
+[Unit]
+Description=ddr retrain
+
+[Service]
+ExecStart=/usr/sbin/retrain
+Restart=always
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target
+
