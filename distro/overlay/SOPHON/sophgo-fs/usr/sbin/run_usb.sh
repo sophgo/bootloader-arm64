@@ -1,4 +1,4 @@
-UDC=4340000.usb
+UDC=39010000.usb
 CLASS=acm
 VID=0x3346
 PID=0x1003
@@ -61,9 +61,12 @@ case "$2" in
 	PID=$ADB_PID
 	PRODUCT=$PRODUCT_ADB
 	;;
+  mtp)
+	CLASS=mtp
+	;;
   *)
 	if [ "$1" = "probe" ] ; then
-	  echo "Usage: $0 probe {acm|msc|cvg|rndis|uvc|uac1|adb}"
+	  echo "Usage: $0 probe {acm|msc|cvg|rndis|uvc|uac1|adb|mtp}"
 	  exit 1
 	fi
 esac
@@ -105,6 +108,11 @@ res_check() {
   EP_IN=$(($EP_IN+$TMP_NUM))
   EP_OUT=$(($EP_OUT+$TMP_NUM))
   INTF_NUM=$(($INTF_NUM+$TMP_NUM))
+  TMP_NUM=$(find $CVI_GADGET/functions/ -name "mtp*" | wc -l)
+  EP_OUT=$(($EP_OUT+$TMP_NUM))
+  TMP_NUM=$(($TMP_NUM * 2))
+  EP_IN=$(($EP_IN+$TMP_NUM))
+  INTF_NUM=$(($INTF_NUM+$TMP_NUM))
 
   if [ "$CLASS" = "acm" ] ; then
     EP_IN=$(($EP_IN+2))
@@ -131,6 +139,10 @@ res_check() {
   fi
   if [ "$CLASS" = "ffs.adb" ] ; then
     EP_IN=$(($EP_IN+1))
+    EP_OUT=$(($EP_OUT+1))
+  fi
+  if [ "$CLASS" = "mtp" ] ; then
+    EP_IN=$(($EP_IN+2))
     EP_OUT=$(($EP_OUT+1))
   fi
   echo "$EP_IN in ep"
@@ -216,7 +228,6 @@ probe() {
     echo 1 >$CVI_FUNC/rndis.usb$FUNC_NUM/os_desc/interface.rndis/Label/type
     echo "XYZ Device" >$CVI_FUNC/rndis.usb$FUNC_NUM/os_desc/interface.rndis/Label/data
   fi
-
 }
 
 start() {
@@ -233,16 +244,19 @@ start() {
   do
     find $CVI_GADGET/functions/ -name "*.usb$i" | xargs -I % ln -s % $CVI_GADGET/configs/c.1
   done
+  if [ -d $CVI_GADGET/functions/mtp.usb0 ]; then
+    $ADBD_PATH/mtp-server &
+  fi
   if [ -d $CVI_GADGET/functions/ffs.adb ]; then
     ln -s $CVI_GADGET/functions/ffs.adb $CVI_GADGET/configs/c.1
     mkdir /dev/usb-ffs/adb -p
     mount -t functionfs adb /dev/usb-ffs/adb
     if [ -f $ADBD_PATH/adbd ]; then
+	echo high-speed > $CVI_GADGET/max_speed
 	$ADBD_PATH/adbd &
     fi
   else
     # Start the gadget driver
-    UDC=`ls /sys/class/udc/ | awk '{print $1}'`
     echo ${UDC} >$CVI_GADGET/UDC
   fi
 }
@@ -252,7 +266,10 @@ stop() {
     pkill adbd
     rm $CVI_GADGET/configs/c.1/ffs.adb
   else
-    echo "" >$CVI_GADGET/UDC
+    echo "" > $CVI_GADGET/UDC
+  fi
+  if [ -d $CVI_GADGET/functions/mtp.usb0 ]; then
+    pkill mtp-server
   fi
   find $CVI_GADGET/configs/ -name "*.usb*" | xargs rm -f
   rmdir $CVI_GADGET/configs/c.*/strings/0x409/
@@ -273,6 +290,9 @@ stop() {
 
 case "$1" in
   start)
+	if [ $# -eq 2 ] && [ $2 -eq "1" ]; then
+		UDC=39110000.usb
+	fi
 	start
 	;;
   stop)
@@ -282,10 +302,10 @@ case "$1" in
 	probe
 	;;
   UDC)
-	echo ${UDC} >$CVI_GADGET/UD
+	echo ${UDC} > $CVI_GADGET/UDC
 	;;
   *)
-	echo "Usage: $0 probe {acm|msc|cvg|uvc|uac1} {file (msc)}"
+	echo "Usage: $0 probe {acm|msc|cvg|uvc|uac1|mtp} {file (msc)}"
 	echo "Usage: $0 start"
 	echo "Usage: $0 stop"
 	exit 1
