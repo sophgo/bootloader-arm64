@@ -148,9 +148,6 @@ if [ $is_ubuntu -gt 1 ];then
 				echo "                                  table: ${table}" | sudo tee -a  $device_path
         fi
 	echo "                        optional: yes" | sudo tee -a  $device_path
-	if [ "$dns" != "" ];then
-	        sudo sed -i "s/^nameserver .*/nameserver $dns/" /etc/resolv.conf
-	fi
 	sudo sync
 	sudo netplan apply
 

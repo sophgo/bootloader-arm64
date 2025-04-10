@@ -1,0 +1,8 @@
+/dev/sda1	/boot		vfat	rw				0	1
+/dev/sda2	/recovery       ext4	defaults			0	0
+# /dev/sda3 is misc partition, no filesystem
+/dev/sda4	/media/root-ro	ext4	ro,errors=remount-ro,noauto	0	0
+/dev/sda5	/media/root-rw  ext4	defaults			0	0
+/media/root-ro	/		overlay	lowerdir=/media/root-ro,upperdir=/media/root-rw/overlay,workdir=/media/root-rw/overlay-workdir	0	0
+/dev/sda6	/data           ext4	defaults			0	0
+# tmpfs		/tmp            tmpfs	nodev,nosuid,size=1G		0	0

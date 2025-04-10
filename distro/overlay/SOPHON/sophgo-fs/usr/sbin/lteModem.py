@@ -6,7 +6,6 @@ from socket import error as SocketError
 import errno
 import configparser
 import re
-import sys
 
 
 class serialCom():
@@ -99,9 +98,7 @@ class serialCom():
                 if "CHN-CU" in self.operator or "CHN-UN" in self.operator:
                     cmd = 'pppd call  modem_CUCC &'
 
-                elif "CHN-TE" in self.operator or \
-                        "CHINA Te" in self.operator or \
-                        "CHN-CT" in self.operator:
+                elif "CHN-TE" in self.operator or "CHINA Te" in self.operator:
                     cmd = 'pppd call  modem_CTCC &'
 
                 elif "CHN-CM" in self.operator or "CHINA MO" in self.operator:
@@ -113,17 +110,6 @@ class serialCom():
                 print('4g is dialing...')
 
             time.sleep(20)
-
-    def send_msg(self, msg):
-        self.serial.write(str(msg).encode('utf-8'))
-
-    def recv_msg(self):
-        self.recv = []
-        while self.serial.isOpen():
-            self.data = self.serial.readline()
-            self.recv.append(self.data)
-            if self.data == b'OK\r\n' or self.data == b'ERROR\r\n':
-                break
 
     def socket_handler(self):
         print("serialCom socket_handler thread start")
@@ -180,20 +166,6 @@ class serialCom():
         print("lte socket received accept")
 
     def start(self):
-        # Modify dial mode
-        self.serial.write(str('AT+GTUSBMODE? \r').encode('utf-8'))
-        self.send_msg('AT+GTUSBMODE? \r')
-        self.recv_msg()
-        print(self.recv)
-        usbmode = (str(self.recv).split(': ')[1]).split('\\')[0]
-        print('usbmode: ' + usbmode)
-        if usbmode != '18':
-            self.send_msg('AT+GTUSBMODE=18 \r')
-            self.recv_msg()
-            print(self.recv)
-            self.serial.close()
-            sys.exit(1)
-
         self.send_thread = threading.Thread(target=self.send)
         self.rec_thread = threading.Thread(target=self.received)
         self.mon_thread = threading.Thread(target=self.monitor)
@@ -290,6 +262,17 @@ class SAserialCom(serialCom):
 
             time.sleep(20)
 
+    def send_msg(self, msg):
+        self.serial.write(str(msg).encode('utf-8'))
+
+    def recv_msg(self):
+        self.recv = []
+        while self.serial.isOpen():
+            self.data = self.serial.readline()
+            self.recv.append(self.data)
+            if self.data == b'OK\r\n' or self.data == b'ERROR\r\n':
+                break
+
     def diag(self):
         if self.serial.isOpen():
             print("Open " + self.ttyusb + " success")
@@ -312,9 +295,7 @@ class SAserialCom(serialCom):
                 self.send_msg('AT+CGDCONT=1,"IP","3gnet" \r')
                 self.recv_msg()
                 print(self.recv)
-            elif "CHN-TE" in self.recv[1].decode('utf-8') or \
-                    "CHINA Te" in self.recv[1].decode('utf-8') or \
-                    "CHN-CT" in self.recv[1].decode('utf-8'):
+            elif "CHN-TE" in self.recv[1].decode('utf-8') or "CHINA Te" in self.recv[1].decode('utf-8'):
                 self.send_msg('AT+CGDCONT=1,"IP","ctnet" \r')
                 self.recv_msg()
                 print(self.recv)

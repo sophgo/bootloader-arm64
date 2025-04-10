@@ -1,19 +1,7 @@
 #!/bin/bash
 
-if [ "$EUID" -ne 0 ]; then
-  echo "Please run this script with root privileges."
-  exit 1
-fi
-
-sdkv=$(sudo busybox devmem 0x27102014)
-sdkv=$((sdkv & 0xff))
 chip=$(cat /factory/OEMconfig.ini | grep "CHIP =" | awk -F= '{print $2}' | sed 's/^ *//')
-
-if [[ $sdkv -eq 193 ]] || [[ $sdkv -eq 249 ]];then
-        echo "SophonSDK(CV186AH) 1.9"
-else
-        echo "SophonSDK(BM1688) 1.9"
-fi
+echo "SophonSDK($chip) 2.0"
 
 
 dpkg -l | grep sophon-soc-libsophon | awk '{printf "%s : %s\n",$2,$3}'
@@ -25,23 +13,3 @@ fi
 kern_version=$(uname -a)
 echo "KernelVersion : $kern_version"\
 
-hexv=$(sudo busybox devmem 0x28100004)
-
-hexv=${hexv:2}
-
-decv=$(echo "ibase=16; $hexv" | bc)
-
-mode=$((decv >> 24 & 0x1F))
-
-if [ "$mode" = "0" ];then
-        echo "Mode: soc mode"
-else
-        echo "Mode: pcie mode"
-fi
-
-mcu_reg=$(sudo busybox devmem 0x05026024)
-mcu_1=$(( (mcu_reg & 0xFF0000) >> 16 ))
-mcu_2=$(( (mcu_reg & 0xFF00) >> 8 ))
-mcu_3=$(( (mcu_reg & 0xFF) >> 0 ))
-mcu_version="$mcu_1"."$mcu_2"."$mcu_3"
-echo "MCUVersion: $mcu_version"

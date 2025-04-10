@@ -53,7 +53,11 @@ PART_TABLE_TYPE=$(udevadm info --query=property --name=${ROOT_DEVICE} | grep '^I
 DEVICE=$(udevadm info --query=path --name=${ROOT_DEVICE} | awk -F'/' '{print $(NF-1)}')
 DEVICE="/dev/${DEVICE}"
 # find the last partition
-LAST_DEVICE=$(ls ${DEVICE}p* | tail -1)
+if [ "$DEVICE" == "/dev/sda" ]; then
+	LAST_DEVICE=$(ls ${DEVICE}* | tail -1)
+else
+	LAST_DEVICE=$(ls ${DEVICE}p* | tail -1)
+fi
 PART_ENTRY_NUMBER=$(udevadm info --query=property --name=${LAST_DEVICE} | grep '^ID_PART_ENTRY_NUMBER=' | cut -d'=' -f2)
 
 if [ "$PART_TABLE_TYPE" = "gpt" ]; then
@@ -65,11 +69,36 @@ ${PARTPROBE}
 ${RESIZE2FS} "${LAST_DEVICE}"
 
 # resize the filesystem on each partition
-PARTS=$(ls /dev/mmcblk0p*)
-for PART in ${PARTS}
-do
-	if [ "$LAST_DEVICE" = "$PART" ]; then
-		continue
-	fi
-        ${RESIZE2FS} "${PART}"
-done
+# eMMC
+if [ "$DEVICE" == "/dev/mmcblk0" ]; then
+	PARTS=$(ls /dev/mmcblk0p*)
+	for PART in ${PARTS}
+	do
+		if [ "$LAST_DEVICE" = "$PART" ]; then
+			continue
+		fi
+		${RESIZE2FS} "${PART}"
+	done
+fi
+# NVME SSD
+if [ "$DEVICE" == "/dev/nvme0n1" ]; then
+	PARTS=$(ls /dev/nvme0n1p*)
+	for PART in ${PARTS}
+	do
+		if [ "$LAST_DEVICE" = "$PART" ]; then
+			continue
+		fi
+		${RESIZE2FS} "${PART}"
+	done
+fi
+# SATA SSD
+if [ "$DEVICE" == "/dev/sda" ]; then
+	PARTS=$(ls /dev/sda*)
+	for PART in ${PARTS}
+	do
+		if [ "$LAST_DEVICE" = "$PART" ]; then
+			continue
+		fi
+		${RESIZE2FS} "${PART}"
+	done
+fi
