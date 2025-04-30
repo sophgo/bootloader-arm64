@@ -94,7 +94,7 @@ if [ $? -ne 0 ]; then
 
 			busybox mkdir -p /media/root-rw/overlay
 			busybox mkdir -p /media/root-rw/overlay-workdir
-			mount -t overlay -o lowerdir=/media/root-ro,upperdir=/media/root-rw/overlay,workdir=/media/root-rw/overlay-workdir overlay /mnt
+			mount -t overlay -o lowerdir=/media/root-ro,upperdir=/media/root-rw/overlay,workdir=/media/root-rw/overlay-workdir,index=off overlay /mnt
 			busybox cp /mnt/etc/fstab.emmc.dm /mnt/etc/fstab
 		fi
 	else
@@ -111,7 +111,7 @@ if [ $? -ne 0 ]; then
 
 		busybox mkdir -p /media/root-rw/overlay
 		busybox mkdir -p /media/root-rw/overlay-workdir
-		mount -t overlay -o lowerdir=/media/root-ro,upperdir=/media/root-rw/overlay,workdir=/media/root-rw/overlay-workdir overlay /mnt
+		mount -t overlay -o lowerdir=/media/root-ro,upperdir=/media/root-rw/overlay,workdir=/media/root-rw/overlay-workdir,index=off overlay /mnt
 		busybox cp /mnt/etc/fstab.emmc.ro /mnt/etc/fstab
 	fi
 else

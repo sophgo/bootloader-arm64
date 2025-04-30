@@ -77,7 +77,9 @@ enum {
 	MCU_BM1684X_SE7_V2_0 = 0x38,
 	MCU_BM1684X_SM7_AIRBOX = 0x39,
 	MCU_BM1684X_SM7_CUST_V1 = 0x3a,
-	MCU_BM1684X_SM7M_V1_0_RB_CTRL = 0X40,
+	MCU_BM1684X_SM7M_V1_0_RB_CTRL = 0x40,
+	MCU_BM1684X_SM7_CUST_V2 = 0x3b,
+	MCU_BM1684X_M2_V2 = 0x3c,
 };
 
 enum {
@@ -130,12 +132,48 @@ enum {
 	BM1684X_SM7M_V1_0_RB_CTRL = 143,
 	BM1684X_M2_CUST02_V0_0 = 144,
 	BM1684X_SM7_CUST_V1 = 145,
+	BM1684X_SM7_CUST_V2 = 146,
 };
 
 enum {
 	BM_CORE_DOWN = 0,
 	BM_CORE_UP = 1,
 };
+
+/*
+ * smbus register base address in sram, see
+ * https://doc.sophgo.com/sdk-docs/v23.07.01/docs_latest_release/docs/libsophon/guide/html/5_out_of_band_management_interface.html#smbus
+ */
+#define BM1684X_SMBUS_REG_BASE (0x101FB100UL)
+
+#define BM1684X_VENDOR_ID (0x1f1c)
+
+#define BM1684X_DEVICE_ID (0x1686)
+
+/* sc7pro mcu smbus interface registers, BIG ENDIAN ! */
+struct bm_sc7pro_sbus_regs_t {
+	uint8_t chip_temp;
+	uint8_t board_temp;
+	uint8_t board_power;
+	uint8_t fan_speed;
+	uint8_t reserved_a[12];
+	uint16_t vendor_id_device;
+	uint16_t vendor_id_vendor;
+	uint8_t hardware_ver;
+	uint8_t reserved_b[3];
+	uint16_t firmware_ver_chip;
+	uint8_t firmware_ver_major;
+	uint8_t firmware_ver_minor;
+	uint8_t board_type;
+	uint8_t reserved_c[10];
+	uint16_t sub_vendor_id_subsystem;
+	uint16_t sub_vendor_id_vendor;
+	uint8_t sn_id[18];
+	uint8_t mcu_ver;
+} __packed;
+
+/* soc general purpose register, set it to 1 if driver(bmsophon.ko) is working, 0 if not */
+#define BM1684X_DRIVER_PROBE_FLAG (0x50010200UL)
 
 void bm_configure_mmu_svc_mon(unsigned long total_base,
 			      unsigned long total_size,

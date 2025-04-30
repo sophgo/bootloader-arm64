@@ -1,7 +1,13 @@
 Build
 ========
 
-1. download toolchain and Ubuntu base from https://pan.baidu.com/s/1zhEQ0vlh8ehDKOdm279wcg code: bth5
+1. download toolchain and Ubuntu base
+```bash
+python3 -m pip install dfss -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade
+python3 -m dfss --dflag=gcc_linaro_6.3.1
+python3 -m dfss --dflag=distro_focal_28ad82b4cf01327b1f81d3d193923424
+```
+NOTE: You need to rename the distro package to distro_focal.tgz
 2. put them on the same level of bootloader-arm64 and linux-arm64, then unzip toolchain,
    no need to unzip distro, now you get the following folders:
    .

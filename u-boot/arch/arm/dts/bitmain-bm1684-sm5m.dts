@@ -339,6 +339,7 @@
 		64_addressing;
 		has_phy;
 		index = <0x1>;
+		pwr-gpio = <&port1a 10 GPIO_ACTIVE_HIGH>;
 		status = "okay";
 	};
 

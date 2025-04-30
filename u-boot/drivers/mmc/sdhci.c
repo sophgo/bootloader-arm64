@@ -527,12 +527,24 @@ static void sdhci_set_power(struct sdhci_host *host, unsigned short power)
 #endif
 	if (pwr == 0) {
 		sdhci_writeb(host, 0, SDHCI_POWER_CONTROL);
+#if CONFIG_IS_ENABLED(DM_MMC) && CONFIG_IS_ENABLED(DM_GPIO)
+		dm_gpio_set_value(&host->pwr_gpio, 0);
+#else
+		/* set SDIO_PWR_EN/GPIO42 pin output 0 */
+		mmio_clrsetbits_32(BM_PORTB_BASE + 0x0, 0x1 << 10, 0);
+#endif
 		return;
 	}
 
 	pwr |= SDHCI_POWER_ON;
 
 	sdhci_writeb(host, pwr, SDHCI_POWER_CONTROL);
+#if CONFIG_IS_ENABLED(DM_MMC) && CONFIG_IS_ENABLED(DM_GPIO)
+	dm_gpio_set_value(&host->pwr_gpio, 1);
+#else
+	/* set SDIO_PWR_EN/GPIO42 pin output 1 */
+	mmio_clrsetbits_32(BM_PORTB_BASE + 0x0, 0x1 << 10, 0x1 << 10);
+#endif
 }
 
 void sdhci_set_uhs_timing(struct sdhci_host *host)
@@ -740,6 +752,14 @@ static int sdhci_init(struct mmc *mmc)
 
 	gpio_request_by_name(dev, "cd-gpios", 0,
 			     &host->cd_gpio, GPIOD_IS_IN);
+
+	gpio_request_by_name(dev, "pwr-gpio", 0,
+			     &host->pwr_gpio, GPIOD_IS_OUT);
+#else
+	/* set SDIO_PWR_EN/GPIO42 pin for software mode */
+	mmio_clrsetbits_32(BM_PORTB_BASE + 0x8, 0x1 << 10, 0);
+	/* set SDIO_PWR_EN/GPIO42 pin for output */
+	mmio_clrsetbits_32(BM_PORTB_BASE + 0x4, 0x1 << 10, 0x1 << 10);
 #endif
 
 	sdhci_reset(host, SDHCI_RESET_ALL);

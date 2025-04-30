@@ -42,14 +42,25 @@ function store_reset_reason()
 {
 	# store mcu boot reason
 	name=$(date +%m-%d-%H-%M-%S)
-	name="$name.txt"
 	mkdir -p /root/.boot/
-	count=$(ls /root/.boot/*.txt|wc -l)
-	if [ $count -gt 10 ];then
-		rm /root/.boot/*.txt
-	fi
-	dd if=/sys/bus/nvmem/devices/1-006a0/nvmem of=/root/.boot/$name count=4 bs=1 skip=160
-
+	pushd /root/.boot/
+		count=$(ls -l | grep root | awk '{print $NF}' | cut -d'_' -f1 | sort -n | tail -n1)
+		declare -i num
+		if [[ "$count" == "" ]]; then
+			count=0
+		fi
+		num=$count
+		num=$(($num + 1))
+		name="${num}_${name}.txt"
+		count=$(ls /root/.boot/*.txt|wc -l)
+		if [ $count -gt 25 ];then
+			old_file=$(ls -l | grep root | awk '{print $NF}' | sort -n | head -n $(($count - 25)))
+			for item in $old_file; do
+				rm "$item"
+			done
+		fi
+		dd if=/sys/bus/nvmem/devices/1-006a0/nvmem of=/root/.boot/$name count=4 bs=1 skip=160
+	popd
 	# erase mcu reason
 	echo "0000">sn.txt
 	xxd -p -u -r sn.txt > sn.bin
@@ -83,12 +94,10 @@ function install_prepackages()
 				dpkg -i -R /root/post_install/debs
 			done
 		fi
+
 		# configure docker
 		if [ -f /lib/systemd/system/docker.service ]; then
 			usermod -aG docker linaro
-			sed -i "s/ExecStart=\/usr\/bin\/dockerd -H fd:\/\//ExecStart=\/usr\/bin\/dockerd -g \/data\/docker -H fd:\/\//g" /lib/systemd/system/docker.service
-			systemctl daemon-reload
-			systemctl restart docker.service
 		fi
 
 		# avoid conficts with last_kmsg service
@@ -154,4 +163,7 @@ else
 	systemctl start sophliteos.service
 
 fi
+
+bash /usr/sbin/get_info server_logs_path /recovery/get_info_logs 150
+
 echo "bmrt_setup finish done!!!"

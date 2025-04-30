@@ -1,14 +1,14 @@
 
-前言
-====
+2. 前言
+============
 
-文档概述
---------
+2.1. 文档概述
+-----------------
 
-本文档详细介绍了 |Product| 系列智算模组（含开发板）的外观特点、应用场景、设备参数、电气特性、配套软件、使用环境等，使得该设备的用户及开发者对 |Product| 系列智算模组（含开发板）有比较全面深入的了解。设备用户及开发者可依据此手册，开展对该设备的安装、调试、部署、维护等一系列工作。
+本文档详细介绍了 |Product| EVB 开发板的外观特点、应用场景、设备参数、配套软件等，使得该设备的用户及开发者对 |Product| EVB 开发板有比较全面深入的了解。设备用户及开发者可依据此手册，开展对该设备的安装、调试、部署、维护等一系列工作。
 
-读者对象
---------
+2.2. 读者对象
+-----------------
 
 本文档主要适用于如下人员：
 
@@ -18,36 +18,43 @@
 
 -  用户企业研发工程师、售前工程师
 
-约定的符号、标志、专用语解释
-----------------------------
+2.3. 约定的符号、标志、专用语解释
+-------------------------------------
 
 在本文中可能出现如下符号、标志，它们所代表的含义如下：
 
 +--------------+--------------------------------------------------------+
 | |image1|     |                                                        |
+|              |                                                        |
 | 危险         |表示有高度危险，如果不能避免，可能导致人员伤亡或严重伤害|
 +--------------+--------------------------------------------------------+
 | |image2|     | 表示有中度或低                                         |
+|              |                                                        |
 | 警告         | 度潜在危险，如果不能避免，可能导致人员轻微或中等伤害   |
 +--------------+--------------------------------------------------------+
 | |image3|     | 表示有潜在风险，如果忽视这部分文本，可能               |
+|              |                                                        |
 | 注意         | 导致设备损坏、数据丢失、设备性能降低或不可预知的结果   |
 +--------------+--------------------------------------------------------+
 | |image4|     | 防静电标识，表示静电敏感的设备或操作                   |
+|              |                                                        |
 | 防静电       |                                                        |
 +--------------+--------------------------------------------------------+
 | |image5|     | 电击防护标识，标识高压危险，需做好防护                 |
+|              |                                                        |
 | 当心触电     |                                                        |
 +--------------+--------------------------------------------------------+
 | |image6|     | 表示能帮助您解决某个问题或节省您的时间                 |
+|              |                                                        |
 | 窍门         |                                                        |
 +--------------+--------------------------------------------------------+
 | |image7|     | 表示是正文的附加信息，是对正文的强调和补充             |
+|              |                                                        |
 | 说明         |                                                        |
 +--------------+--------------------------------------------------------+
 
-缩略语
-------
+2.4. 缩略语
+---------------
 
 +-----------------+----------------------------+-----------------------+
 | JPU             | JPEG Process Unit          | JPEG处理单元          |
@@ -57,8 +64,8 @@
 | VPU             | Video Process Unit         | 视频编解码单元        |
 +-----------------+----------------------------+-----------------------+
 
-修改记录
---------
+2.5. 修改记录
+-----------------
 
 +-------------+-------------+-------------+-----------------+-------------+
 | 文档版本    | 发布日期    | 修订说明    | 对              | 对          |
@@ -69,8 +76,8 @@
 +-------------+-------------+-------------+-----------------+-------------+
 
 
-声明
-----
+2.6. 声明
+------------------
 
 Copyright ©️2022 北京算能科技有限公司。
 
@@ -80,36 +87,38 @@ Copyright ©️2022 北京算能科技有限公司。
 
 我们保留在不事先通知的情况下进行技术改进、文档变更、产品改进升级、增加或减少产品型号和功能的权利。
 
-硬件安装
+3. 硬件安装
 ============
 
-板卡安装
-------------
+3.1. 板卡准备
+---------------
 
-|Product| 智算模组仅指包括BM1684X、LPDDR4X、eMMC等核心组件的板卡，如下图：
+|Product| EVB 开发板仅指包括BM1684X、LPDDR4X、eMMC等核心组件的板卡，如下图：
 
 |Product| EVB 正面
 
    .. image:: ./_static/image8.png
       :width: 8in
-      :height: 6in
+      :height: 4in
 
 |Product| EVB 背面
 
    .. image:: ./_static/image9.png
       :width: 8in
-      :height: 5in
+      :height: 4in
 
 各部件位置指示图如下:
 
    .. image:: ./_static/image51.jpg
       :width: 12in
-      :height: 10in
+      :height: 4in
 
 为方便后面的描述，下文以“核心板”指代这块板卡。
 
-附件安装
-------------
+核心板支持SoC模式和Pcie模式，也可以称为RC模式和EP模式，本文档只介绍SoC模式（RC模式）。
+
+3.2. 附件介绍
+--------------
 
 为方便调试，建议您准备如下附件：
 
@@ -124,8 +133,8 @@ d. |image8|\ 与您的底板设计相匹配的电源：如果您使用我们提�
 e. 散热：请安装散热片、风扇等必要的散热设备，以免出现过热关机等异常状况。
 
 
-上电开机
-------------
+3.3. 上电开机
+---------------
 
 一切就绪后，您就可以为底板加电了，如果您使用我们提供的参考底板，请先插上电源，然后拨电源键（此时从串口终端应该也应可以看到log打印了），指示灯正常状态如下：
 
@@ -133,8 +142,7 @@ e. 散热：请安装散热片、风扇等必要的散热设备，以免出现�
       :width: 6.27083in
       :height: 4.29167in
 
-请检查您的串口终端，|Product| 出厂时已经预装Ubuntu 20.04系统，初始用户名和密码均为linaro（root账户无初始密码，使用前需要先用linaro账户做sudo
-passwd root设置密码）：
+请检查您的串口终端，|Product| 对于我们适配的Ubuntu 20.04系统，初始用户名和密码均为linaro（root账户无初始密码，使用前需要先用命令 ``sudo passwd root`` 设置密码）：
 
    .. code-block:: bash
 
@@ -166,7 +174,7 @@ passwd root设置密码）：
       ip a
 
 
-如果需要手工配置静态IP，可按如下方法修改/etc/netplan/01-netcfg.yaml配置文件，并使能所修改的配置文件：
+如果需要手工配置静态IP，可按如下方法修改 ``/etc/netplan/01-netcfg.yaml`` 配置文件，并使能所修改的配置文件，这里给出一个实例，具体netplan工具的使用说明请自行搜索：
 
    .. code-block:: bash
 
@@ -199,16 +207,16 @@ passwd root设置密码）：
 
       ssh linaro@your_ip
 
-关机时建议使用sudo poweroff命令，尽量避免直接断电，以免文件系统损坏。\ |image9|
+关机时建议使用 ``sudo poweroff`` 命令，尽量避免直接断电，以免文件系统损坏。\ |image9|
 
 
 核心板有两个网卡，eth0默认为DHCP，故您需要通过上述方法获取IP。eth1默认配置为静态IP：192.168.150.1。
 
-软件安装
+4. 软件安装
 ============
 
-检查预装版本
-----------------
+4.1. 检查预装版本
+-------------------
 
 |Product| 出厂时已经预装系统软件，在Ubuntu下可通过如下命令检查其版本：
 
@@ -217,164 +225,301 @@ a. 查看Linux kernel版本：bm_version
    .. code-block:: bash
 
       $ bm_version
-      sophon-mw-soc-sophon-ffmpeg : 0.2.3
-      sophon-mw-soc-sophon-opencv : 0.2.3
-      sophon-soc-libsophon : 0.2.3
-      boot_loader_version_bl1: v2.7(release):075b939dc-dirty Built : 14:30:23, Sep 15 2022
-      boot_loader_version_bl2: v2.7(release):075b939dc-dirty Built : 14:30:23, Sep 15 2022
-      boot_loader_version_bl31: v2.7(release):075b939dc-dirty Built : 14:30:23, Sep 15 2022
-      boot_loader_version_uboot: U-Boot 2022.07 075b939dc-dirty (Sep 15 2022 - 14:37:14 +0800) Sophon BM1684
-      KernelVersion : Linux bm1684 5.4.202-bm1684 #2 SMP PREEMPT Wed Jul 6 01:55:57
-      UTC 2022 aarch64 aarch64 aarch64 GNU/Linux
+      SophonSDK version: v23.09 LTS-SP3
+      sophon-soc-libsophon : 0.5.1
+      sophon-soc-libsophon-dev : 0.5.1
+      sophon-mw-soc-sophon-ffmpeg : 0.11.0
+      sophon-mw-soc-sophon-opencv : 0.11.0
+      BL2 v2.7(release):b0dc29c Built : 10:20:22, Aug 15 2024
+      BL31 v2.7(release):b0dc29c Built : 10:20:22, Aug 15 2024
+      U-Boot 2022.10 b0dc29c (Aug 15 2024 - 10:20:18 +0800) Sophon BM1684X
+      KernelVersion : Linux bm1684 5.4.217-bm1684-g3357dba62ec6 #1 SMP Thu Aug 15 10:20:28 CST 2024 aarch64 aarch64 aarch64 GNU/Linux
       HWVersion: 0x00
-      MCUVersion: 0x03
+      MCUVersion: 0x04
 
-   sophon-mw-soc-sophon-ffmpeg、sophon-mw-soc-sophon-opencv和sophon-soc-libsophon后面的信息为SOPHON SDK的版本号，boot_loader_version后面的信息分别为bl1、bl2、bl31和uboot的bootloader版本号及build时间，KernelVersion字段即为Kernel版本信息， 5.4.202表示官方Linux Kernel确切版本号， 后半部分的时间戳代表build时间。
-   MCUVersion字段即为MCU firmware版本号。
+   1. SophonSDK后面的信息为SOPHON SDK的版本号。
+   2. sophon-mw-soc-sophon-ffmpeg、sophon-mw-soc-sophon-opencv和sophon-soc-libsophon后面的信息是各个组件的版本号。
+   3. BL2、BL31、U-Boot后面的信息分别为bl2、bl31和uboot的bootloader版本号及build时间。
+   4. KernelVersion字段即为Kernel版本信息， 5.4.202表示官方Linux Kernel确切版本号， 后半部分的时间戳代表build时间。
+   5. MCUVersion字段即为MCU firmware版本号。
 
+b. 对于我们官网发布的包，SDK版本号和小组件版本之间有对应关系，如下：
 
-软件更新
-------------
+   .. list-table:: 版本号对应关系
+      :widths: 25 25 25
+      :header-rows: 1
 
-|Product| 目前提供三种更新方式：SD卡刷机， 文件替换 和 OTA升级。其中SD卡刷机会重写整个eMMC，也即您存储在eMMC的数据全部会丢失。这种方式最为干净可靠，理论上只要您的 |Product| 没有硬件损坏，都可以进行SD卡刷机。文件替换方式是指在Ubuntu下通过替换对应文件的方式分别升级bootloader、kernel和其它软件。这种方式有一定的风险，如不同软件组件之间的版本匹配、文件损坏等。以下分别介绍三种软件更新方式的操作：
+      * - SDK大版本号
+        - libsophon版本
+        - 多媒体组件版本
+      * - V22.09.02
+        - 0.4.1
+        - 0.3.1
+      * - V22.10.01
+        - 0.4.2
+        - 0.4.0
+      * - V22.11.01
+        - 0.4.3
+        - 0.5.0
+      * - V22.12.01
+        - 0.4.4
+        - 0.5.1
+      * - V23.03.01
+        - 0.4.6
+        - 0.6.0
+      * - V23.05.01
+        - 0.4.8
+        - 0.6.3
+      * - V23.07.01
+        - 0.4.9
+        - 0.7.0
+      * - V23.09 LTS
+        - 0.4.9-LTS
+        - 0.7.1
+      * - V23.09 LTS SP1
+        - 0.4.9-LTS
+        - 0.8.0
+      * - V23.09 LTS SP2
+        - 0.4.9-LTS
+        - 0.8.0
+      * - V23.09 LTS SP3
+        - 0.5.1-LTS
+        - 0.11.0
+      * - V23.10.01
+        - 0.5.0
+        - 0.7.3
+      * - V24.04.01
+        - 0.5.1
+        - 0.10.0
 
-a. SD卡刷机
+4.2. 软件更新
+---------------
 
-请将SD卡格式化为FAT32格式（如果SD卡上有多个分区，只能使用第一个分区），大小为1GB以上。
+|Product| 目前提供三种更新方式：SD卡刷机、TFTP刷机、文件替换和在线刷机，他们的关系如下
 
-请下载 |Product| 最新刷机包，地址请见FAQ节：
+.. list-table:: 刷机方式对比
+   :widths: 25 25 25
+   :header-rows: 1
 
-请将下载的压缩包解压到SD卡根目录。确认文件如下（数量不一定相同）：
+   * - 刷机方式
+     - 刷机成功依赖
+     - 烧录内容
+   * - SD卡刷机
+     - | 1. 设备硬件功能正常
+       | 2. SD卡为MBR+FAT32格式
+     - | 1. 设备flash
+       | 2. 设备emmc
+   * - TFTP刷机
+     - | 1. 设备硬件功能正常
+       | 2. 设备flash中固件正常
+     - | 1. 设备flash
+       | 2. 设备emmc
+   * - 文件替换
+     - | 1. 设备硬件功能正常
+       | 2. flash和emmc正常
+       | 3. 设备软件系统正常
+     - 被替换的部分
+   * - 在线刷机
+     - | 1. 设备硬件功能正常
+       | 2. flash和emmc正常
+       | 3. 设备软件系统正常
+       | 4. 刷机前后的分区表不能发生变动
+     - | 1. 设备flash
+       | 2. 设备emmc中除分区表和data分区外的部分
 
-   .. image:: ./_static/image18.png
-      :width: 4.20625in
-      :height: 2.49295in
+总结如下：
 
-请将 |Product| 断电，插入SD卡，并连接串口终端，然后给 |Product| 上电。您将看到 |Product| 自动进入刷机流程：
+1. 其中SD卡刷机、TFTP刷机和在线刷机会重写整个eMMC，也即您存储在eMMC的数据全部会丢失。
+2. SD卡刷机方式最为干净可靠，理论上只要您的没有硬件损坏，都可以进行SD卡刷机。
+3. 在线刷机则要求设备至少能够通过串口或网络方式连接进入终端且刷机前后的分区表不能发生变动。
+4. 文件替换方式是指在Ubuntu下通过替换对应文件的方式分别升级bootloader、kernel和其它软件。这种方式有一定的风险，如不同软件组件之间的版本匹配、文件损坏等。
 
-   .. image:: ./_static/image19.png
-      :width: 6.27083in
-      :height: 2.69444in
+以下分别介绍各种软件更新方式的操作：
 
-刷机通常耗时约3分钟，结束后，会看到拔掉SD卡并重启 |Product| 的提示，请依照操作即可：
+4.2.1. SD卡刷机
+~~~~~~~~~~~~~~~
 
-   .. image:: ./_static/image20.png
-      :width: 4.23438in
-      :height: 0.83192in
+   1. 请将SD卡格式化为MBR分区表，且第一个分区是FAT32格式的状态，分区大小需要放下整个刷机包。
 
-请注意：刷机后Ubuntu系统第一次启动时会进行文件系统初始化等关键动作，请勿随意断电，待开机进入命令行后使用sudo
-poweroff命令关机。
+      1. 如果不方便手动格式化SD卡，则可以通过如下操作制作MBR+FAT32的SD卡：
 
-b. 文件替换
+         1. 下载压缩包 `sdcard_imgs.zip` https://sophon-file.sophon.cn/sophon-prod-s3/drive/23/11/09/18/sdcard_imgs.zip ，解压后文件类似下图，按照TF卡大小和刷机包大小选择合适的img.gz文件
 
-文件替换均在Ubuntu下执行，您可以选择使用串口或SSH终端。以下分别介绍如何替换各个组件。
+            .. image:: ./_static/image98.png
+               :width: 4.5in
+               :height: 2in
 
-替换bootloader：请将您要更新的spi_flash.bin文件上传到 |Product| ，然后执行sudo
-flash_update -i ./spi_flash.bin -b 0x6000000，成功后可以看到如下log：
+            比如4GB的TF卡，则选择其中sdcard.3G.img.gz包
+         2. 访问balenaEtcher工具官网 https://etcher.balena.io/ ，下载工具将选择的img.gz文件写入TF卡
+         3. 格式正确的SD卡制作完毕
+   2. 请下载 |Product| 最新的SD卡刷机包，位置在SDK压缩包中 ``sophon-img_<date>_<hash>`` 目录下的sdcard.tgz。
+   3. 请将下载的压缩包解压到SD卡根目录。确认文件如下（数量不一定相同）：
 
-   .. image:: ./_static/image21.png
-      :width: 6.26772in
-      :height: 2.13889in
+      .. image:: ./_static/image18.png
+         :width: 4.5in
+         :height: 2in
 
-可以执行flash_update查看帮助：
+   4. 请将 |Product| 断电，插入SD卡，并连接串口终端，然后给 |Product| 上电。您将看到 |Product| 自动进入刷机流程：
 
-   .. image:: ./_static/image90.png
-      :width: 8.39in
-      :height: 4.04in
+      .. image:: ./_static/image19.png
+         :width: 6.27083in
+         :height: 2.69444in
 
-替换kernel：将您要更新的emmcboot.itb放入/boot中替换同名文件，再sudo
-reboot即可。
+   5. 刷入1GB的包通常耗时约3分钟，可以根据这个数据预估刷机时间，结束后，会看到拔掉SD卡并重启 |Product| 的提示，请依照操作即可，（同时在一些SE5或SE7设备上刷机成功后会有一个状态灯一直闪烁）：
 
-替换bmnnsdk2运行时环境：bmnnsdk2运行时环境位于/system目录下，请将您拿到的更新包（通常是一个名为system.tgz的压缩包）整体替换即可，解压时请留意相对路径。
-替换SophonSDK运行时环境：SophonSDK运行时环境位于/opt目录下，请将您拿到的更新包（通常是一个名为opt.tgz的压缩包）整体替换即可，解压时请留意相对路径。
+      .. image:: ./_static/image20.png
+         :width: 4.23438in
+         :height: 0.83192in
 
-.. warning::
+   6. 请注意：刷机后Ubuntu系统第一次启动时会进行文件系统初始化等关键动作，请勿随意断电，待开机进入命令行后使用sudo poweroff命令关机。
 
-   做完上述文件操作后不要马上暴力断电，否则可能会有文件损坏，请执行sync、sudo
-   reboot、sudo poweroff等动作。\ |image10|
+4.2.2. TFTP刷机
+~~~~~~~~~~~~~~~
 
-c. OTA升级
+   1. 请下载 |Product| 最新的SD卡刷机包，位置在SDK压缩包中 ``sophon-img_<date>_<hash>`` 目录下的tftp.tgz。
+   2. 在PC上安装tftp server，并指定tftp刷机包路径：
 
-按如下步骤可进行OTA升级:
+      1. Ubuntu系统：运行： apt-get install tftpd-hpa tftp-hpa ，下载tftp工具；然后查看 /etc/default/tftpd-hpa 文件中的 TFTP DIRECTORY 路径，将刷机包拷贝进去（您也可以修改这个路径配置， sudo service tftpd-hpa restart 后即可生效）;
+      2. windows系统： 点击链接下载 https://pjo2.github.io/tftpd64/ ，随后打开下载好的 tftpd64.exe 图形界面，并将 Current Directory 设置指向tftp刷机包解压后的文件夹。
 
-1. 首先获取待更新版本的SophonSDK压缩包，获取其sophon-img子文件夹下的bsp_update.tgz和system.tgz压缩包。
-   其中bsp_update.tgz主要包含升级脚本（bsp_update.sh）及内核镜像（emmcboot.itb）等内容，解压后的文件如下：
+      .. warning::
+         1. 使用的 PC 推荐尽可能使用 Ubuntu 系统，Windows 下的 tftpd64 对环境比较挑剔，在传输大文件时有时会不稳定，造成升级失败。
+         2. tftp server 搭建好后，您可以用另一台 PC 先测试一下，避免网络、防火墙等配置问题。
+
+   3. 搭建基础网络环境：将需要升级的设备和 PC 机放在同一个路由器下（也可以通过设备LAN口直连PC）。
+   4. 执行刷机步骤：
+
+      1. 将需要升级的设备接上串口终端，启动盒子，快速按回车，进入uboot指令模式；
+      2. 输入如下指令：
+
+         .. code-block:: bash
+
+            setenv serverip 192.168.150.2
+            setenv ipaddr 192.168.150.1
+            setenv gatewayip 192.168.150.2
+            setenv update_all 0
+            setenv reset_after 1
+            tftp 0x310000000 boot.scr
+            source 0x310000000
+            set netretry yes
+
+         .. warning::
+            指令中的serverip为tftp服务器地址，ipaddr为盒子的ip地址，gatewayip为网关地址，需要根据实际情况进行调整； 在window使用场景下，通常是使用盒子的lan口和PC端进行连接，此时serverip和gatewayip是相同的； 用户可以在执行tftp指令之前先ping一下serverip，确认一下连接状态。
+
+      3. 随后开始刷机，您会看到#号表示的进度。
+      4. 由于通过指令配置了环境变量 reset_after 1 ，在刷机完成后系统将会重新启动。同时，指令 set netretry yes 将传输超时后进行重试，而非直接重新启动设备。需要注意的是，如果刷机失败，系统同样会自动重启。请根据执行结束后的提示来判断刷机是否成功完成。
+
+4.2.3. 文件替换
+~~~~~~~~~~~~~~~
+
+   文件替换均在Ubuntu下执行，您可以选择使用串口或SSH终端。需要替换的组件包括内核镜像、flash固件、TPU控制模块固件和SophonSDK运行时环境等。以下分别介绍如何替换各个组件。
+
+   1. 首先获取待更新版本的SophonSDK压缩包，获取其sophon-img子文件夹下的bsp_update.tgz和system.tgz压缩包。
+      其中bsp_update.tgz主要包含升级脚本（bsp_update.sh）及内核镜像（emmcboot.itb）等内容，解压后的文件如下：
 
          .. image:: ./_static/image94.jpg
 
 
-2. 将两个压缩包拷贝到模组的某一路径如家目录（/home/linaro）下，解压bsp_update.tgz压缩包并进入解压后的目录，执行bsp_update.sh升级脚本。可使用如下命令：
+   2. 将两个压缩包拷贝到模组的某一路径如家目录（/home/linaro）下，解压bsp_update.tgz压缩包并进入解压后的目录，执行bsp_update.sh升级脚本。该步骤会替换boot分区的内核镜像、flash固件，并替换TPU控制模块固件，可使用如下命令：
 
-   .. code-block:: bash
+      .. code-block:: bash
 
-      tar zxvf bsp_update.tgz
-      cd bsp_update
-      sudo ./bsp_update.sh
-
-
-3. 回退至system.tgz所在目录，执行如下命令将system.tgz中的内容解压至/opt/sophon/libsophon-0.5.0目录下：
-
-   .. code-block:: bash
-
-      sudo tar xzf system.tgz -C /opt/sophon/libsophon-0.5.0
-      sudo sync
+         tar zxvf bsp_update.tgz
+         cd bsp_update
+         sudo ./bsp_update.sh
 
 
-4. 关机重启检查是否升级成功（可以通过bm_version查看kernel版本及libsophon的版本信息）。以下为升级前后的对比示例：
+   3. 替换SophonSDK运行时环境。SophonSDK运行时环境位于/opt目录下，回退至system.tgz所在目录，执行如下命令将system.tgz中的内容解压至/opt/sophon/libsophon-0.5.0目录下：
 
-   .. image:: ./_static/image95.jpg
+      .. code-block:: bash
 
-   .. image:: ./_static/image96.jpg
-
-
-5. 如有内核开发的需求，需要升级内核开发软件包。同理，从对应版本的SophonSDK压缩包中获取bsp-debs将其拷贝至家目录（/home/linaro）下并在bsp-debs下创建linux-headers-install.sh脚本，脚本内容如下：
-
-   .. code-block:: bash
-
-      #!/bin/bash
-
-      cur_ver=$(uname -r)
-      echo ${cur_ver}
-      sudo mkdir -p /lib/modules/${cur_ver}
-      if [ -e /home/linaro/bsp-debs/linux-headers-${cur_ver}.deb ]; then
-            if [ -d /lib/modules/${cur_ver} ]; then
-                     sudo dpkg -i /home/linaro/bsp-debs/linux-headers-${cur_ver}.deb
-                     sudo mkdir -p /usr/src/linux-headers-${cur_ver}/tools/include/tools
-                     sudo cp /home/linaro/bsp-debs/*.h  /usr/src/linux-headers-${cur_ver}/tools/include/tools
-                     cd /usr/src/linux-headers-${cur_ver}
-                     sudo make prepare0
-                     sudo make scripts
-            else
-                     echo "/lib/modules not match"
-            fi
-      else
-            echo "linux header deb not match"
-      fi
-
-   如果遇到linux-headers-install.sh没有执行权限，使用如下命令增加权限：
-
-   .. code-block:: bash
-
-      chmod +x linux-headers-install.sh.sh
-
-   若脚本执行过程中出现缺少flex等错误，可执行如下命令安装相关环境：
-
-   .. code-block:: bash
-
-      sudo apt install flex bison libssl-dev
+         sudo tar xzf system.tgz -C /opt/sophon/libsophon-0.5.0
+         sudo sync
 
 
+   4. 关机重启检查是否升级成功（可以通过bm_version查看kernel版本及libsophon的版本信息）。以下为升级前后的对比示例：
 
-|image11|\ 替换MCU固件：核心板上有一颗MCU负责 |Product| 的上电时序等重要工作，它的固件只能通过下面的命令升级，不能通过SD卡升级。这颗MCU的固件如果烧写错误，会造成 |Product| 无法上电，此时就只能通过专用的烧写器进行修复了，因此请谨慎操作，通常也并不需要对它进行升级。命令：sudo
-mcu-util-aarch64 upgrade 1 0x17 bm1686evb-mcu.bin。升级完成后请执行sudo
-poweroff，待关机动作完成后（串口会打印NOTICE: CPU0
-bm_system_off，并且盒子的风扇声音会突然变大）对盒子进行断电后重新上电。
+      .. image:: ./_static/image95.jpg
 
-系统软件构成
+      .. image:: ./_static/image96.jpg
+
+
+   5. 如有内核开发的需求，需要升级内核开发软件包。同理，从对应版本的SophonSDK压缩包中获取bsp-debs将其拷贝至家目录（/home/linaro）下并在bsp-debs下创建linux-headers-install.sh脚本，脚本内容如下：
+
+      .. code-block:: bash
+
+         #!/bin/bash
+
+         cur_ver=$(uname -r)
+         echo ${cur_ver}
+         sudo mkdir -p /lib/modules/${cur_ver}
+         if [ -e /home/linaro/bsp-debs/linux-headers-${cur_ver}.deb ]; then
+               if [ -d /lib/modules/${cur_ver} ]; then
+                        sudo dpkg -i /home/linaro/bsp-debs/linux-headers-${cur_ver}.deb
+                        sudo mkdir -p /usr/src/linux-headers-${cur_ver}/tools/include/tools
+                        sudo cp /home/linaro/bsp-debs/*.h  /usr/src/linux-headers-${cur_ver}/tools/include/tools
+                        cd /usr/src/linux-headers-${cur_ver}
+                        sudo make prepare0
+                        sudo make scripts
+               else
+                        echo "/lib/modules not match"
+               fi
+         else
+               echo "linux header deb not match"
+         fi
+
+      如果遇到linux-headers-install.sh没有执行权限，使用如下命令增加权限：
+
+      .. code-block:: bash
+
+         chmod +x linux-headers-install.sh.sh
+
+      若脚本执行过程中出现缺少flex等错误，可执行如下命令安装相关环境：
+
+      .. code-block:: bash
+
+         sudo apt install flex bison libssl-dev
+
+   6. 替换libsophon和sophon-mw相关deb包。将相关包放置在当前工作目录，通过以下命令逐个安装。其中x.y.z为要安装的版本号，arch为目标平台架构（x86_64平台对应amd64，arm平台对应aarch64），请根据实际版本和架构进行替换。
+
+      .. code-block:: bash
+
+         sudo dpkg -i sophon-mw-soc-sophon-ffmpeg_x.y.z_arch.deb
+         sudo dpkg -i sophon-mw-soc-sophon-ffmpeg-dev_x.y.z_arch.deb
+         sudo dpkg -i sophon-mw-soc-sophon-opencv_x.y.z_arch.deb
+         sudo dpkg -i sophon-mw-soc-sophon-opencv-dev_x.y.z_arch.deb
+         sudo dpkg -i sophon-soc-libsophon_x.y.z_arch.deb
+         sudo dpkg -i sophon-soc-libsophon-dev_x.y.z_arch.deb
+
+   .. warning::
+
+      做完上述文件操作后不要马上暴力断电，否则可能会有文件损坏，请执行sync、sudo reboot、sudo poweroff等动作。\ |image10|
+
+4.2.4. 在线刷机
+~~~~~~~~~~~~~~~~~~~~~
+
+   该方式同样要用到SD卡刷机包sdcard.tgz，并且在完成后会清除eMMC除了/data分区下的所有用户文件。将获取到的压缩文件传输到目标平台，同目录下执行以下命令：
+
+      .. code-block:: bash
+
+         tar -zxvf sdcard.tgz
+         sudo mkdir /data/ota
+         sudo mv sdcard/* /data/ota
+         cd /data/ota
+         sudo ./local_update.sh md5.txt
+
+   请注意，以上操作会立即触发设备重启，随后设备将在uboot下自动进行升级，通过串口输出调试信息。升级过程中请不要断电，等待完成即可。
+
+4.2.5. MCU固件在线升级
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   |image11|\ 替换MCU固件：核心板上有一颗MCU负责 |Product| 的上电时序等重要工作，它的固件只能通过下面的命令升级，不能通过SD卡升级。这颗MCU的固件如果烧写错误，会造成 |Product| 无法上电，此时就只能通过专用的烧写器进行修复了，因此请谨慎操作，通常也并不需要对它进行升级。命令：sudo mcu-util-aarch64 upgrade 1 0x17 bm1686evb-mcu.bin。升级完成后请执行sudo poweroff，待关机动作完成后（串口会打印NOTICE: CPU0 bm_system_off，并且盒子的风扇声音会突然变大）对盒子进行断电后重新上电。
+
+5. 系统软件构成
 ================
 
-启动流程
-------------
+5.1. 启动流程
+-----------------
 
 |Product| 的系统软件属于典型的嵌入式ARM64
 Linux，由bootloader、kernel、ramdisk和Ubuntu 20.04
@@ -388,8 +533,8 @@ Linux，由bootloader、kernel、ramdisk和Ubuntu 20.04
 ROM、bootloader基于arm-trusted-firmware和u-boot构建；kernel基于Linux的5.4分支构建；Ubuntu 20.04
 基于Ubuntu官方arm64源构建，不包含GUI相关组件。
 
-eMMC分区
-------------
+5.2. eMMC分区
+-----------------
 
 +-------------------+----------------+-------------+--------------------------+
 | 分区设备文件      | 挂载点         | 文件系统    | 内容                     |
@@ -427,23 +572,35 @@ eMMC分区
       :width: 3.99583in
       :height: 2.18464in
 
-docker
-----------
+eMMC的boot0分区的前1M空间被用于存放uboot env数据，使用者存放自定义信息时需要避开该区域。
 
-核心板系统已经预装了docker服务，您可以用docker
-info命令查看状态。注意docker的根目录被配置到了/data/docker目录下，与默认设置不同。
+5.3. docker
+---------------
 
-文件系统支持
-----------------
+核心板系统默认有docker服务，您可以用docker info命令查看状态。注意docker的根目录被配置到了/data/docker目录下，与默认设置不同。
 
-如果您使用参考底板，当插入U盘或者移动硬盘后（需考虑USB供电能力），存储设备会被识别为/dev/sdb1或类似节点，与桌面PC
-Linux环境下相同。文件系统支持FAT、FAT32、EXT2/3/4、NTFS。 |Product| 不支持自动挂载，所以需要手工进行挂载：sudo
-mount /dev/sdb1
-/mnt。当访问NTFS格式的存储设备时，预装的内核版本仅支持读取，如果需要写入，需要手工安装ntfs-3g软件包，请参考\ https://wiki.debian.org/NTFS\ 。完成数据写入后，请及时使用sync或umount操作，关机时请使用sudo
-poweroff命令，避免暴力下电关机，以免数据丢失。
+当前由 `/etc/systemd/system/docker.service.d/docker.conf` 文件进行配置。
 
-修改SN和MAC地址
--------------------
+5.4. 命令审计
+---------------
+
+核心板系统中有一个命令记录的服务，会将在终端执行的所有命令及其返回值记录到文件 `/var/log/prompt-cmd.log` 中。
+
+当前由 `/etc/logrotate.d/prompt-command-log` 、 `/etc/rsyslog.d/90-prompt-command.conf` 文件进行配置。
+
+5.5. 文件系统支持
+---------------------
+
+如果您使用参考底板，当插入U盘或者移动硬盘后（需考虑USB供电能力），存储设备会被识别为/dev/sdb1或类似节点，与桌面PC Linux环境下相同。
+
+文件系统支持FAT、FAT32、EXT2/3/4、NTFS。在 |Product| 下，FAT、FAT32、EXT2/3/4支持自动挂载，设备插入后会自动挂载到/media/usb-xxx下。
+
+当访问NTFS格式的存储设备时，预装的内核版本仅支持读取，如果需要写入，需要手工安装ntfs-3g软件包，请参考\ https://wiki.debian.org/NTFS\ 。
+
+完成数据写入后，请及时使用sync或umount操作，关机时请使用sudo poweroff命令，避免暴力下电关机，以免数据丢失。
+
+5.6. 修改SN和MAC地址
+------------------------
 
 |Product| 的SN和MAC地址存放在MCU的EEPROM中，你可以通过如下方式进行修改。
 
@@ -454,23 +611,23 @@ poweroff命令，避免暴力下电关机，以免数据丢失。
       sudo -i
       echo 0 > /sys/devices/platform/5001c000.i2c/i2c-1/1-0017/lock
 
-写入SN：
+写入SN（假设SN为HQATEVBAIAIAI0001）：
 
    .. code-block:: bash
 
-      echo "HQATEVBAIAIAI0001" > sn.txt
-      dd if=sn.txt of=/sys/bus/nvmem/devices/1-006a0/nvmem count=17 bs=1
+      echo -en "HQATEVBAIAIAI0001\0" > sn.txt
+      dd if=sn.txt of=/sys/bus/nvmem/devices/1-006a0/nvmem count=32 bs=1
 
-count参数需要根据实际写入的SN码长度进行修改。
+count参数最大是32。
 
 读取SN：
 
    .. code-block:: bash
 
       sudo -i
-      dd if=/sys/bus/nvmem/devices/1-006a0/nvmem count=17 bs=1 2>&1 | head -n 1 | cut -c 1-17
+      dd if=/sys/bus/nvmem/devices/1-006a0/nvmem count=32 bs=1 2>/dev/null
 
-其中count参数与cut参数需要根据实际写入的SN长度进行修改。
+其中count参数最大为32
 
 写入MAC（双网卡各有一个MAC）：
 
@@ -491,11 +648,11 @@ count参数需要根据实际写入的SN码长度进行修改。
 
 新的MAC地址将在重启系统后生效。
 
-读写eFuse
--------------
+5.7. 读写eFuse
+--------------------
 
-eFuse寻址
-~~~~~~~~~~~~~~~
+5.7.1. eFuse寻址
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 BM1684X内置的eFuse共4096bit，按照128×32bit来组织，即地址范围0~127，每个地址表示一个32bit的存储单元。eFuse的每个bit初始值都是0，用户可以将其从0修改成1，但之后无法再从1修改成0，比如您对地址0先写入0x1，再写入0x2，那么最后得到的是0x1|0x2=0x3。
 
@@ -512,8 +669,8 @@ copy_a OR copy_b。有两种存储形式：
    address[48] OR address[49]。这种形式的double
    bit用于软件定义信息的存储。
 
-eFuse分区
-~~~~~~~~~~~~~~~
+5.7.2. eFuse分区
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 eFuse里的一些地址有指定的用途，如下表：
 
@@ -549,8 +706,8 @@ eFuse里的一些地址有指定的用途，如下表：
 
 其余未注明区域目前没有特定用途，可以用作存储或实验之用。
 
-eFuse工具
-~~~~~~~~~~~~~~~
+5.7.3. eFuse工具
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 |Product| 中预装了一个eFuse读写工具，读写操作命令如下：
 
@@ -560,16 +717,341 @@ sudo efuse -w 0x? -v 0x? 即可在该地址写入指定的32bit值。
 
 以上数值均只支持十六进制数。
 
+5.7.4. SPACC+eFuse加解密实例
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   .. code-block:: bash
+
+      #include <stdio.h>
+      #include <sys/socket.h>
+      #include <linux/if_alg.h>
+      #include <string.h>
+      #include <errno.h>
+      #include <stdlib.h>
+      #include <unistd.h>
+
+      /*
+      要与内核加密API交互，用户空间应用程序必须创建一个套接字socket。用户空间使用send/write系统调用族调用密码操作。密码运算的结果是通过read/recv系统调用获得的。
+      */
+
+      #ifndef AF_ALG
+      #define AF_ALG 38
+      #endif
+
+      #ifndef SOL_ALG
+      #define SOL_ALG 279
+      #endif
+
+      /* 配置是否使用efuse中的密钥 */
+      #define SET_KEY_EFUSE 1
+      /* 选择接收的系统调用接口 0-recvmsg 1-read 2-recv */
+      #define RECV 1
+
+      extern int errno;
+
+      void print(char* src, int len) {
+
+         int i;
+         for (i = 0; i < len; i++) {
+            printf("%x", (unsigned char)src[i]);
+         }
+         putchar('\n');
+      }
 
 
-系统接口使用
+      int setkey(int fd, char* key, int keylen) {
+         /*
+         调用应用程序必须使用ALG_SET_KEY的setsockopt()选项。
+         如果没有设置该键，则执行HMAC操作时不会因该键导致初始HMAC状态改变。
+         */
+         int err = setsockopt(fd, SOL_ALG, ALG_SET_KEY, key, keylen);
+         if (err) {
+            perror("setkey err");
+            goto out;
+         }
+      out:
+         err = errno;
+         return err;
+      }
+
+      int sendmsg_to_crypto(int opfd, int cmsg_type, __u32 cmsg_data, char* plaintext_buf, int buflen) {
+         /* 描述发送的消息 */
+         struct msghdr msg = {};
+         //struct cmsghdr *cmsg = malloc(CMSG_SPACE(sizeof(cmsg_data)));
+         struct cmsghdr* cmsg = NULL;
+         char buff[CMSG_SPACE(sizeof(cmsg_data))] = { 0 };
+         /*
+            struct iovec 结构体定义了一个向量元素
+            通常这个 iovec 结构体用于一个多元素的数组，对于每一个元素，iovec 结构体的字段 iov_base 指向一个缓冲区，
+            这个缓冲区存放的是网络接收的数据（read），或者网络将要发送的数据（write）。
+            iovec 结构体的字段 iov_len 存放的是接收数据的最大长度（read），或者实际写入的数据长度（write）。
+         */
+         struct iovec iov;
+         int err;
+
+         /* 配置了socket的消息结构体 */
+         msg.msg_iov = &iov;
+         msg.msg_iovlen = 1;
+         msg.msg_control = buff;
+         msg.msg_controllen = sizeof(buff);
+
+         /* 初始化控制消息的实例 */
+         cmsg = CMSG_FIRSTHDR(&msg);
+
+         cmsg->cmsg_level = SOL_ALG;
+         cmsg->cmsg_type = cmsg_type;
+         cmsg->cmsg_len = CMSG_SPACE(sizeof(cmsg_data));
+         /*
+            传输控制消息的data
+            使用下列标志之一的密码操作类型的规范:
+            ALG_OP_ENCRYPT 数据加密
+            ALG_OP_DECRYPT 数据的解密
+            IV信息的规范，标记为ALG_SET_IV标志
+         */
+         //memcpy(CMSG_DATA(cmsg), &cmsg_data, sizeof(cmsg_data));
+         *(__u32*)CMSG_DATA(cmsg) = cmsg_data;
+
+         /* 配置iov */
+         iov.iov_base = plaintext_buf;
+         iov.iov_len = buflen;
+
+         /* 发送数据 */
+         err = sendmsg(opfd, &msg, MSG_MORE);
+         if (err == -1) {
+            perror("sendmsg err");
+            goto out;
+         }
+         else
+            return err;
+      out:
+         err = errno;
+         return err;
+      }
+
+      int recvmsg_from_crypto(int opfd, char* src, int len) {
+         /* 初始化消息结构体和iov结构体用以接收数据 */
+         struct msghdr msg = {};
+         struct iovec iov;
+         int err;
+         msg.msg_iov = &iov;
+         msg.msg_iovlen = 1;
+         iov.iov_base = src;
+         iov.iov_len = len;
+
+         /* 接收数据 */
+         err = recvmsg(opfd, &msg, 0);
+         if (err == -1) {
+            perror("recvmsg err");
+            goto out;
+         }
+         else {
+            /* 打印出接收到的加密后的数据 */
+            printf("recvmsg_from_crypto hex: ");
+            print(src, len);
+            return err;
+         }
+
+
+      out:
+         err = errno;
+         return err;
+      }
+
+      char* text_align16(const char* src, long int* len) {
+         /* 对字符串进行16字节对齐不足补\0，用于处理AES加密的16字节分组 */
+         char* new_str;
+         long int new_len = ((*len) / 16 + 1) * 16;
+         new_str = malloc((*len) % 16 == 0 ? *len : new_len);
+         memcpy(new_str, src, *len);
+         if ((*len) % 16 == 0)
+            return new_str;
+         memset((new_str + (unsigned int)(*len)), 0, new_len - *len - 1);
+         *len = new_len;
+         return new_str;
+      }
+
+      int main(int argc, char** argv) {
+         /* 使用带有-secure-key后缀的算法名可以让spacc使用efuse中的密钥 */
+         struct sockaddr_alg sa = {
+            .salg_family = AF_ALG,
+            .salg_type = "skcipher",
+      #if SET_KEY_EFUSE == 1
+            .salg_name = "cbc(aes-secure-key)",
+      #else
+            .salg_name = "cbc(aes)",
+      #endif
+         };
+         //char key_buf[16] = { 0xff, 0xd7, 0x40, 0x57, 0x47, 0x68, 0x5e, 0xd6, 0xe0, 0x0b, 0xc6, 0x82, 0xa7, 0x72, 0x86, 0x09 };
+         char key_buf[16] = { 0 };
+         char* encrypt_buf;
+         char* decrypt_buf;
+         char* plaintext_buf;
+         long int plaintext_buf_len;
+         int tfmfd;
+         int opfd;
+         int opfd2;
+         int err;
+         /* 实例需要加密的明文数据 */
+         if (argc > 1)
+            plaintext_buf = argv[1];
+         else
+            plaintext_buf = "Single block msgSingle block msg";
+         plaintext_buf_len = strlen(plaintext_buf);
+         /* 根据输入进行内存空间的申请，确保可以处理超大字符串 */
+         encrypt_buf = malloc(plaintext_buf_len + 16);
+         decrypt_buf = malloc(plaintext_buf_len + 16);
+         plaintext_buf = text_align16(plaintext_buf, &plaintext_buf_len);
+         printf("src text: %s len: %ld->%ld\n", plaintext_buf, strlen(plaintext_buf), plaintext_buf_len);
+         /* 申请socket控制句柄 */
+         tfmfd = socket(AF_ALG, SOCK_SEQPACKET, 0);
+         err = bind(tfmfd, (struct sockaddr*)&sa, sizeof(sa));
+         if (err) {
+            perror("bind err");
+            goto bind_err;
+         }
+
+         err = setkey(tfmfd, key_buf, sizeof(key_buf));
+         if (err) {
+            goto setkey_err;
+         }
+
+         /* 申请一个句柄，用于加密 */
+         opfd = accept(tfmfd, NULL, 0);
+         if (opfd == -1) {
+            perror("accept err");
+         }
+
+         /* 申请一个句柄，用于解密 */
+         opfd2 = accept(tfmfd, NULL, 0);
+         if (opfd2 == -1) {
+            perror("accept err");
+         }
+
+         /* 发送数据用以加密 */
+         err = sendmsg_to_crypto(opfd, ALG_SET_OP, ALG_OP_ENCRYPT, plaintext_buf, plaintext_buf_len);
+         if (err == -1) {
+            goto sendmsg_err;
+         }
+
+         /* 接收加密后的数据 */
+         /*
+         使用recv()系统调用，应用程序可以从内核加密API读取加密操作的结果。
+         输出缓冲区必须至少与保存加密或解密数据的所有块一样大。如果输出数据大小较小，则只返回符合输出缓冲区大小的块。
+         */
+         err = recvmsg_from_crypto(opfd, encrypt_buf, plaintext_buf_len);
+         if (err == -1) {
+            goto recv_err;
+         }
+
+         /* 发送数据用以解密 */
+         err = sendmsg_to_crypto(opfd2, ALG_SET_OP, ALG_OP_DECRYPT, encrypt_buf, plaintext_buf_len);
+         if (err == -1) {
+            goto sendmsg_err;
+         }
+         int bytesToRecv = 0;
+
+      #if RECV==0
+         /* 接收加密后的数据 */
+         err = recvmsg_from_crypto(opfd2, decrypt_buf, plaintext_buf_len);
+         if (err == -1) {
+            goto recv_err;
+         }
+         printf("recvmsg_from_crypto txt: %s len: %ld\n\n", decrypt_buf,strlen(decrypt_buf));
+         /*下面是两个使用其他接口操作编解码的实例*/
+      #elif RECV==1
+         read(opfd2, decrypt_buf, plaintext_buf_len);
+         printf("read txt: %s len: %ld\n", decrypt_buf,strlen(decrypt_buf));
+      #else
+         err = recv(opfd2, decrypt_buf, plaintext_buf_len, 0);
+         if (err == -1)
+            perror("recv error:");
+         else
+            printf("recv txt: %s len: %ld\n\n", decrypt_buf,strlen(decrypt_buf));
+      #endif
+
+      bind_err:
+      setkey_err:
+      accept_err:
+      sendmsg_err:
+      recv_err:
+         close(tfmfd);
+         close(opfd);
+         close(opfd2);
+         free(plaintext_buf);
+         free(encrypt_buf);
+         free(decrypt_buf);
+
+         return 0;
+      }
+
+代码如上，仓库位置：https://github.com/sophgo/sophon-tools/tree/main/source/pspacc_efuse_demo
+
+6. 系统接口使用
 ================
 
 |Product| 的CPU占用率、内存使用率等信息均可使用标准的Linux
 sysfs、procfs节点，或top等工具读取。以下仅介绍 |Product| 特有的一些接口或硬件使用方式。
 
-读取核心板序列号
---------------------
+6.1. 设备基础信息获取工具
+----------------------------------
+
+我们准备了一款获取基础信息的工具，它可以一并获取上述大部分信息和大部分linux系统信息，程序打印示例如下：
+
+   .. code-block:: bash
+
+      BOOT_TIME(s)|28236.15|
+      DATE_TIME|2024-10-18 18:41:16 CST|
+      WORK_MODE|SOC|
+      CPU_MODEL|bm1684x|
+      SHUTDOWN_REASON|10-17-22-22-23,NO_INFO 10-17-23-05-19,POWER_OFF|
+      DDR_SIZE(MiB)|16384|
+      EMMC_SIZE(MiB)|59648|
+      SYSTEM_MEM(MiB)|3707|
+      TPU_MEM(MiB)|7615|
+      VPU_MEM(MiB)|1024|
+      VPP_MEM(MiB)|3000|
+      TPU_MEM_USAGE(%)|99.00|
+      VPU_MEM_USAGE(%)|0|
+      VPP_MEM_USAGE(%)|0|
+      CPU_ALL_USAGE(%)|0.25,0.00,0.25,0.00,0.00|
+      CPUS_USAGE(%)|1.96,0.00,1.96,0.00,0.00 0.00,0.00,0.00,0.00,0.00 0.00,0.00,0.00,0.00,0.00 0.00,0.00,0.00,0.00,0.00 1.92,0.00,1.92,0.00,0.00 1.96,0.00,1.96,0.00,0.00 0.00,0.00,0.00,0.00,0.00 0.00,0.00,0.00,0.00,0.00|
+      VPU_USAGE(%)|0,0,0|
+      VPP_USAGE(%)|0,0|
+      SYSTEM_MEM_USAGE(%)|31.88|
+      DTS_NAME|bm1684x_se7_v1.dtb|
+      DEVICE_MODEL|SE7 V1|
+      CPU_CLK(Hz)|1800000000|
+      TPU_CLK(Hz)|850000000|
+      VPU_CLK(Hz)|500000000|
+      CHIP_SN|C1710AC0H24220215|
+      DEVICE_SN||
+      ETH0_MAC|5c:f8:38:70:6d:7a|
+      ETH1_MAC|5c:f8:38:70:6d:7b|
+      CHIP_TEMP(degree Celsius)|68|
+      BOARD_TEMP(degree Celsius)|68|
+      DTS_THERMAL_TEMP(degree Celsius)|85 90 95|
+      VTPU_POWER(W)|3|
+      VTPU_VOLTAGE(mV)|726|
+      VDDC_POWER(W)|3|
+      VDDC_VOLTAGE(mV)|877|
+      V12_POWER(mW)|17496|
+      TPU_USAGE(%)|0|
+      BOARD_TYPE|0x33|
+      MCU_VERSION|0x02|
+      KERNEL_VERSION|5.4.217-bm1684-g27254622663c|
+      KERNEL_BUILD_TIME|#1 SMP Mon Jun 24 16:02:21 CST 2024|
+      SYSTEM_TYPE|Ubuntu 20.04 LTS|
+      DOCKER_VERSION|Docker version 27.3.0, build e85edf8|
+      MMC0_CID|9b0100593053303634004d1927d4aa00|
+      DISK_INFO|/data:1% /media/root-ro:100% /media/root-rw:13% /opt:14% /recovery:3% /boot:53% /data2:4%|
+      SDK_VERSION|v24.04.01|
+      LIBSOPHON_VERSION|0.5.1|
+      SOPHON_MEDIA_VERSION|0.10.0|
+
+此工具名为 ``get_info`` ，其工程链接如下：https://github.com/sophgo/sophon-tools/tree/main/source/pget_info
+
+6.2. 读取核心板序列号
+---------------------------
 
 命令：
 
@@ -643,8 +1125,8 @@ sysfs、procfs节点，或top等工具读取。以下仅介绍 |Product| 特有�
       coretemperature: 41
       ------------------------------------------------------------------------
 
-读取BM1684X片上温度
------------------------
+6.3. 读取BM1684X片上温度
+----------------------------
 
 命令：
 
@@ -660,20 +1142,8 @@ sysfs、procfs节点，或top等工具读取。以下仅介绍 |Product| 特有�
 
 即38.745摄氏度。
 
-Linux的thermal框架会使用这个温度做管理：
-
-1. 普通版模组：当温度升到85度时，NPU频率会降到75%，CPU降频到1.15GHz；当温度回落到80度时，NPU频率会恢复到100%，CPU频率恢复到2.3GHz；当温度升到90度时，NPU频率会降到最低挡位；当温度升到95度时，会自动关机。
-
-2. 宽温版模组：当温度升到95度时，NPU频率会降到75%，CPU降频到1.15GHz；当温度回落到90度时，NPU频率会恢复到100%，CPU频率恢复到2.3GHz；当温度升到105度时，NPU频率会降到最低挡位；当温度升到110度时，会自动关机。
-
-另外，片外的MCU也会使用这个温度来做最后的保险机制：
-
-1. 普通版模组：片上结温大于95度，并且板上温度大于85度时强制关机。
-
-2. 宽温版模组：片上结温大于120度时强制关机。
-
-读取核心板温度
-------------------
+6.4. 读取核心板温度
+----------------------
 
 命令：
 
@@ -691,8 +1161,8 @@ Linux的thermal框架会使用这个温度做管理：
 
 核心板温度通常会比前面读取的片上结温内部温度低。
 
-读取功耗信息
-----------------
+6.5. 读取功耗信息
+------------------
 
 命令：
 
@@ -729,8 +1199,8 @@ pmbus 读取的是给npu和cpu供电的传感器的温度，所以更接近核�
 
 返回结果格式与BM1684X相同。
 
-使用GPIO
-------------
+6.6. 使用GPIO
+------------------
 
 BM1684X 包含3组GPIO控制器，每个控制32根GPIO，与Linux的设备节点对应如下：
 
@@ -759,22 +1229,22 @@ BM1684X 包含3组GPIO控制器，每个控制32根GPIO，与Linux的设备节�
 
 请注意，由于pin是复用的，并不是全部96根GPIO都可以使用，请与硬件设计结合确认。
 
-使用UART
-------------
+6.7. 使用UART
+--------------------
 
 |Product| 的144pin
 BTB接口上提供了3组UART，其中UART0已用作bootloader和Linux的console端口。
 
-使用I2C
------------
+6.8. 使用I2C
+----------------------
 
 |Product| 的144pin BTB接口上提供了1组I2C
 master，对应设备节点为/dev/i2c-2，可以使用标准的I2C tools和API操作。
 
 在我们的参考底板上， |Product| 通过这组I2C连接了底板上的RTC设备。
 
-使用PWM
------------
+6.9. 使用PWM
+----------------------
 
 .. warning::
 
@@ -816,8 +1286,8 @@ tree把对应的pwmfan节点disable掉后才能自由使用：
          cooling-levels = <255 153 128 77 26 1>; //total 255
       };
 
-风扇测速
-------------
+6.10. 风扇测速
+-----------------------
 
 .. warning::
 
@@ -841,8 +1311,8 @@ BTB接口上提供了1个风扇测速输入引脚，可以采样风扇的转速�
 
 同时提供了一个netlink事件，当风扇停转时告警，示例代码可以从bsp-sdk/linux-arm64/tools/fan_alert获取。
 
-查询内存用量
------------------
+6.11. 查询内存用量
+----------------------------
 
 BM1684X 板载了16GB DDR，可以分为三类：
 
@@ -887,8 +1357,7 @@ BM1684X 板载了16GB DDR，可以分为三类：
    heap（即三块预留的内存区域），如名字所示，分别供NPU、VPU、VPP使用。以上示例中只打印了每个heap使用信息的开头，如果完整地cat
    summary文件，可以看到其中分配的每块buffer的地址和大小信息。
 
-
-系统定制
+7. 系统定制
 ============
 
 因为 |Product| 的底板可以由您自行设计，我们提供了一个BSP SDK以便您对内核和Ubuntu
@@ -896,13 +1365,84 @@ BM1684X 板载了16GB DDR，可以分为三类：
 
 如果您只是希望部署自己的业务软件，并不涉及硬件修改，那么出于解耦的考虑，更推荐您把自己的业务软件打包成一个deb安装包。比如包含您的业务软件执行程序、依赖库、开机自启动服务等等，deb安装包里还可以放一个安装时自动执行的脚本，在安装时做一些配置文件修改替换之类的操作。这样您可以单独安装、卸载、升级您的业务软件，避免与我们系统包版本的依赖问题，对产品部署后的批量更新等操作也更友好。deb安装包的制作可以参考Debian\ `官方文档 <https://wiki.debian.org/Packaging/Intro>`__\ ，或其他网上资料。
 
-文件结构
-------------
+7.1. 基于镜像方式自定义刷机包
+------------------------------------------------
+
+如果有一个设备已经把定制化的文件配置完毕了，可以使用 `socbak` 工具对该设备进行镜像操作，生成的刷机包可以用于其他同种设备。仓库链接：https://github.com/sophgo/sophon-tools
+
+最新版本可以从网址：https://github.com/sophgo/sophon-tools/releases/latest 位置下载
+
+如下是使用说明：
+
+1. 确定使用条件
+
+   1. 芯片：BM1684、BM1684X
+   2. SDK版本： `v23.03.01` 之后版本
+   3. 外置存储分区格式尽量保证ext4，且可用空间至少是当前emmc使用总量的2.5倍以上
+
+2. 将外置存储插入目标设备，然后执行如下操作
+
+   .. code-block:: bash
+
+      sudo su
+      cd /
+      mkdir socrepack
+      # 这一步需要根据你的外置存储选择挂载设备路径，但是目标路径必须是/socrepack
+      mount /dev/sda1 /socrepack
+      chmod 777 /socrepack
+      cd /socrepack
+
+3. 然后将从GitHub上下载的 `socbak.zip` 传输到 `/socrepack` 目录下，执行如下命令进行打包
+
+   .. code-block:: bash
+
+      unzip socbak.zip
+      cd socbak
+      export SOC_BAK_ALL_IN_ONE=1
+      bash socbak.sh
+
+4. 等待一段时间，执行成功后会生成如下文件
+
+   .. code-block:: bash
+
+      root@sophon:/socrepack/socbak# tree -L 1
+      .
+      ├── binTools
+      ├── output
+      ├── script
+      ├── socbak.sh
+      ├── socbak_log.log
+      └── socbak_md5.txt
+
+      3 directories, 3 files
+
+5. 新的刷机包在 `output/sdcard` 下
+
+
+7.2. 基于源码自定义刷机包
+------------------------------------------------
+
+7.2.1. 源码文件获取方式
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. bootloader-arm64仓库 https://github.com/sophgo/bootloader-arm64 编译刷机包的流程文件、ATF源码、UBOOT源码
+2. linux-kernel源码仓库 https://github.com/sophgo/linux-arm64 编译刷机包使用的kernel源码
+3. libsophon源码仓库 https://github.com/sophgo/libsophon 编译刷机包中算法加速驱动和中间件源码
+4. mcu源码仓库 https://github.com/sophgo/mcu 核心板MCU固件源码
+5. BSP_SDK二进制文件，该包中包含了ubuntu系统底包、交叉编译工具链等二进制文件，使用dfss工具下载
+
+   .. code-block:: bash
+
+      pip3 install dfss --upgrade
+      python3 -m dfss --url=open@sophgo.com:/sophon-bsp/BSP_SDK.zip
+
+7.2.2. 源码文件结构
+~~~~~~~~~~~~~~~~~~~~
 
 BSP
 SDK包含两部分：一部分为github网站（https://github.com/sophgo）上发布的源码文件，bootloarder-arm64和linux-arm64；另一部分基本不会改动的二进制文件，为避免影响git效率，是通过NAS发布的。请参考bootloarder-arm64源码文件的README中的描述将两部分合并，将看到如下文件：
 
-   ::
+   .. code-block:: bash
 
       top
       ├── bootloader-arm64
@@ -918,9 +1458,8 @@ SDK包含两部分：一部分为github网站（https://github.com/sophgo）上�
       ├── gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu → 交叉编译工具链
       └── linux-arm64 → kernel源代码
 
-
-交叉编译
-------------
+7.2.3. 实机交叉编译
+~~~~~~~~~~~~~~~~~~~~
 
 推荐在Ubuntu
 20.04系统下进行交叉编译，不支持X86_64以外的架构。请预留至少10GB空闲磁盘空间，并请先安装必要的一些工具：
@@ -939,8 +1478,6 @@ SDK包含两部分：一部分为github网站（https://github.com/sophgo）上�
 
       source bootloader-arm64/scripts/envsetup.sh
       build_bsp
-      # build_update tftp 必须在 build_bsp之后执行
-      build_update tftp
 
 因为脚本中使用了sudo，编译过程中可能会提示您输入当前用户密码。第一次编译时可能遇到各种问题，如结果不符合预期，请仔细检查编译log，如果有遇到提示某某工具找不到的话，用apt
 install安装即可。
@@ -992,8 +1529,160 @@ module）可以在如下路径找到：
 
 默认已经打进刷机包，即板卡上的/home/linaro/bsp-debs目录。
 
-修改kernel
---------------
+7.2.4. docker环境交叉编译
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+7.2.4.1. docker镜像的获取方式1: docker image
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+考虑到国内dockerfile可能编译不方便，这里提供一个docker image的下载方式
+
+   .. code-block:: bash
+
+      python3 -m pip install dfss --upgrade
+      python3 -m dfss --dflag=cross_build_sophon_docker
+
+7.2.4.2. docker镜像的获取方式2: Dockerfile
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+1. dockerfile内容如下
+
+   .. code-block:: bash
+
+      # from ubuntu 20.04
+      FROM ubuntu:20.04
+
+      SHELL ["/bin/bash", "-c"]
+
+      # Add apt sources
+      RUN cp -a /etc/apt/sources.list /etc/apt/sources.list.bak \
+      && sed -i 's@//.*archive.ubuntu.com@//mirrors.ustc.edu.cn@g' /etc/apt/sources.list
+
+      # install pack
+      RUN export DEBIAN_FRONTEND=noninteractive \
+      && apt-get update \
+      && apt-get upgrade -y \
+      && apt-get install -y --no-install-recommends \
+      wget curl rsync ca-certificates bc bison byobu cmake cpio debootstrap \
+      device-tree-compiler dosfstools dpkg-dev exfat-utils fakeroot flex gcc kmod kpartx \
+      language-pack-en language-pack-zh-hans git libssl-dev libxml2 libxml2-dev qemu-user \
+      qemu-user-static rsync sudo u-boot-tools util-linux uuid uuid-dev lrzsz openssh-server \
+      vim nano python3-dev python3-pip gdb g++ build-essential p7zip-full bsdmainutils \
+      && apt-get autoclean
+      RUN python3 -m pip install --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple \
+      && python3 -m pip install setuptools --upgrade -i https://pypi.tuna.tsinghua.edu.cn/simple \
+      && python3 -m pip install setuptools_rust --upgrade -i https://pypi.tuna.tsinghua.edu.cn/simple \
+      && python3 -m pip install dfss --upgrade -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+      # set work dir
+      WORKDIR /workspace
+
+      # download build files
+      RUN mkdir /env && pushd /env/ \
+      && python3 -m dfss --url=open@sophgo.com:/sophon-bsp/BSP_SDK.zip \
+      && 7z x BSP_SDK.zip \
+      && mv 'BSP SDK'/* ./ \
+      && rm -rf 'BSP SDK' \
+      && rm -rf BSP_SDK.zip \
+      && rm -rf memory_layout_modification_tool \
+      && tar -xaf gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu.tar.xz \
+      && mkdir qt_fl2000 && pushd qt_fl2000 \
+      && python3 -m dfss --dflag=sophgo-bsp-qt5-fl2000fb-toolchain \
+      && tar -xaf qt-5.14-amd64-aarch64-fl2000fb_v1.1.0.tar.xz \
+      && popd \
+      && mkdir qt_ms9132 && pushd qt_ms9132 \
+      && python3 -m dfss --dflag=sophgo-bsp-qt5-ms9132-toolchain \
+      && tar -xaf qt-5.14-amd64-aarch64-ms9132_v1.1.0.tar.xz \
+      && popd \
+      && popd
+
+      RUN ulimit -n 1024
+
+      # add path
+      ENV PATH "$PATH:/env/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin"
+
+      # Set the locale
+      RUN locale-gen en_US.UTF-8
+      ENV LANG en_US.UTF-8
+      ENV LANGUAGE en_US:en
+      ENV LC_ALL en_US.UTF-8
+
+2. 使用如下命令生成编译用的docker镜像和进入容器
+
+   .. code-block:: bash
+
+      docker build -t sophon_bsp_build:v1 .
+
+      docker run \
+      -td \
+      --privileged=true \
+      -v /workspace:/workspace \
+      --name sophon_bsp_container sophon_bsp_build:v1 /bin/bash
+
+      docker exec -it sophon_bsp_container bash
+
+7.2.5. docekr镜像使用
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. 导出、导入镜像相关命令
+
+   .. code-block:: bash
+
+      docker save sophon_bsp_build:v1 | pv | gzip > sophon_bsp_build-v1.tar.gz
+      docker load -i sophon_bsp_build-v1.tar.gz
+
+2. 该docker镜像的使用注意事项:
+
+   1. 需要amd64架构的宿主机
+   2. docker中的系统是Ubuntu20.04
+   3. docker中的交叉编译工具链是gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu，在/env/下，环境变量已经配置完毕
+   4. docker中的定制化qt交叉编译工具链是qmake，在/env/qt_fl2000/install下，环境变量已经配置完毕
+   5. docker中/env下有交叉编译工具链和ubuntu底包
+   6. docker中安装了dfss文件下载工具
+
+7.2.6. 默认参数编译一个刷机包（SE5&7）
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. 执行 `build_bsp_without_package` 命令编译fip、uboot、kernel以及一些相关deb包，并且准备好打包刷机包的环境
+2. 拷贝 `sophon-soc-libsophon*.deb` 、 `sophon-mw-soc-sophon-ffmpeg*.deb` 和 `sophon-mw-soc-sophon-opencv*.deb` 这些中间件包到 `install/soc_bm1684/bsp-debs` 下
+
+   1. `sophon-soc-libsophon*.deb` 是算法推理驱动和runtime包，需要编译kernel生成的header文件+libsophon源码进行编译出包
+   2. `sophon-mw-soc-sophon-ffmpeg*.deb` 和 `sophon-mw-soc-sophon-opencv*.deb` 是多媒体相关的runtime包，由于只依赖系统，所以可以选择与SophonSDK版本对应的版本，无需重新编译。可以从SophonSDK包中image下bsp-debs下获取
+
+3. 执行 `build_package` 命令打包刷机包，执行成功后会在 `install/soc_bm1684/bsp-debs` 下生成sdcard目录和tftp目录，对应sd卡刷机包和tftp刷机包
+
+7.2.7. 编译流程解析
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   .. image:: ./_static/image97.png
+      :width: 8in
+      :height: 3in
+
+如上图，是刷机包编译流程的图形化说明，整体流程如下：
+
+1. 编译uboot
+2. 编译tfa
+3. 编译spi_flash生成工具
+4. 使用uboot固件和tfa固件生成flash固件
+5. 编译kernel
+6. 编译ramdisk
+
+   1. 编译emmc启动ramdisk
+   2. 编译恢复模式remdisk
+
+7. 生成emmc上boot分区内容
+8. 编译相关deb包
+9. 生成根文件系统（使用qemu）
+10. 生成其他分区压缩包
+11. 生成sd卡刷机包
+12. 生成tgz升级补丁包
+13. 生成tftp刷机包
+
+7.2.8. 源码修改说明
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+7.2.8.1. 修改kernel
+:::::::::::::::::::::::::::::::::::::::::::::
 
 kernel的配置文件在：
 
@@ -1040,8 +1729,8 @@ tree的修改。请替换到板卡的/boot目录下并重启即可。
    关注 Selecting config 这一行，
    即可知道这块板子对应的device tree源文件是在linux-arm64/arch/arm64/boot/dts/bitmain/目录下的**bm1684x_evb_v0.0.dts**。
 
-修改Ubuntu 20.04
---------------------
+7.2.8.2. 修改Ubuntu 20.04
+:::::::::::::::::::::::::::::::::::::::::::::
 
 方式一：利用Ubuntu系统源码包进行修改
 
@@ -1123,8 +1812,8 @@ b. 将deb包直接放到bootloader-arm64/distro/sophgo-fs/root/post_install/debs
       build_update tftp    // 重新编译tftp刷机包
 
 
-定制化软件包
---------------------
+7.2.8.3. 定制化软件包
+:::::::::::::::::::::::::::::::::::::::::::::
 
 您可以通过以下操作获取您所需要的特定的软件包:
 
@@ -1164,99 +1853,40 @@ b. 将deb包直接放到bootloader-arm64/distro/sophgo-fs/root/post_install/debs
       build_update sdcard  // 重新编译sdcard刷机包
       build_update tftp    // 重新编译tftp刷机包
 
-如何通过github代码构建安装包
--------------------------------
+7.2.8.4. 修改分区表
+:::::::::::::::::::::::::::::::::::::::::::::
 
-1.从http://219.142.246.77:65000/sharing/5ajzpas1H下载工具链和Ubuntu base。
+|Product| 使用GPT分区表。分区表的配置文件在bootloader-arm64/scripts/partition32G.xml，其中依次描述了每个分区的大小信息。
 
-2.将它们放在与bootloader-arm64和linux-arm64同一级别的目录下，然后解压缩工具链，不需要解压缩发行版，你将得到以下文件夹：
+不建议您修改分区的顺序和个数，以及readonly和format属性，以免与其它一些预装脚本中的写法发生冲突。
 
-    .. code-block:: bash
+您可以修改每个分区的大小。最后一个分区的大小不需要凑满eMMC实际容量，可以把它设成一个比较小的值，只要足够存放您准备预装的文件（即data.tgz解开后的内容）就可以。
 
-        .
-        ├── bootloader-arm64
-        ├── distro
-        │   └── distro_focal.tgz
-        ├── gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu
-        └── linux-arm64
+刷机后第一次开机时，会有一个脚本将这个分区自动扩大到填满eMMC的全部剩余可用空间。
 
-3.执行以下命令
+内容解析如下：
 
-    .. code-block:: bash
+   .. code-block:: xml
 
-       sudo apt install bison flex bc rsync kmod cpio sudo \
-       uuid-dev cmake libssl-dev fakeroot \
-       dpkg-dev device-tree-compiler u-boot-tools \
-       uuid-dev libxml2-dev debootstrap \
-       qemu-user-static kpartx
+      <physical_partition size_in_kb="20971520">
+            <partition label="BOOT"       size_in_kb="131072"  readonly="false"  format="1" />
+            <partition label="RECOVERY"   size_in_kb="3145728"  readonly="false" format="2" />
+            <partition label="MISC"       size_in_kb="10240"  readonly="false"   format="0" />
+            <partition label="ROOTFS"     size_in_kb="2621440" readonly="true"   format="2" />
+            <partition label="ROOTFS_RW"  size_in_kb="6291456" readonly="false"  format="2" />
+            <partition label="OPT"        size_in_kb="2097152" readonly="false"  format="2" />
+            <partition label="DATA"       size_in_kb="4194304" readonly="false"  format="2" />
+      </physical_partition>
 
-4.编译envsetup.sh文件
+1. 其中第一行代表总分区表大小，对于32GB emmc设备，推荐最大30000000，对于64GB emmc设备，推荐最大55000000。
 
-    .. code-block:: bash
+2. 然后修改下面的各个分区大小到需求大小
 
-       source bootloader-arm64/scripts/envsetup.sh
+3. 注： 不要轻易将某一个分区大小缩小，可能会导致某个分区打刷机包时出现问题
 
-5.创建bsp-debs文件包
 
-    .. code-block:: bash
-
-       build_bsp_without_package
-
-6.从源码编译SoC版本。首先您需要编译SoC BSP，请参考BSP的编译指导。
-
-7.在GitHub官网https://github.com/sophgo/libsophon.git下载libsophon，参考BSP的编译指导编译SoC BSP。在SoC模式下编译以获取libsophon*.deb文件包。
-
-8.在https://developer.sophgo.com/site/index/material/all/all.html网站下载SDK，下载多媒体文件多媒体文件sophon-mw-soc-sophon-ffmpeg*.deb ， sophon-mw-soc-sophon-opencv*.deb。
-
-9.拷贝Sophon-soc-lib sophon*.deb、sophon-mw-soc-sophon-ffmpeg*.deb和Sophon-mw-soc-sophon-opencv*.deb 软件包到 soc_bm1684/bsp-debs目录下。
-
-10.执行以下命令，即可得到sdcard刷机包。
-
-    .. code-block:: bash
-
-       build_ package
-
-在 |Product| 上编译内核模块
--------------------------------
-
-您也可以选择直接在 |Product| 板卡上直接编译kernel
-module，可以省去上述搭建交叉编译环境的麻烦。步骤如下：
-
-1. uname
-   -r得到kernel版本号，与/home/linaro/bsp-debs和/lib/modules里面的文件名比较，确保一致
-
-2. 因为kernel在交叉编译环境下做make
-   bindeb-pkg的缺陷，需要再额外做如下处理：
-
-   a. 用date命令检查当前系统时间，如果跟实际时间相差太多，请设置为当前时间，如
-
-      .. code-block:: bash
-
-         sudo date -s "01:01:01 2021-03-01"
-
-   b. 检查是否存在/home/linaro/bsp-debs/install.sh，如果有的话，执行它即可
-
-   c. 如果没有的话，需要手工操作：
-
-      .. code-block:: bash
-
-         sudo dpkg -i /home/linaro/bsp-debs/linux-headers-*.deb
-         sudo mkdir -p /usr/src/linux-headers-$(uname -r)/tools/include/tools
-         sudo cp /home/linaro/linux-dev/*.h /usr/src/linux-headers-$(uname-r)/tools/include/tools
-         cd /usr/src/linux-headers-$(uname -r)
-         sudo apt update
-         sudo apt-get install -y build-essential bc bison flex libssl-dev
-         sudo make scripts
-
-3. 回到您的driver目录，make ko吧
-
-修改分区表
---------------
-
-|Product| 使用GPT分区表。分区表的配置文件在bootloader-arm64/scripts/partition32G.xml，其中依次描述了每个分区的大小信息。不建议您修改分区的顺序和个数，以及readonly和format属性，以免与其它一些预装脚本中的写法发生冲突。您可以修改每个分区的大小。最后一个分区的大小不需要凑满eMMC实际容量，可以把它设成一个比较小的值，只要足够存放您准备预装的文件（即data.tgz解开后的内容）就可以。刷机后第一次开机时，会有一个脚本将这个分区自动扩大到填满eMMC的全部剩余可用空间。
-
-修改u-boot
---------------
+7.2.8.5. 修改u-boot
+:::::::::::::::::::::::::::::::::::::::::::::
 
 u-boot的配置文件在：
 
@@ -1307,410 +1937,42 @@ tree，并非kernel使用的device tree：
    关注 Selecting config 这一行，
    即可知道这块板子对应的device tree源文件是在u-boot/arch/arm/dts/ 目录下的 **bitmain-bm1684x-evb-v0.0.dts**.
 
-修改板卡预制的内存布局
------------------------------
+7.3. 在 |Product| 上编译内核模块
+------------------------------------
 
-本工具需要运行在PC机上，不可在板卡上直接运行推荐使用Ubuntu 20.04系统，Python 3.8版本环境。
-如果您想直接修改当前板卡上的内存布局，请获取工具包，路径在http://219.142.246.77:65000/fsdownload/5ajzpas1H/BSP%20SDK的memory_layout_modification_tool目录下，仅用到这个文件夹，不需要其它完整的源码和交叉编译工具链等。其中包含如下文件：
+您也可以选择直接在 |Product| 板卡上直接编译kernel
+module，可以省去上述搭建交叉编译环境的麻烦。步骤如下：
 
-├── dtc  → device tree compiler
+1. uname
+   -r得到kernel版本号，与/home/linaro/bsp-debs和/lib/modules里面的文件名比较，确保一致
 
-├── dumpimage  → itb解包工具
+2. 因为kernel在交叉编译环境下做make
+   bindeb-pkg的缺陷，需要再额外做如下处理：
 
-├── gen_mm_dts.py  → 生成memory layout描述的脚本
-
-├── gen_mm_dts.sh  →  配合同名python脚本使用的expect脚本
-
-├── gui_new_update_itb_its.py  → 修改内存界面工具脚本
-
-├── mkimage  → itb打包工具
-
-├── new_update_itb_its.py  → 修改内存命令行脚本
-
-├── new_update_itb_its.sh  → 配合同名python脚本使用的expect脚本
-
-└── reassemble.sh  →  打包itb的脚本
-
-您直接用到的是new_update_itb_its.py和gui_new_update_itb_its.py脚本；其中new_update_itb_its.py是以命令行的方式进行修改内存布局操作，没有窗口界面；而gui_new_update_itb_its.py运行后会显示一个修改内存布局操作界面，适合带有桌面的Ubuntu系统。这两个脚本的具体操作步骤如下：
-
-（一）new_update_itb_its.py脚本操作步骤：
-
-   1.从板卡的/boot目录下copy出emmcboot.itb和multi.its两个文件放到脚本同级目录下(即mm_layout/目录下)。
-
-   2.在mm_layout目录下，使用Python运行new_update_itb_its.py文件：
+   a. 用date命令检查当前系统时间，如果跟实际时间相差太多，请设置为当前时间，如
 
       .. code-block:: bash
 
-         python3 new_update_itb_its.py
+         sudo date -s "01:01:01 2021-03-01"
 
-   它会解开emmcboot.itb，然后提示您选择要修改哪个device tree；进入到所需要修改dtb文件的选择页面；标准版SM5对应的文件为bm1684_asic_modm.dtb。
+   b. 检查是否存在/home/linaro/bsp-debs/install.sh，如果有的话，执行它即可
 
-   .. image:: ./_static/image42.png
-      :width: 2.85in
-      :height: 3.49in
-
-   您可以通过在板卡上执行以下命令获取板卡对应的dtb文件名称：
-
-   .. code-block:: bash
-
-      cat /proc/device-tree/info/file-name
-
-   3.输入所需要修改的板卡的dtb文件的序号，之后会列出当前这份device tree里的内存状况，并进入内存布局的功能操作选择流程：
-
-   .. image:: ./_static/image43.png
-      :width: 5.02in
-      :height: 2.67in
-
-   如上图，先列出了所有DDR channel的物理内存大小。然后列出了每个DDR channel上除去固定分配区域后还有多少可以调整的。接下来就会逐个列出NPU、VPP、VPU三个区域所在DDR channel起始地址和大小；同时显示能够对内存布局的进行的操作。
-
-   0）update  →  表示修改内存布局，注意这里不能调整区域所在的DDR channel，不能删除或增加区域，只能修改大小，且大小不能超过上面开列的每个DDR channel的可用空间。
-
-   1）delete  →  表示删除已有的内存区，例如删除NPU、VPP、VPU区域。
-
-   2）add  →  表示增加板卡里没有的内存区，注意这里只能增加NPU、VPP、VPU区域，若device tree内已经存在该内存区域，则不能进行增加内存操作，且增加的内存大小不能超过上面开列的每个DDR channel的可用空间(例如 device tree内存在NPU区域，则无法再增加NPU内存区域)。
-
-   3）finish all operation and generate new files  →  表示结束对内存布局的功能操作，生成新的emmcboot.itb文件。注意选择update、delete、add等操作之后，需要选择finish all operation and generate new files 操作才会退出程序。
-
-   输入您所需要的内存操作序号后执行相应的操作，上述各操作的详细流程如下：
-
-      3.1 update操作步骤：
-
-      .. image:: ./_static/image59.png
-         :height: 2.01in
-         :width: 3.08in
-
-      如上图，输入0之后进入修改内存布局操作流程，然后会列出可供修改的内存区域名称及其序号。
-
-         3.1.1 选择您所需要修改的内存区域的序号：
-
-            .. image:: ./_static/image60.png
-               :height: 1.27in
-               :width: 4.42in
-
-            选择您需要修改的内存区后，会让您输入该ion区域的新分配的内存大小（10进制和16进制都可以，16进制数以0x开头），并且列出了能够分配的最大内存大小。
-
-         3.1.2 输入您所需要修改的内存大小：
-
-            .. image:: ./_static/image61.png
-               :height: 0.76in
-               :width: 4.73in
-
-            输入所需要修改的内存大小后，会询问您是否需要继续进行修改内存区域操作。
-
-         3.1.3 选择您是否需要继续修改内存：
-
-            yes:(表示继续修改内存区域)
-
-            .. image:: ./_static/image62.png
-               :height: 1.55in
-               :width: 3.61in
-
-            选择yes后会继续进行修改内存操作，回到3.1.1步骤继续修改内存；注意，如果您继续修改内存选择了相同的ion区域操作会覆盖之前对该区域的操作，以最新的操作为准；如果您继续修改内存选择了不同的ion区域操作会记录之前的所有修改操作，执行所有的修改内存操作，如果您的更新的内存区域的起始地址不是所属DDR channel的可用起始基地址，系统会提示您相应的warning，并把所更新的内存区域的起始地址重置到所属DDR channel的可用起始基地址。
-
-            no:(表示结束修改内存区域操作)
-
-            .. image:: ./_static/image63.png
-               :height: 1.91in
-               :width: 3.80in
-
-            .. image:: ./_static/image92.png
-               :height: 0.22in
-               :width: 5.76in
-
-            选择no后会退出修改内存操作，显示您更新了哪个区域提示信息，回到3步骤继续选择对内存的功能操作；注意,如果您想结束所有的操作，需要选择3结束内存布局的功能操作，生成新的emmcboot.itb文件。
-
-      3.2 delete操作步骤：
-
-      .. image:: ./_static/image64.png
-         :height: 2.22in
-         :width: 4.01in
-
-      如上图，输入1之后进入删除内存操作流程，然后列出可供删除的内存区域名称及序号。
-
-         3.2.1 选择您需要删除的内存区域序号：
-
-            .. image:: ./_static/image65.png
-               :height: 1.21in
-               :width: 3.22in
-
-            选择所需要删除的内存区域之后，会询问您是否需要继续进行删除内存区域操作。
-
-         3.2.2 选择您是否需要继续删除内存区域：
-
-            yes:(表示继续删除内存区域)
-
-            .. image:: ./_static/image66.png
-               :height: 1.47in
-               :width: 3.29in
-
-            选择yes之后会继续进行删除内存操作，回到3.2.1步骤继续删除内存；注意，如果您继续删除内存区域，之前删除过的区域不可再删除，可供删除的内存区域也不再显示之前删除过的内存区。
-
-            no:(表示结束删除内存区域操作)
-
-            .. image:: ./_static/image67.png
-               :height: 1.97in
-               :width: 3.89in
-
-            选择no后会退出删除内存区域操作，显示您删除了哪个区域提示信息，回到3步骤继续选择对内存的功能操作；注意,如果您想结束所有的操作，需要选择3结束内存布局的功能操作，生成新的emmcboot.itb文件。
-
-      3.3 add操作步骤：
-
-      .. image:: ./_static/image68.png
-         :height: 2.05in
-         :width: 3.28in
-
-      注意：如果device tree内已经存在NPU、VPU、VPP内存区域，则不能进行增加内存操作，提示您“npu、vpu、vpp already exist, can not add memory!“信息，并回到步骤3继续选择对内存的功能操作。
-
-      .. image:: ./_static/image69.png
-         :height: 1.74in
-         :width: 3.44in
-
-      如果device tree内不全存在NPU、VPU、VPP内存区域，则能进行增加内存操作，并显示可供增加的内存区域。
-
-         3.3.1 选择您所需要增加的内存区域的序号：
-
-            .. image:: ./_static/image70.png
-               :height: 1.05in
-               :width: 4.43in
-
-            选择您需要增加的内存区后，会让您输入该ion区域的新分配的内存大小（10进制和16进制都可以，16进制数以0x开头），并且列出了能够增加的最大内存大小。
-
-         3.3.2 输入您所需要增加的内存区域的大小：
-
-            .. image:: ./_static/image71.png
-               :height: 1.32in
-               :width: 4.09in
-
-            输入所需要增加的内存大小后，会询问您是否需要继续进行增加内存区域操作。
-
-         3.3.3 选择您是否需要继续增加内存区域
-
-            yes:(表示继续增加内存区域)
-
-            .. image:: ./_static/image72.png
-               :height: 1.15in
-               :width: 2.95in
-
-            选择yes之后会继续进行增加内存区域操作，回到3.3.1步骤继续增加内存；注意，如果您继续增加内存区域，之前增加过的区域不可再增加，可供增加的内存区域也不再显示之前增加过的内存区。
-
-            no:(表示结束增加内存区域操作)
-
-            .. image:: ./_static/image73.png
-               :height: 2.03in
-               :width: 3.68in
-
-            选择no后会退出增加内存区域操作，显示您增加了哪个区域提示信息，回到3步骤继续选择对内存的功能操作；注意,如果您想结束所有的操作，需要选择3结束内存布局的功能操作，生成新的emmcboot.itb文件。
-
-      3.4 finish all operation and generate new files 操作步骤
-
-         .. image:: ./_static/image74.png
-            :height: 1.57in
-            :width: 5.96in
-
-         | ......
-
-         .. image:: ./_static/image75.png
-            :height: 1.22in
-            :width: 5.96in
-
-      如上图，输入3之后结束所有的操作，提示您“all finished!”信息，生成新的emmcboot.itb文件。
-
-（二）gui_new_update_itb_its.py脚本操作步骤：
-
-   1.从板卡的/boot目录下copy出emmcboot.itb和multi.its两个文件放到脚本同级目录下(即mm_layout/目录下)。
-
-   2.在mm_layout目录下，使用Python（Python3.0以上版本，建议使用Python3.8）运行gui_new_update_itb_its.py文件：
+   c. 如果没有的话，需要手工操作：
 
       .. code-block:: bash
 
-         python3 gui_new_update_itb_its.py
-
-   .. image:: ./_static/image76.png
-      :height: 3.46in
-      :width: 4.47in
-
-   运行该脚本之后会显示一个操作界面，它会解开emmcboot.itb，然后显示您要修改哪个device tree的相关信息，标准版SM5对应的文件为bm1684_asic_modm.dtb；您在进行相关操作之前需要先选择您所需要修改的dtb文件序号才可继续进行操作，您可以通过在板卡上执行以下命令获取板卡对应的dtb文件名称：
-
-   .. code-block:: bash
-
-      cat /proc/device-tree/info/file-name
-
-   3.选择所需要修改的板卡的dtb文件序号，之后会激活相关功能的操作按钮，并提示您选择了哪个文件。
-
-   .. image:: ./_static/image77.png
-      :height: 3.79in
-      :width: 4.88in
-
-   如上图，当您选择所需要操作的dtb文件之后，相关的功能操作按钮已经激活，有修改内存大小、删除内存分区、增加内存分区和确定修改内存四个功能按钮，当您进入修改内存相关操作的子页面时，主页面将暂时停止使用，子页面关闭后可继续使用；同时左上角的功能菜单中还有清空当前输出面板信息的功能。
-
-   0）修改内存大小  →  表示修改内存布局，注意这里不能调整区域所在的DDR channel，不能删除或增加区域，只能修改大小，且大小不能超过所属DDR channel的可用空间。
-
-   1）删除内存分区  →  表示删除已有的内存区，例如删除NPU、VPP、VPU区域。
-
-   2）增加内存分区  →  表示增加板卡里没有的内存区，注意这里只能增加NPU、VPP、VPU区域，若device tree内已经存在该内存区域，则不能进行增加内存操作，且增加的内存大小不能超过所属DDR channel的可用空间(例如 device tree内存在NPU区域，则无法再增加NPU内存区域)。
-
-   3）确定修改内存  →  表示确定修改内存布局的操作，注意在进行修改、增加、删除内存等操作之后，需要点击确定修改内存操作才会生成新的emmcboot.itb文件，且当您想要切换所修改的dtb文件时，也需要先点击此按钮。
-
-   点击您所需要的内存操作按钮后将会执行相应的功能，上述各功能操作的详细流程如下：
-
-      3.1 修改内存大小操作步骤：
-
-      .. image:: ./_static/image78.png
-         :height: 2.12in
-         :width: 2.82in
-
-      如上图，点击修改内存大小按钮后进入修改内存大小的子页面，在该页面可以选择修改内存区域的名称，可以拉动滑条设置所修改内存的大小，也可以手动输入和点击上下按钮设置所修改的内存大小，但是不能超过该内存区所属的DDR channel的可用空间大小。
-
-         3.1.1 选择您所需要修改的内存区域名称：
-
-            .. image:: ./_static/image79.png
-               :height: 2.02in
-               :width: 2.69in
-
-            选择所修改的内存区域名称后，滑条会自动设置所能修改的最大内存大小。
-
-         3.1.2 设置所修改内存的大小，单位是MB：
-
-            .. image:: ./_static/image80.png
-               :height: 2.24in
-               :width: 2.98in
-
-            如上图，拉动滑条后，内存大小输入区会显示相应的大小，也可以在该输入区输入所设置的新内存区域的大小，还可通过输入区右边的上下箭头微调大小；在输入区设置好大小后滑条也会调节到相应的位置，注意这里不能给所修改的内存区域设置0MB的新大小。
-
-         3.1.3  点击确定或者取消的操作按钮
-
-            点击确定按钮后， 会弹出确认选择框，点击OK即可完成修改内存大小操作，回到主界面，点击确定修改内存按钮后完成本次修改内存大小操作，您也可以点击其余功能操作按钮，最后执行确定修改操作；若您对之前的内存大小调节操作有不满意的地方可以点击Cancel按钮返回修改内存大小子界面，重新设置相关信息。
-
-            .. image:: ./_static/image81.png
-               :height: 1.23in
-               :width: 2.25in
-
-            点击取消按钮后，会返回主界面，取消本次修改内存大小操作。
-
-            .. image:: ./_static/image93.png
-               :height: 1.27in
-               :width: 3.47in
-
-            如果您执行确定修改操作后，您的更新的内存区域的起始地址不是所属DDR channel的可用起始基地址，系统会提示您相应的warning，并把所更新的内存区域的起始地址重置到所属DDR channel的可用起始基地址。
-
-      3.2 删除内存分区操作步骤：
-
-      .. image:: ./_static/image82.png
-         :height: 2.10in
-         :width: 2.80in
-
-      如上图，点击删除内存分区按钮后进入删除内存区域的子页面，在该页面可以选择删除内存区域的名称。
-
-         3.2.1 选择您所需要删除的内存区域名称：
-
-            .. image:: ./_static/image83.png
-               :height: 2.18in
-               :width: 2.94in
-
-         3.2.2 点击确定或者取消的操作按钮
-
-            点击确定按钮后， 会弹出确认选择框，点击OK即可完成删除内存区域操作，回到主界面，点击确定修改内存按钮后完成本次删除内存分区操作，您也可以点击其余功能操作按钮，最后执行确定修改操作；若您对之前的删除内存操作有不满意的地方可以点击Cancel按钮返回删除内存区域子界面，重新设置相关信息。
-
-            .. image:: ./_static/image84.png
-               :height: 1.23in
-               :width: 2.25in
-
-            击取消按钮后，会返回主界面，取消本次删除内存区域操作。
-
-      3.3 增加内存分区操作步骤：
-
-      .. image:: ./_static/image85.png
-         :height: 2.17in
-         :width: 2.89in
-
-      如上图，点击增加内存分区按钮后进入增加内存区域子页面，在该页面可以选择增加内存区域的名称以及所属的DDR channel，可以拉动滑条设置所增加内存的大小，也可以手动输入和点击上下按钮设置所增加的内存大小，但是不能超过该内存区所属的DDR channel的可用空间大小。注意，如果device tree内已经存在NPU、VPU、VPP内存区域，则不能进行增加内存操作。
-
-         3.3.1 选择您所需要增加的内存区域名称：
-
-            .. image:: ./_static/image86.png
-               :height: 2.34in
-               :width: 3.11in
-
-         3.3.2 选择所选内存区域的所属DDR区：
-
-            .. image:: ./_static/image87.png
-               :height: 2.37in
-               :width: 3.16in
-
-            选择所属的DDR区后，滑条会自动设置所能增加的最大内存大小。
-
-         3.3.3 设置所增加内存的大小，单位是MB：
-
-            .. image:: ./_static/image88.png
-               :height: 2.44in
-               :width: 3.22in
-
-            如上图，拉动滑条后，内存大小输入区会显示相应的大小，也可以在该输入区输入所设置的新内存区域的大小，还可通过输入区右边的上下箭头微调大小；在输入区设置好大小后滑条也会调节到相应的位置，注意这里不能给所增加的内存区域设置0MB的新大小。
-
-         3.3.4 点击确定或者取消的操作按钮
-
-            点击确定按钮后， 会弹出确认选择框，点击OK即可完成增加内存分区操作，回到主界面，点击确定修改内存按钮后完成本次增加内存分区操作，您也可以点击其余功能操作按钮，最后执行确定修改操作；若您对之前的内存大小调节操作有不满意的地方可以点击Cancel按钮返回增加内存分区子界面，重新设置相关信息。
-
-            .. image:: ./_static/image89.png
-               :height: 1.23in
-               :width: 2.25in
-
-            点击取消按钮后，会返回主界面，取消本次增加内存分区操作。
-
-      3.4 确定修改内存操作步骤：
-
-      点击确定修改内存按钮后会在output目录下生成新的emmcboot.itb文件，结束之前对所选dtb文件的功能操作，您可以回到步骤2后选择其他dtb文件进行功能操作。
-
-   4.最后界面关闭或者点击确定修改内存按钮后会在output目录下生成新的emmcboot.itb文件。将它替换回板卡的/boot目录下，执行sudo reboot操作即可；另外，在output目录下会保留原始的dts和dtb文件供您比较。
-
-注意事项：
-
-（1）如果遇到shell提示"dtc not found"，在Ubuntu系统上可以通过执行以下命令解决:
-
-      .. code-block:: bash
-
-         sudo apt install device-tree-compiler
-
-   或者，mm_layout文件夹里也提供了一个dtc执行文件，请把这个文件夹加入到shell的PATH变量即可，在shell里执行：
-
-      .. code-block:: bash
-
-         PATH=$PATH:/path/to/mm_layout/folder
-
-   然后再执行new_update_itb_dts.py或者gui_new_update_itb_its.py脚本。
-
-（2）目前只能对NPU、VPU、VPP三个内存区域进行操作，其中NPU在DDR0上、VPU在DDR1上、VPP在DDR2上。
-
-选择板卡预制的内存布局
------------------------------
-
-BM1684当前默认的内存布局可能不适合部分yolo等较大模型的精度测试，所以我们提供了一种定制的内存布局，让操作系统能够扩大
-使用的内存，方便客户进行精度测试。
-首先需要确认当前板卡使用的pcb_version，可以通过
-
-      .. code-block:: bash
-
-         cat /proc/device-tree/info/file-name
-
-获取当前板卡使用的device-tree的名字，然后打开/boot/multi.its文件，搜索当前板卡的device-tree名字，找到当前device-tree对应
-的fdt-pcb后面的数字，这个数字就是pcb_version号。
-获取到pcb_version号后，可以通过如下方式进行切换内存布局，下述方式以pcb_version为7为例，如果使用其他型号的板卡，请自己将extra-后面的数字换成真正的pcb_verison。
-
-
-      .. code-block:: bash
-
+         sudo dpkg -i /home/linaro/bsp-debs/linux-headers-*.deb
+         sudo mkdir -p /usr/src/linux-headers-$(uname -r)/tools/include/tools
+         sudo cp /home/linaro/linux-dev/*.h /usr/src/linux-headers-$(uname-r)/tools/include/tools
+         cd /usr/src/linux-headers-$(uname -r)
          sudo apt update
-         sudo apt install u-boot-tools
-         echo "set memory_model 0" > extra-7.cmd
-         mkimage -A arm64 -O linux -T script -C none -a 0 -e 0 -n \
-             "Distro Boot Script" -d extra-7.cmd extra-7.scr
-         sudo cp extra-7.scr /boot
-         sudo reboot
+         sudo apt-get install -y build-essential bc bison flex libssl-dev
+         sudo make scripts
 
-如上会选中u-boot中pcb_version变量为7的板卡的第0个预制的内存布局，如果想要恢复此板卡默认的内存布局，删除/boot/extra-7.scr后重启即可。
+3. 回到您的driver目录，make ko吧
 
-1684x kdump-crash使用说明
------------------------------
+7.4. 1684x kdump-crash使用说明
+----------------------------------
 
 本文记录了如何在1684x ubuntu20.04上使用kexec/kdump-tools生成linux kernel coredump文件，并用crash分析该coredump文件。
 
@@ -1941,32 +2203,46 @@ BM1684当前默认的内存布局可能不适合部分yolo等较大模型的精�
 .. |nbsp| unicode:: 0xA0
    :trim:
 
-开机自启动服务
+7.5. 开机自启动服务
 -----------------------------
 
-如果您有开机自动启动某些服务的需求，可以参考本节内容。
-BM1684X系列计算模组使用systemd实现核心服务bmrt_setup的开机自启动，该服务包含以下三个关键文件：
+本段说明如何使用systemd在SOC模式下配置一个最简单的开机自启动服务用于算法业务：
 
-   .. code-block:: bash
-
-      /etc/systemd/system/bmrt_setup.service （服务描述文件）
-      /etc/systemd/system/multi-user.target.wants/bmrt_setup.service （软链接）
-      /usr/sbin/bmrt_setup.sh （执行脚本）
-
-其中bmrt_setup.service的内容如下，您可以参考它的写法，在/etc/systemd/system目录下构建自己的服务。
+1. 新建文件/etc/systemd/system/user-auto-start.service，内容如下：
 
    .. code-block:: bash
 
       [Unit]
-      Description=setup bitmain runtime env.
-      After=docker.service # 表明该服务在docker服务后启动
+      Description=user auto setup
+      After=network.target bmrt_setup.service # 表明该服务在网络启动后，并且bmrt_setup服务结束后启动
 
       [Service]
       User=root
-      ExecStart=/usr/sbin/bmrt_setup.sh # 指定服务启动执行的命令
-      Type=oneshot
+      ExecStart=/data/user_auto_setup.sh # 指定服务启动执行的命令
+      Type=simple # 服务类型是最简单的前台模式
+      Restart=on-failure # 只有错误退出才会重启
+      RestartSec=10 # 重启服务会等待10s
 
       [Install]
       WantedBy=multi-user.target
 
-在bmrt_setup.sh脚本中，我们加载了VPU、JPU以及NPU等关键驱动，所以请您把自定义的服务放在这个服务后面执行，或者在您的业务逻辑中等待驱动加载完成（可以使用systemd-analyze plot > boot.svg 生成一张启动详细信息矢量图，然后用图像浏览器或者网页浏览器打开查看所有服务的启动顺序和耗时）。
+   配置文件内容解析：
+
+   1. 描述：user auto setup
+   2. 启动时间：在network.target和bmrt_setup.service之后，在multi-user.target之前
+   3. 命令执行账户：root
+   4. 命令：/data/user_auto_setup.sh
+   5. 服务类型：simple
+   6. 是否自动重启：是，仅在命令执行失败10s后重启
+
+2. 配置执行脚本（本文为/data/user_auto_setup.sh），切记需要赋予其运行权限
+3. 执行命令sudo systemctl daemon-reload​​​​重载配置文件
+4. 执行命令sudo systemctl status user-auto-start.service​​​​查看该服务是否配置完成
+5. 执行命令sudo systemctl enable user-auto-start.service​​​​使能其开机自启
+
+注意事项：
+
+1. 默认运行的log会存放在/var/log/syslog文件中
+2. 该示例只适用于简单的业务，复杂的环境配置等需要参考systemd的说明文档
+3. 该示例的服务类型是simple，切记不要在脚本中使其自动放置后台执行，这会导致systemd无法监控前台任务导致直接杀死进程
+4. 可以使用命令sudo systemd-analyze plot > plot.svg​​生成本次启动的服务清单（svg格式）用于分析服务的启动时间和运行时间

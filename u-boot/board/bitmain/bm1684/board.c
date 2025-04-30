@@ -132,6 +132,8 @@ static void pinmux_config(int io_type)
 	case PINMUX_EMMC:
 		break;
 	case PINMUX_SDIO:
+		/* set SDIO_PWR_EN pin to gpio */
+		mmio_clrsetbits_32(PINMUX_BASE + 0x28, (0x3 << 4), (0x1 << 4));
 		break;
 	case PINMUX_RGMII0:
 		mmio_clrsetbits_32(PINMUX_BASE + 0x28, (0x3 << 20) | (0xf << 22),
@@ -190,6 +192,7 @@ static void pinmux_config(int io_type)
 
 int board_init(void)
 {
+	pinmux_config(PINMUX_SDIO);
 	pinmux_config(PINMUX_RGMII0);
 	pinmux_config(PINMUX_RGMII1);
 
@@ -575,6 +578,7 @@ static const char * const board_names[] = {
 	[BM1684X_SM7M_V1_0_RB_CTRL] = "bitmain-bm1684x-sm7m-v1.0-ctrl",
 	[BM1684X_M2_CUST02_V0_0] = "bitmain-bm1684x-m2-cust02-v0.0",
 	[BM1684X_SM7_CUST_V1] = "bitmain-bm1684x-sm7-cust-v1",
+	[BM1684X_SM7_CUST_V2] = "bitmain-bm1684x-sm7-cust-v2",
 };
 
 int board_fit_config_name_match(const char *name)

@@ -611,6 +611,16 @@
 				algo = "sha1";
 			};
 		};
+		fdt-pcb146 {
+			description = "for BM1684X SM7 CUST V2";
+			data = /incbin/("./bm1684x_sm7_cust_v2.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
 	};
 
 	configurations {
@@ -1245,6 +1255,18 @@
 			kernel = "kernel";
 			ramdisk = "ramdisk";
 			fdt = "fdt-pcb145";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb146 {
+			description = "for BM1684X SM7 CUST V2";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb146";
 			signature {
 				algo = "sha1,rsa2048";
 				key-name-hint = "vboot";

@@ -8,6 +8,7 @@
 CHIP=${CHIP:-bm1684}
 DEBUG=${DEBUG:-0} # now only for TFA
 DISTRO=${DISTRO:-focal} # focal = Ubuntu 20.04; kylinos
+DISTRO_MD5=${DISTRO_MD5:-28ad82b4cf01327b1f81d3d193923424} # target distro md5
 KERNEL_VARIANT=${KERNEL_VARIANT:-normal} # normal; mininum
 PRODUCT=${PRODUCT:-} # se6; cust01; cust02
 
@@ -483,6 +484,11 @@ function create_ramdisk_folders()
 		cp -r --remove-destination $RAMDISK_DIR/target/overlay/${PROJECT_NAME}_pcie/* $RAMDISK_BUILD_DIR/target/
 	elif [ "$2" == "mix" ]; then
 		cp -r --remove-destination $RAMDISK_DIR/target/overlay/${PROJECT_NAME}_mix/* $RAMDISK_BUILD_DIR/target/
+	elif [ "$2" == "mix_nfs" ]; then
+		cp -r --remove-destination $RAMDISK_DIR/target/overlay/${PROJECT_NAME}_mix_nfs/* $RAMDISK_BUILD_DIR/target/
+		cp $OUTPUT_DIR/rootfs/opt/sophon/libsophon-*/data/*.ko $RAMDISK_BUILD_DIR/target/usr/bm
+	elif [ "$2" == "xmr" ]; then
+		cp -r --remove-destination $RAMDISK_DIR/target/overlay/${PROJECT_NAME}_xmr/* $RAMDISK_BUILD_DIR/target/
 	fi
 
 	# create config folder
@@ -502,6 +508,7 @@ emmc
 emmc_ro
 pcie
 mix
+mix_nfs
 recovery
 )
 
@@ -596,7 +603,7 @@ function build_bsp_without_package()
 }
 
 # for building se6:
-# $ PRODUCT=se6
+# $ export PRODUCT=se
 # $ source bootloader-arm64/scripts/envsetup.sh
 # $ build_bsp_without_package
 # $ build_rootp
@@ -697,7 +704,7 @@ function build_distro()
 
 	pushd $DISTRO_DIR/$DISTRO
 # following lines must not be started with space or tab.
-sudo chroot . /bin/bash << "EOT"
+sudo env DISTRO=$DISTRO chroot . /bin/bash << "EOT"
 adduser --gecos linaro --disabled-login linaro
 echo "linaro:linaro" | chpasswd
 usermod -a -G sudo linaro
@@ -706,7 +713,10 @@ echo "admin:admin" | chpasswd
 usermod -a -G sudo admin
 
 apt install -y software-properties-common
+add-apt-repository "deb http://ports.ubuntu.com/ubuntu-ports ${DISTRO}-updates main"
+add-apt-repository "deb http://ports.ubuntu.com/ubuntu-ports ${DISTRO}-security main"
 add-apt-repository universe
+apt update
 
 DEBIAN_FRONTEND=noninteractive apt install -y \
 irqbalance kexec-tools busybox i2c-tools \
@@ -718,16 +728,14 @@ parted gdisk vim sysstat minicom atop u-boot-tools tree \
 memtester rng-tools psmisc gawk automake pkg-config bc \
 rsync lsof cmake dnsutils python3-dev nginx python3-pip \
 acpid curl dnsutils linux-tools-generic libgflags-dev \
-expect libgoogle-glog-dev libboost-all-dev
+expect libgoogle-glog-dev libboost-all-dev libev4 \
+libev-dev libncurses5-dev libncurses5 libncurses-dev \
+libtinfo5 telnet python3-flask python3-psutil python3-numpy \
+python3-serial fdisk dkms
+
+apt upgrade -y
 
 apt clean
-
-pip3 install flask psutil numpy pyserial
-
-sed -i -e '
-/\%sudo/ c \
-%sudo	ALL=(ALL) NOPASSWD: ALL
-' /etc/sudoers
 
 echo -e "127.0.0.1       sophon\n" >> /etc/hosts
 echo -e "sophon\n" > /etc/hostname
@@ -964,6 +972,104 @@ function clean_bootp()
 	rm -f $OUTPUT_DIR/recovery.tgz
 }
 
+function build_rootfs_mix_nfs()
+{
+	echo cleanup previous build...
+	sudo rm -rf $OUTPUT_DIR/rootfs
+	rm -f $OUTPUT_DIR/rootfs.tgz
+	mkdir $OUTPUT_DIR/rootfs
+
+	echo copy distro rootfs files from ${DISTRO_BASE_PKT}...
+	zcat $DISTRO_BASE_PKT | sudo tar -C $OUTPUT_DIR/rootfs -x -f -
+
+	echo copy linux debs...
+	sudo mkdir -p $OUTPUT_DIR/rootfs/home/linaro
+	sudo cp -r $DEB_INSTALL_DIR $OUTPUT_DIR/rootfs/home/linaro/
+
+	echo copy overlay file to rootfs...
+	if [ -d $DISTRO_OVERLAY_DIR/common/rootfs ]; then
+		echo copy common rootfs overlay files...
+		sudo cp -rf $DISTRO_OVERLAY_DIR/common/rootfs/* $OUTPUT_DIR/rootfs
+	fi
+	if [ -d $DISTRO_OVERLAY_DIR/$PROJECT_NAME/rootfs ]; then
+		echo copy project rootfs overlay files...
+		sudo cp -rf $DISTRO_OVERLAY_DIR/$PROJECT_NAME/rootfs/* $OUTPUT_DIR/rootfs
+	fi
+	# debs will be installed later after chroot and then deleted
+	sudo cp -rf $DISTRO_MOD_DIR/debs $OUTPUT_DIR/rootfs
+
+	if [ "$PRODUCT" != "" ] && [ -d $DISTRO_OVERLAY_DIR/$PRODUCT/debs ]; then
+		echo copy product $PRODUCT debs overlay files...
+		sudo cp -rf $DISTRO_OVERLAY_DIR/$PRODUCT/debs/* $OUTPUT_DIR/rootfs/debs/
+	fi
+
+	echo install packages...
+	pushd $OUTPUT_DIR/rootfs
+# following lines must not be started with space or tab.
+# install bsp images first, so it won't run flash_update
+sudo chroot . /bin/bash << "EOT"
+
+if [  -d /debs ] && [ $(ls /debs/*.deb | wc -l) -gt 0 ]; then
+	dpkg -i -R /debs
+	while [ $? -ne 0 ];
+	do
+		sleep 1
+		dpkg -i -R /debs
+	done
+fi
+for file in /debs/*
+do
+	file=$(basename $file)
+	if  [ "${file##*.}" == "whl" ]; then
+		pip3 install --no-index --find-links=file:///debs ${file%%-*}
+	fi
+done
+rm -rf /debs
+
+dpkg -i /home/linaro/bsp-debs/sophon-soc-libsophon*.deb
+dpkg -i /home/linaro/bsp-debs/sophon-mw-soc-sophon-ffmpeg*.deb
+dpkg -i /home/linaro/bsp-debs/sophon-mw-soc-sophon-opencv*.deb
+
+os_release=$(lsb_release -i | awk  '{print $3}')
+echo "os is $os_release"
+if [ "$os_release" = "Kylin" ]; then
+	echo "add linaro user for kylin os!!!"
+	adduser --gecos linaro --disabled-login linaro
+	echo "linaro:linaro" | chpasswd
+	usermod -a -G sudo linaro
+	chown linaro.linaro -R /home/linaro
+fi
+
+exit
+EOT
+	popd
+
+	# to make it simple, cust overlay always comes at last
+	if [ "$PRODUCT" != "" ] && [ -d $DISTRO_OVERLAY_DIR/$PRODUCT/rootfs ]; then
+		echo copy product $PRODUCT rootfs overlay files...
+		sudo cp -rf $DISTRO_OVERLAY_DIR/$PRODUCT/rootfs/* $OUTPUT_DIR/rootfs
+	fi
+
+	echo packing mix_rootfs...
+	pushd $OUTPUT_DIR/rootfs
+	sudo chown 1000:1000 -R data
+	sudo tar -czf ../mix_rootfs.tgz *
+	popd
+}
+
+# build mixmode nfs mount ubuntu:
+# 0. export PRODUCT=mixmode_nfs; source bootloader-arm64/scripts/envsetup.sh
+# 1. build_bsp_without_package
+# 2. cp libsophon deb to install/soc_bm1684/bsp-debs/
+# 3. build_mix_mode_nfs
+# 4. ubuntu package: install/soc_bm1684/mix_rootfs.tgz
+#    itb file: install/soc_bm1684/ramdisk_glibc_mix_nfs.itb
+function build_mix_mode_nfs()
+{
+	build_rootfs_mix_nfs &&
+	build_ramdisk glibc mix_nfs
+}
+
 function build_athena2_rootp()
 {
 	echo cleanup previous build...
@@ -1046,6 +1152,19 @@ function build_rootp()
 	rm -f $OUTPUT_DIR/rootfs.tgz
 	mkdir $OUTPUT_DIR/rootfs
 
+	echo check distro file md5
+	FILE_MD5=$(md5sum "$DISTRO_BASE_PKT" | awk '{ print $1 }')
+	if [ "$FILE_MD5" != "$DISTRO_MD5" ]; then
+		echo Error: MD5 checksum does not match.
+		echo You need to download distro package with md5sum = $DISTRO_MD5 below
+		echo python3 -m dfss --dflag=distro_${DISTRO}_$DISTRO_MD5
+		echo And move it to $TOP_DIR/distro/distro_$DISTRO.tgz
+		echo Or set DISTRO_MD5 based on your own distro package
+		return -1
+	else
+		echo MD5 checksum matches.
+	fi
+
 	echo copy distro rootfs files from ${DISTRO_BASE_PKT}...
 	zcat $DISTRO_BASE_PKT | sudo tar -C $OUTPUT_DIR/rootfs -x -f -
 
@@ -1118,7 +1237,6 @@ else
 	if [ "$os_release" != "Kylin" ]; then
 		echo "not se6 and not kylin, try install hdmi and system deb"
 		dpkg -i /home/linaro/bsp-debs/sophgo-hdmi_*.deb
-		dpkg -i /home/linaro/bsp-debs/sophgo-system_*.deb
 	fi
 fi
 
@@ -1159,6 +1277,41 @@ EOT
 function clean_rootp()
 {
 	sudo rm -rf $OUTPUT_DIR/rootfs
+	rm -f $OUTPUT_DIR/rootfs.tgz
+}
+
+function build_rootp_ram()
+{
+	echo cleanup previous build...
+	sudo rm -rf $OUTPUT_DIR/rootfs_ram
+	rm -f $OUTPUT_DIR/rootfs.tgz
+	mkdir $OUTPUT_DIR/rootfs_ram
+
+	echo copy distro rootfs files from uclibc...
+	sudo cp -rf $DISTRO_OVERLAY_DIR/../../ramdisk/target/rootfs_uclibc/* $OUTPUT_DIR/rootfs_ram
+
+	# to make it simple, cust overlay always comes at last
+	if [ "$PRODUCT" != "" ] && [ -d $DISTRO_OVERLAY_DIR/$PRODUCT/rootfs_ram ]; then
+		echo copy product $PRODUCT rootfs overlay files...
+		sudo cp -rf $DISTRO_OVERLAY_DIR/$PRODUCT/rootfs/* $OUTPUT_DIR/rootfs_ram
+	fi
+
+	if [ -d $DISTRO_OVERLAY_DIR/$PROJECT_NAME/rootfs_ram ]; then
+		echo copy project rootfs overlay files...
+		sudo cp -rf $DISTRO_OVERLAY_DIR/$PROJECT_NAME/rootfs/etc/fstab.emmc.ro $OUTPUT_DIR/rootfs_ram/etc
+	fi
+
+	echo packing rootfs...
+	pushd $OUTPUT_DIR/rootfs_ram
+	rm -rf init
+	ln -s sbin/init init
+	sudo tar -czf ../rootfs.tgz *
+	popd
+}
+
+function clean_rootp_ram()
+{
+	sudo rm -rf $OUTPUT_DIR/rootfs_ram
 	rm -f $OUTPUT_DIR/rootfs.tgz
 }
 
@@ -1360,6 +1513,7 @@ echo "using: $CROSS_COMPILE v$GCC_VER"
 echo "with: DEBUG=$DEBUG, KERNEL=$KERNEL_VARIANT"
 echo "to: $OUTPUT_DIR"
 echo "distro: $DISTRO_BASE_PKT $DISTRO_OVERLAY_DIR"
+echo "distro md5: $DISTRO_MD5"
 
 # include riscv environment
 RV_SCRIPT_DIR=$TOP_DIR/bootloader-riscv/scripts
