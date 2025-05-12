@@ -116,6 +116,7 @@
 
 #define YT8531_LED0_REG 0xA00C
 #define YT8531_LED1_REG 0xA00D
+#define YT8531_LED2_REG 0xA00E
 
 #define YT8531_CHIP_CONFIG_REG 0xA001
 #define YT8531_CCR_SW_RST BIT(15)
@@ -304,6 +305,19 @@ static int ytphy_rgmii_clk_delay_config(struct phy_device *phydev)
 	/* Generally, it is not necessary to adjust YT8531_RC1R_FE_TX_DELAY */
 	mask = YT8531_RC1R_RX_DELAY_MASK | YT8531_RC1R_GE_TX_DELAY_MASK;
 	return ytphy_modify_ext(phydev, YT8531_RGMII_CONFIG1_REG, mask, val);
+}
+
+static void ytphy_led_config(struct phy_device *phydev)
+{
+	int led0_config, led1_config, led2_config;
+
+	led0_config = ofnode_read_u32_default(phydev->node, "led0_config", 0x7);
+	led1_config = ofnode_read_u32_default(phydev->node, "led1_config", 0x19f0);
+	led2_config = ofnode_read_u32_default(phydev->node, "led2_config", 0);
+
+	ytphy_write_ext(phydev, YT8531_LED0_REG, led0_config);
+	ytphy_write_ext(phydev, YT8531_LED1_REG, led1_config);
+	ytphy_write_ext(phydev, YT8531_LED2_REG, led2_config);
 }
 
 static int yt8531_parse_status(struct phy_device *phydev)
@@ -585,11 +599,14 @@ static int yt8531_config(struct phy_device *phydev)
 	u16 mask, val;
 	int ret;
 
+	phydev->node = ofnode_path("/ethernet@50108000/mdio/phy");
 	ret = genphy_config_aneg(phydev);
 	if (ret < 0)
 		return ret;
 
 	ytphy_dt_parse(phydev);
+	ytphy_led_config(phydev);
+
 	switch (priv->clk_out_frequency) {
 	case YTPHY_DTS_OUTPUT_CLK_DIS:
 		mask = YT8531_SCR_SYNCE_ENABLE;
@@ -643,9 +660,7 @@ static int yt8531_config(struct phy_device *phydev)
 	ret = yt8531_set_ds(phydev);
 	if (ret < 0)
 		return ret;
-	ytphy_write_ext(phydev, YT8531_RGMII_CONFIG1_REG, 0x14fd);
-	ytphy_write_ext(phydev, YT8531_LED0_REG, 0x7);
-	ytphy_write_ext(phydev, YT8531_LED1_REG, 0x19F0);
+
 	return 0;
 }
 

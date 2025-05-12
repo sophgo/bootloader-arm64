@@ -1,29 +1,4 @@
 #!/bin/bash
-get_reg_yt()
-{
-        phytool write eth$1/0/0x1e $2
-        phytool read eth$1/0/0x1f
-}
-
-set_reg_yt()
-{
-        phytool write eth$1/0/0x1e $2
-        phytool write eth$1/0/0x1f $3
-}
-
-if [[ "$(phytool read eth0/0/0x02)" == "0x4f51" ]] && [[ "$(phytool read eth0/0/0x03)" == "0xe91b" ]]; then
-        set_reg_yt 0 0xa001 0x8060
-        set_reg_yt 0 0xa003 0x20fd
-        set_reg_yt 0 0xa00c 0x0078
-        set_reg_yt 0 0xa00d 0x19f0
-fi
-
-if [[ "$(phytool read eth1/0/0x02)" == "0x4f51" ]] && [[ "$(phytool read eth1/0/0x03)" == "0xe91b" ]]; then
-        set_reg_yt 1 0xa001 0x8060
-        set_reg_yt 1 0xa003 0x24fd
-        set_reg_yt 1 0xa00c 0x0078
-        set_reg_yt 1 0xa00d 0x19f0
-fi
 
 systemctl stop ledSocketServer.service
 systemctl disable ledSocketServer.service

@@ -1,0 +1,6 @@
+KERNEL=="ion", MODE="0666"
+KERNEL=="bm-tpu0", MODE="0666"
+KERNEL=="bmdev-ctl", MODE="0666"
+KERNEL=="vpu", MODE="0664", GROUP="sudo"
+KERNEL=="jpu", MODE="0664", GROUP="sudo"
+KERNEL=="bm-vpp", MODE="0666"

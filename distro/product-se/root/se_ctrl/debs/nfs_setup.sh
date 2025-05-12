@@ -22,6 +22,7 @@ if ([ "$product" = "SE6-CTRL" ] || [ "$product" = "SE6 CTRL" ]\
 	sudo dpkg -r  systemd-timesyncd
 
 	sudo rm -rf /etc/ntp.conf
+	sudo rm -f /root/se_ctrl/debs/bmssm_soc_*.deb
 	sudo dpkg -i -R /root/se_ctrl/debs
 	while [ $? -ne 0 ];
 	do
@@ -41,6 +42,8 @@ else
 	rm -f /root/se_ctrl/debs/sophliteos_soc_*.deb
 	rm -f /root/se_ctrl/debs/tftpd-hpa*.deb
 	rm -f /root/se_ctrl/debs/ntp_*.deb
+	rm -f /root/se_ctrl/debs/bmsec_*.deb
+	rm -r /root/se_ctrl/debs/bmssm_ctrl_soc_*.deb
 
 	sudo dpkg -i -R /root/se_ctrl/debs
 	while [ $? -ne 0 ];

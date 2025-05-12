@@ -1,5 +1,55 @@
 #!/bin/bash
 
+formatcheck(){
+	std_l1=0
+	std_l2=8
+	std_l3=16
+	std_l4=24
+	std_l5=32
+	file_path="/etc/netplan/01-netcfg.yaml"
+
+	file_len=$(wc -l $file_path | awk '{print $1}')
+
+	for ((i=1; i<=$file_len; i++))
+	do
+		c_str_1=$(sed -n "${i}p" $file_path)
+		indent_len=$(echo "$c_str_1" | awk '{match($0, /^[\t ]+/); print RLENGTH}')
+		if [[ "$c_str_1" == *:* ]]; then
+			c_str_2=$(sed -n "${i}p" $file_path | awk -F : '{print$1}')
+			if [[ $c_str_2 =~ "dhcp" ]] || [[ $c_str_2 =~ "addresses" ]] || [[ $c_str_2 =~ "gateway4" ]] || [[ $c_str_2 =~ "nameservers" ]] || [[ $c_str_2 =~ "optional" ]] || [[ $c_str_2 =~ "dhcp-identifier" ]];then
+				if [[ $c_str_2 =~ "addresses" ]];then
+					prev=$[$i-1]
+					c_str_3=$(sed -n "${prev}p" $file_path | awk -F : '{print$1}')
+					if [[ $c_str_3 =~ "nameservers" ]];then
+						new_indent=$(printf '%*s' $std_l5 '')
+						sudo sed -i "${i}s/^[ \t]*/$new_indent/" $file_path
+					else
+						new_indent=$(printf '%*s' $std_l4 '')
+						sudo sed -i "${i}s/^[ \t]*/$new_indent/" $file_path
+					fi
+				else
+					new_indent=$(printf '%*s' $std_l4 '')
+					sudo sed -i "${i}s/^[ \t]*/$new_indent/" $file_path
+				fi
+			elif [[ $c_str_2 =~ "network" ]];then
+				new_indent=$(printf '%*s' $std_l0 '')
+				sudo sed -i "${i}s/^[ \t]*/$new_indent/" $file_path
+			elif [[ $c_str_2 =~ "version" ]] || [[ $c_str_2 =~ "renderer" ]] || [[ $c_str_2 =~ "ethernets" ]];then
+				new_indent=$(printf '%*s' $std_l2 '')
+				sudo sed -i "${i}s/^[ \t]*/$new_indent/" $file_path
+			else
+				new_indent=$(printf '%*s' $std_l3 '')
+				sudo sed -i "${i}s/^[ \t]*/$new_indent/" $file_path
+			fi
+		else
+			d_str="${i}d"
+			sudo sed -i "$i,$d_str" $file_path
+			i=$[$i-1]
+			file_len=$[$file_len-1]
+		fi
+	done
+	sudo sync
+}
 
 if [ $# -lt 4  ] ; then
 	echo "bm_set_ip net_device ip netmask gateway dns"
@@ -41,10 +91,12 @@ if [ $is_ubuntu -gt 1 ];then
 	echo "ubuntu"
 	device_path="/etc/netplan/01-netcfg.yaml"
 	#device_path="01-netcfg.yaml"
+	sudo cp $device_path /etc/netplan/01-netcfg.yaml.bak
+	formatcheck
 	eth_num=$(grep -inr "$device:" $device_path | awk -F : '{print $1}')
 	num=$(($eth_num+5))
 	if [ ! $eth_num = "" ];then
-		for ((i=1; i<=6; i++))
+		for ((i=1; i<=8; i++))
 		do
 			num=$(($eth_num+$i))
 			c_str=$(sed -n "${num}p" $device_path | awk -F : '{print$1}')
@@ -69,8 +121,17 @@ if [ $is_ubuntu -gt 1 ];then
 	echo "                        nameservers:" | sudo tee -a  $device_path
 	echo "                                addresses: [${dns}]" | sudo tee -a  $device_path
 	echo "                        optional: yes" | sudo tee -a  $device_path
+	if [ "$dns" != "" ];then
+		sudo sed -i "s/^nameserver .*/nameserver $dns/" /etc/resolv.conf
+	fi
 	sudo sync
+	formatcheck
 	sudo netplan apply
+	if [ $? -eq 0 ];then
+		sudo rm /etc/netplan/01-netcfg.yaml.bak
+	else
+		sudo mv /etc/netplan/01-netcfg.yaml.bak /etc/netplan/01-netcfg.yaml
+	fi
 
 else
 	if [ $is_kylinos -gt 1 ];then

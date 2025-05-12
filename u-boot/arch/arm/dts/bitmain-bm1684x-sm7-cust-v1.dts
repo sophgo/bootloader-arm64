@@ -280,6 +280,22 @@
 		phy-reset-gpios = <&port0a 29 GPIO_ACTIVE_HIGH>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&rgmii0_grp1>;
+		mdio {
+			#address-cells = <0x1>;
+			#size-cells = <0x0>;
+			compatible = "snps,dwmac-mdio";
+			phy0: phy@0 {
+				compatible = "ethernet-phy-ieee802.3-c22";
+				device_type = "ethernet-phy";
+				rx-internal-delay-ps = <1050>;
+				motorcomm,rx-clk-drv-microamp = <3970>;
+				motorcomm,rx-data-drv-microamp = <3970>;
+				led0_config = <0x0078>;
+				led1_config = <0x2600>;
+				led2_config = <0x0>;
+				reg = <0x0>;
+			};
+		};
 	};
 
 	ethernet1: ethernet@5010C000 {
@@ -332,6 +348,7 @@
 		64_addressing;
 		has_phy;
 		index = <0x1>;
+		pwr-gpio = <&port1a 10 GPIO_ACTIVE_HIGH>;
 		status = "okay";
 	};
 

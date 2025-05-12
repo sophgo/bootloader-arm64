@@ -1,4 +1,4 @@
-声明
+1. 声明
 -------------
 
 .. figure:: ../../common/images/logo.png

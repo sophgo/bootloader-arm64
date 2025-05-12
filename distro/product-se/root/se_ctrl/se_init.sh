@@ -278,4 +278,23 @@ function se_init()
 
 	fi
 
+	check_netconfig
+}
+
+# check netconfig file in case of rpcbind error
+check_netconfig()
+{
+	if [ ! -s /etc/netconfig ]; then
+		echo "/etc/netconfig empty, overwrite it"
+		content="udp        tpi_clts      v     inet     udp     -       -
+tcp        tpi_cots_ord  v     inet     tcp     -       -
+udp6       tpi_clts      v     inet6    udp     -       -
+tcp6       tpi_cots_ord  v     inet6    tcp     -       -
+rawip      tpi_raw       -     inet      -      -       -
+local      tpi_cots_ord  -     loopback  -      -       -
+unix       tpi_cots_ord  -     loopback  -      -       -"
+        echo -n "$content" > /etc/netconfig
+		systemctl restart rpcbind
+		echo "rpcbind service restart"
+	fi
 }

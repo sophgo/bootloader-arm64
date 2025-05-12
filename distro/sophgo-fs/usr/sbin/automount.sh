@@ -82,6 +82,16 @@ rm_dir() {
 name="`basename "$DEVNAME"`"
 
 if [ "$ACTION" = "add" ] && [ -n "$DEVNAME" ] ; then
+	wait_timeout_c = 0;
+	while !(mountpoint -q /boot && lsblk | grep -q 'mmcblk0p1.* /boot'); do
+		wait_timeout_c=$(($wait_timeout_c + 1));
+		logger "wait mmc mount[${wait_timeout_c}] ..."
+		sleep 2
+		if [[ "$wait_timeout_c" == "20" ]]; then
+			logger "wait mmc mount timeout"
+			exit -1;
+		fi
+	done
 	logger "-------$name--ADD------------"
 	if [ -x $MOUNT ]; then
 		$MOUNT $DEVNAME 2> /dev/null
