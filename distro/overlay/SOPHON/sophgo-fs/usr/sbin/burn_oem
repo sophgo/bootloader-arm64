@@ -254,6 +254,18 @@ SE9_16_EPC_20_func(){
     burn_oem_func "PRODUCT_TYPE" "0x13"
 }
 
+SM9_16_ENC_28_func(){
+    burn_oem_func "CHIP" "BM1688"
+    burn_oem_func "PRODUCT" "SM9V1"
+    burn_oem_func "HW_VERSION" "v1"
+    burn_oem_func "DTS_TYPE" "config-bm1688_sm9v1_16G"
+    burn_oem_func "PHY_LED_FLAG" "0x01"
+    burn_oem_func "CONSOLE_FLAG" "0x02"
+    burn_oem_func "MODULE_TYPE" "16-ENC-28"
+}
+
+
+
 echo "Please select the device model"
 echo "1:SE9 8-EPC-B0"
 echo "2:SE9 8-EPC-A0"
@@ -266,6 +278,7 @@ echo "8:SM9_8_ENC_B8_func"
 echo "9:SM9_16_ENC_A3_func"
 echo "10:SM9_16_ENC_A8_func"
 echo "11:SM9_16_ENC_23_func"
+echo "12:SM9_16_ENC_28_func"
 
 read choice
 
@@ -302,6 +315,9 @@ case $choice in
 	;;
 	11)
 		SM9_16_ENC_23_func
+	;;
+	12)
+		SM9_16_ENC_28_func
 	;;
 	*)
 		echo "please choose 1, 2, 3 or 4"
