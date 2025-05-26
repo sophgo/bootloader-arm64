@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 ExecStart=/usr/bin/bsl_hack_bm.sh
-oneshot
+Type=oneshot
 
 [Install]
 WantedBy=default.target

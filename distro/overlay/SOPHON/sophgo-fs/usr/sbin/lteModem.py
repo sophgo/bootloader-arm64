@@ -6,13 +6,13 @@ from socket import error as SocketError
 import errno
 import configparser
 import re
+import sys
 
 
 class serialCom():
     def __init__(self, ttyusb):
         self.ttyusb = ttyusb
         self.serial = serial.Serial(ttyusb, 115200, timeout=1)
-        print("Open serial ", ttyusb)
         self.intf = self.find_interface()
         self.rec_state = False
         self.send_state = True
@@ -98,7 +98,9 @@ class serialCom():
                 if "CHN-CU" in self.operator or "CHN-UN" in self.operator:
                     cmd = 'pppd call  modem_CUCC &'
 
-                elif "CHN-TE" in self.operator or "CHINA Te" in self.operator:
+                elif "CHN-TE" in self.operator or \
+                        "CHINA Te" in self.operator or \
+                        "CHN-CT" in self.operator:
                     cmd = 'pppd call  modem_CTCC &'
 
                 elif "CHN-CM" in self.operator or "CHINA MO" in self.operator:
@@ -110,6 +112,17 @@ class serialCom():
                 print('4g is dialing...')
 
             time.sleep(20)
+
+    def send_msg(self, msg):
+        self.serial.write(str(msg).encode('utf-8'))
+
+    def recv_msg(self):
+        self.recv = []
+        while self.serial.isOpen():
+            self.data = self.serial.readline()
+            self.recv.append(self.data)
+            if self.data == b'OK\r\n' or self.data == b'ERROR\r\n':
+                break
 
     def socket_handler(self):
         print("serialCom socket_handler thread start")
@@ -166,6 +179,44 @@ class serialCom():
         print("lte socket received accept")
 
     def start(self):
+        # Modify dial mode
+        self.serial.write(str('AT+GTUSBMODE? \r').encode('utf-8'))
+        self.send_msg('AT+GTUSBMODE? \r')
+        self.recv_msg()
+        print(self.recv)
+        usbmode = (str(self.recv).split(': ')[1]).split('\\')[0]
+        print('usbmode: ' + usbmode)
+        if usbmode != '18':
+            self.send_msg('AT+GTUSBMODE=18 \r')
+            self.recv_msg()
+            print(self.recv)
+            self.serial.close()
+            sys.exit(1)
+
+        self.send_msg('AT \r')
+        self.recv_msg()
+        at_res = self.recv
+        print(at_res)
+        self.send_msg('AT+CPIN? \r')
+        self.recv_msg()
+        cpin_res = self.recv
+        print(cpin_res)
+
+        if 'OK' in str(at_res) and 'ERROR' in str(cpin_res):
+            print("not find sim card, try to soft reboot module.")
+            self.send_msg('AT+CFUN=0 \r')
+            time.sleep(1)
+            self.recv_msg()
+            print(self.recv)
+            self.send_msg('AT+CFUN=1 \r')
+            time.sleep(5)
+            self.recv_msg()
+            print(self.recv)
+            self.send_msg('AT \r')
+            time.sleep(1)
+            self.recv_msg()
+            print(self.recv)
+
         self.send_thread = threading.Thread(target=self.send)
         self.rec_thread = threading.Thread(target=self.received)
         self.mon_thread = threading.Thread(target=self.monitor)
@@ -197,7 +248,6 @@ class SAserialCom(serialCom):
         self.ttyusb = ttyusb
         self.mode = mode
         self.serial = serial.Serial(ttyusb, 115200, timeout=1)
-        print("Open serial ", ttyusb)
         self.rec_state = False
         self.send_state = True
 
@@ -262,17 +312,6 @@ class SAserialCom(serialCom):
 
             time.sleep(20)
 
-    def send_msg(self, msg):
-        self.serial.write(str(msg).encode('utf-8'))
-
-    def recv_msg(self):
-        self.recv = []
-        while self.serial.isOpen():
-            self.data = self.serial.readline()
-            self.recv.append(self.data)
-            if self.data == b'OK\r\n' or self.data == b'ERROR\r\n':
-                break
-
     def diag(self):
         if self.serial.isOpen():
             print("Open " + self.ttyusb + " success")
@@ -295,7 +334,9 @@ class SAserialCom(serialCom):
                 self.send_msg('AT+CGDCONT=1,"IP","3gnet" \r')
                 self.recv_msg()
                 print(self.recv)
-            elif "CHN-TE" in self.recv[1].decode('utf-8') or "CHINA Te" in self.recv[1].decode('utf-8'):
+            elif "CHN-TE" in self.recv[1].decode('utf-8') or \
+                    "CHINA Te" in self.recv[1].decode('utf-8') or \
+                    "CHN-CT" in self.recv[1].decode('utf-8'):
                 self.send_msg('AT+CGDCONT=1,"IP","ctnet" \r')
                 self.recv_msg()
                 print(self.recv)
@@ -352,39 +393,22 @@ def check_usb_mode(driver):
     err, output = subprocess.getstatusoutput(cmd)
     return output.strip()
 
-def check_product(product):
-    cmd = f'lsusb | grep {product}'
-    err, output = subprocess.getstatusoutput(cmd)
-    return output.strip()
 
-drivers = ['cdc_ether', 'cdc_ncm', 'rndis_host', 'wwan', 'cdc_mbim']
-products = ['Fibocom', 'Quectel']
+drivers = ['cdc_ether', 'cdc_ncm', 'rndis_host', 'wwan']
 
 if __name__ == '__main__':
+
     modes = [check_usb_mode(driver) for driver in drivers if check_usb_mode(driver)]
-    product = [check_product(product) for product in products if check_product(product)]
 
     mode_str = ''.join(modes)
-    pro_str = ''.join(product)
-    print(mode_str)
-    print(pro_str)
 
-    if 'Fibocom' in pro_str:
-        if 'cdc_ncm' in mode_str or 'rndis_host' in mode_str:
-            ser_obj = SAserialCom('/dev/ttyUSB0', mode_str)
-        elif 'cdc_ether' in mode_str:
-            ser_obj = SAserialCom('/dev/ttyUSB1', mode_str)
-        elif 'wwan' in mode_str:
-            ser_obj = serialCom('/dev/ttyUSB1')
-        else:
-            print("mode not support!")
-            exit
-    elif 'Quectel' in pro_str: # for quectel EC25
+    if 'cdc_ncm' in mode_str or 'rndis_host' in mode_str:
+        ser_obj = SAserialCom('/dev/ttyUSB0', mode_str)
+    elif 'cdc_ether' in mode_str:
+        ser_obj = SAserialCom('/dev/ttyUSB1', mode_str)
+    elif 'wwan' in mode_str:
+        ser_obj = serialCom('/dev/ttyUSB1')
+    else:  # for quectel EC25
         ser_obj = serialCom('/dev/ttyUSB2')
-    else: 
-        print("product not support!")
-        exit
-
 
     ser_obj.start()
-
