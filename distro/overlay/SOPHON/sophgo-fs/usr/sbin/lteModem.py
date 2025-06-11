@@ -92,19 +92,28 @@ class serialCom():
                     self.confg_changed = False
 
             elif self.operator == 'NULL':
-                print('sim card check failed')
+                self.serial.open()
+                while self.operator == 'NULL':
+                    print('sim card check failed')
+                    self.send_msg('AT+COPS? \r')
+                    self.recv_msg()
+                    parts = str(self.recv).split('"')
+                    self.operator = parts[1] if len(parts) > 1 else "NULL"
+                    print(self.operator)
+                    time.sleep(5)
+                self.serial.close()
 
             else:
                 if "CHN-CU" in self.operator or "CHN-UN" in self.operator:
-                    cmd = 'pppd call  modem_CUCC &'
+                    cmd = 'pppd call modem_CUCC &'
 
                 elif "CHN-TE" in self.operator or \
                         "CHINA Te" in self.operator or \
                         "CHN-CT" in self.operator:
-                    cmd = 'pppd call  modem_CTCC &'
+                    cmd = 'pppd call modem_CTCC &'
 
                 elif "CHN-CM" in self.operator or "CHINA MO" in self.operator:
-                    cmd = 'pppd call  modem_CMCC &'
+                    cmd = 'pppd call modem_CMCC &'
 
                 os.system(cmd)
                 # err1,result=subprocess.getstatusoutput(cmd)
@@ -179,54 +188,30 @@ class serialCom():
         print("lte socket received accept")
 
     def start(self):
-        # Modify dial mode
-        self.serial.write(str('AT+GTUSBMODE? \r').encode('utf-8'))
-        self.send_msg('AT+GTUSBMODE? \r')
+        print("soft reboot module.")
+        self.send_msg('AT+CFUN=0 \r')
+        time.sleep(2)
         self.recv_msg()
         print(self.recv)
-        usbmode = (str(self.recv).split(': ')[1]).split('\\')[0]
-        print('usbmode: ' + usbmode)
-        if usbmode != '18':
-            self.send_msg('AT+GTUSBMODE=18 \r')
-            self.recv_msg()
-            print(self.recv)
-            self.serial.close()
-            sys.exit(1)
-
-        self.send_msg('AT \r')
+        self.send_msg('AT+CFUN=1 \r')
+        time.sleep(5)
         self.recv_msg()
-        at_res = self.recv
-        print(at_res)
-        self.send_msg('AT+CPIN? \r')
+        print(self.recv)
+        self.send_msg('ATZ \r')
+        time.sleep(1)
         self.recv_msg()
-        cpin_res = self.recv
-        print(cpin_res)
-
-        if 'OK' in str(at_res) and 'ERROR' in str(cpin_res):
-            print("not find sim card, try to soft reboot module.")
-            self.send_msg('AT+CFUN=0 \r')
-            time.sleep(1)
-            self.recv_msg()
-            print(self.recv)
-            self.send_msg('AT+CFUN=1 \r')
-            time.sleep(5)
-            self.recv_msg()
-            print(self.recv)
-            self.send_msg('AT \r')
-            time.sleep(1)
-            self.recv_msg()
-            print(self.recv)
+        print(self.recv)
 
         self.send_thread = threading.Thread(target=self.send)
         self.rec_thread = threading.Thread(target=self.received)
         self.mon_thread = threading.Thread(target=self.monitor)
         self.socket_server = threading.Thread(target=self.socket_handler)
+
         # backup user dns file
         cmd = 'cp /etc/resolv.conf /etc/resolv.conf.user'
         err, result = subprocess.getstatusoutput(cmd)
 
         # read conf file
-
         curpath = os.path.dirname(os.path.realpath(__file__))
         self.cfgpath = os.path.join(curpath, "lteModemCfg.ini")
         print(self.cfgpath)
@@ -235,9 +220,23 @@ class serialCom():
         self.conf.read(self.cfgpath, encoding="utf-8")
         self.confg_changed = True
         self.ltefirst = self.conf.get('base', 'ltefirst')
+        self.setusbmode = self.conf.get('base', 'setusbmode')
         self.simstatus = 'UINIT'
 
         print('lte is first selection ' + self.ltefirst)
+        if(self.setusbmode != ''):
+            self.send_msg('AT+GTUSBMODE? \r')
+            self.recv_msg()
+            print(self.recv)
+            usbmode = (str(self.recv).split(': ')[1]).split('\\')[0]
+            print('now usbmode: ' + usbmode)
+            print('set usbmode: ' + self.setusbmode)
+            if usbmode != self.setusbmode:
+                self.send_msg('AT+GTUSBMODE=' + self.setusbmode + ' \r')
+                self.recv_msg()
+                print(self.recv)
+                self.serial.close()
+                sys.exit(1)
 
         self.send_thread.start()
         self.socket_server.start()
@@ -302,7 +301,14 @@ class SAserialCom(serialCom):
                     self.confg_changed = False
 
             elif self.operator == 'NULL':
-                print('sim card check failed')
+                while self.operator == 'NULL':
+                    print('sim card check failed')
+                    self.send_msg('AT+COPS? \r')
+                    self.recv_msg()
+                    parts = str(self.recv).split('"')
+                    self.operator = parts[1] if len(parts) > 1 else "NULL"
+                    print(self.operator)
+                    time.sleep(5)
 
             else:
                 self.diag()
@@ -394,21 +400,38 @@ def check_usb_mode(driver):
     return output.strip()
 
 
-drivers = ['cdc_ether', 'cdc_ncm', 'rndis_host', 'wwan']
+def check_product(product):
+    cmd = f'lsusb | grep {product}'
+    err, output = subprocess.getstatusoutput(cmd)
+    return output.strip()
+
+
+drivers = ['cdc_ether', 'cdc_ncm', 'rndis_host', 'wwan', 'cdc_mbim']
+products = ['Fibocom', 'Quectel']
 
 if __name__ == '__main__':
-
     modes = [check_usb_mode(driver) for driver in drivers if check_usb_mode(driver)]
+    product = [check_product(product) for product in products if check_product(product)]
 
     mode_str = ''.join(modes)
+    pro_str = ''.join(product)
+    print(mode_str)
+    print(pro_str)
 
-    if 'cdc_ncm' in mode_str or 'rndis_host' in mode_str:
-        ser_obj = SAserialCom('/dev/ttyUSB0', mode_str)
-    elif 'cdc_ether' in mode_str:
-        ser_obj = SAserialCom('/dev/ttyUSB1', mode_str)
-    elif 'wwan' in mode_str:
-        ser_obj = serialCom('/dev/ttyUSB1')
-    else:  # for quectel EC25
+    if 'Fibocom' in pro_str:
+        if 'cdc_ncm' in mode_str or 'rndis_host' in mode_str:
+            ser_obj = SAserialCom('/dev/ttyUSB0', mode_str)
+        elif 'cdc_ether' in mode_str:
+            ser_obj = SAserialCom('/dev/ttyUSB1', mode_str)
+        elif 'wwan' in mode_str:
+            ser_obj = serialCom('/dev/ttyUSB1')
+        else:
+            print("mode not support!")
+            exit
+    elif 'Quectel' in pro_str:
         ser_obj = serialCom('/dev/ttyUSB2')
+    else:
+        print("no product found!")
+        exit
 
     ser_obj.start()
