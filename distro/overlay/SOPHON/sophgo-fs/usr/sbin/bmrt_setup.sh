@@ -71,7 +71,6 @@ function install_prepackages()
 		systemctl enable bsl_hack.service
 		systemctl start bsl_hack.service
 
-
 		touch /root/post_install/installed
 	fi
 }
@@ -97,6 +96,14 @@ if [ -f "/etc/systemd/system/bmssm.service" ]; then
 		systemctl start bmssm.service
 		systemctl enable sophliteos.service
 		systemctl start sophliteos.service
+	fi
+fi
+
+if [ -f "/etc/systemd/system/bmveth.service" ]; then
+	if [ ! -f "/etc/systemd/system/multi-user.target.wants/bmveth.service" ]; then
+		echo "systemctl enable bmveth"
+		systemctl enable bmveth.service
+		systemctl start bmveth.service
 	fi
 fi
 

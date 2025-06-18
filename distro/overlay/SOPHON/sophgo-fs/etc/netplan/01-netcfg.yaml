@@ -11,3 +11,13 @@ network:
                         dhcp4: no
                         addresses: [192.168.150.1/24]
                         optional: yes
+                eth2:
+                        dhcp4: yes
+                        addresses: []
+                        optional: yes
+                        dhcp-identifier: mac
+                usb0:
+                        dhcp4: yes
+                        addresses: []
+                        optional: yes
+                        dhcp-identifier: mac

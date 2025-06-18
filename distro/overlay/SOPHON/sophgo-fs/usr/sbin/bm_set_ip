@@ -25,7 +25,7 @@ else
 		echo "eg: bm_set_ip eth0 192.168.1.100 255.255.255.0 192.168.1.1 192.168.1.1 192.168.2.0 255.255.255.0 192.168.1.1"
 		echo "gateway and dns allow empty. pls follow below example"
 		echo "eg: bm_set_ip eth0 192.168.1.100 255.255.255.0 '' '' "
-		ech0 "Restoring default netplan configuration"
+		echo "Restoring default netplan configuration"
 		echo "eg: bm_set_ip default "
 		echo " to: destination network, via: next hop address, table: Routing Table ID, rule_from/rule_to: routing-policy"
 		exit -1
@@ -148,9 +148,6 @@ if [ $is_ubuntu -gt 1 ];then
 				echo "                                  table: ${table}" | sudo tee -a  $device_path
         fi
 	echo "                        optional: yes" | sudo tee -a  $device_path
-	if [ "$dns" != "" ];then
-	        sudo sed -i "s/^nameserver .*/nameserver $dns/" /etc/resolv.conf
-	fi
 	sudo sync
 	sudo netplan apply
 
