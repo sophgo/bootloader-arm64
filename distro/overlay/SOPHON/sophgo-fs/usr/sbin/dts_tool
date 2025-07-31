@@ -73,6 +73,10 @@ DTS_TYPES=(
     "bm1688_se9b3_8G"
     "bm1688_se9b3_12G"
     "bm1688_se9b3_16G"
+    "bm1688_se9b4_4G"
+    "bm1688_se9b4_8G"
+    "bm1688_se9b4_12G"
+    "bm1688_se9b4_16G"
     "cv186ah_se9b1_4G"
     "cv186ah_se9b1_8G"
     "cv186ah_se9b1_12G"
@@ -85,6 +89,10 @@ DTS_TYPES=(
     "cv186ah_se9b3_8G"
     "cv186ah_se9b3_12G"
     "cv186ah_se9b3_16G"
+    "cv186ah_se9b4_4G"
+    "cv186ah_se9b4_8G"
+    "cv186ah_se9b4_12G"
+    "cv186ah_se9b4_16G"
 )
 
 
