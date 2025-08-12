@@ -33,9 +33,14 @@ else
     #sudo mcu-util-aarch64 upgrade 1 0x17 sa5-mcu*.bin
 
     # private ota :boot-recovery /data/ota/startup.sh\nprivate_update"
-    echo -e "boot-recovery\n/DATA/ota" > /dev/mmcblk0p3
+    sudo dd if=/dev/zero of=/dev/mmcblk0p3 bs=512 count=1
+    if [ $# -ge 2 ]; then
+        echo -e "boot-recovery\n/DATA/ota\n$2" > /dev/mmcblk0p3
+    else
+        echo -e "boot-recovery\n/DATA/ota" > /dev/mmcblk0p3
+    fi
     echo "update success"
     sync
-    reboot -f
+    reboot
 fi
 

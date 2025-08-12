@@ -1,0 +1,11 @@
+/var/log/prompt-cmd.log
+{
+        size=60M
+        rotate 4
+        missingok
+        notifempty
+        compress
+        postrotate
+                kill -HUP $(ps -ef | grep rsyslog | grep -v  grep | awk '{print $2}')
+        endscript
+}
