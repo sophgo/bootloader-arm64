@@ -91,7 +91,7 @@ if [ -f ~/.bash_aliases ]; then
     . ~/.bash_aliases
 fi
 export PATH=$PATH:/opt/sophon/libsophon-current/bin:/opt/sophon/sophon-ffmpeg-latest/bin
-export PYTHONPATH=/opt/sophon/libsophon-current/lib:$PYTHONPATH:/opt/sophon/sophon-ffmpeg-latest/lib
+export PYTHONPATH=/opt/sophon/libsophon-current/lib:$PYTHONPATH:/opt/sophon/sophon-ffmpeg-latest/lib:/opt/sophon/sophon-opencv-latest/opencv-python
 trap 'echo "$(date "+%Y-%m-%d %H:%M:%S") $(whoami) [$$]: $(history 1 | sed "s/^[ ]*[0-9]\+[ ]*//")" > >(logger -p local0.debug)' DEBUG
 
 # enable programmable completion features (you don't need to enable

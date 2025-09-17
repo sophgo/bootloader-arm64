@@ -83,7 +83,10 @@ do
 	sleep 1;
 done
 
-sudo chown linaro:linaro -R /data
+if [ ! -f /root/post_install/installed ]; then
+    chown linaro:linaro -R /data
+fi
+
 #store_reset_reason
 
 /usr/sbin/read_oem.sh

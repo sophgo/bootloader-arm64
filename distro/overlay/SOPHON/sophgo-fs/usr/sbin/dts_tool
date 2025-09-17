@@ -1,157 +1,124 @@
 #!/bin/bash
 
+# Check if running as root
 if [[ $EUID -ne 0 ]]; then
    echo "This script must be run as root" 
    exit 1
 fi
 
+# Verify multi.its file exists
+MULTI_ITS="/boot/multi.its"
+if [[ ! -f "$MULTI_ITS" ]]; then
+   echo "Error: $MULTI_ITS not found!"
+   exit 1
+fi
+
+# Parse DTS types from multi.its file
+declare -A DTS_GROUPS  # Store grouped DTS types
+DTS_TYPES=()           # Store all DTS types
+GROUP_ORDER=()         # Maintain group order
+
+while IFS= read -r line; do
+    # Detect fdt-* device tree nodes
+    if [[ $line =~ ^[[:space:]]*fdt-[^[:space:]]+[[:space:]]*\{ ]]; then
+        in_fdt=1
+        continue
+    fi
+
+    # Extract data line within fdt node
+    if (( in_fdt )) && [[ $line =~ data[[:space:]]*=[[:space:]]*/incbin/\(\"\./([^\"]+\.dtb)\" ]]; then
+        # Get .dtb filename and remove extension
+        dts_file="${BASH_REMATCH[1]}"
+        dts_type="${dts_file%.dtb}"
+
+        # Extract group using *_str_* pattern
+        if [[ "$dts_type" =~ ^([^_]+)_([^_]+)_(.+)$ ]]; then
+            group="${BASH_REMATCH[2]}"  # Middle part is group identifier
+            DTS_TYPES+=("$dts_type")
+
+            # Add to group
+            if [[ -z "${DTS_GROUPS[$group]}" ]]; then
+                DTS_GROUPS["$group"]="$dts_type"
+                GROUP_ORDER+=("$group")  # Track group order
+            else
+                DTS_GROUPS["$group"]+="|$dts_type"  # Separate types with |
+            fi
+        fi
+
+        in_fdt=0
+    fi
+
+    # Exit node at closing brace
+    [[ $line =~ ^[[:space:]]*\}[[:space:]]*$ ]] && in_fdt=0
+done < "$MULTI_ITS"
+
+# Verify we found DTS types
+if [[ ${#DTS_TYPES[@]} -eq 0 ]]; then
+    echo "Error: No DTS types found in $MULTI_ITS"
+    exit 1
+fi
+
+# Device configuration parameters
 DTS_DEVICE="/dev/mmcblk0boot1"
 DTS_OFFSET=160
 DTS_SIZE=32
 DTS_FILE="current_dts_type.txt"
 
-echo "Reading current DTS type..."
-dd if=$DTS_DEVICE of=$DTS_FILE bs=1 count=$DTS_SIZE skip=$DTS_OFFSET
-CURRENT_DTS_TYPE=$(cat $DTS_FILE | tr -d '\0')
-echo "Current DTS type: $CURRENT_DTS_TYPE"
+# Read current DTS type from device
+echo "Reading current DTS type from device..."
+dd if=$DTS_DEVICE of=$DTS_FILE bs=1 count=$DTS_SIZE skip=$DTS_OFFSET 2>/dev/null
+CURRENT_DTS_TYPE=$(tr -d '\0' < $DTS_FILE)
+echo "Current DTS type: ${CURRENT_DTS_TYPE:-<empty>}"
 
-DTS_TYPES=(
-    "@BM1688_EVB:"
-    "bm1688_wevb_4G"
-    "bm1688_wevb_8G"
-    "bm1688_wevb_12G"
-    "bm1688_wevb_16G"
-    "@CV186AH_EVB:"
-    "cv186ah_wevb_4G"
-    "cv186ah_wevb_8G"
-    "cv186ah_wevb_12G"
-    "cv186ah_wevb_16G"
-    "@BM1688_NVR:"
-    "bm1688_nvrv1_4G"
-    "bm1688_nvrv1_8G"
-    "bm1688_nvrv1_12G"
-    "bm1688_nvrv1_16G"
-    "@CV186AH_NVR:"
-    "cv186ah_nvrv1_4G"
-    "cv186ah_nvrv1_8G"
-    "cv186ah_nvrv1_12G"
-    "cv186ah_nvrv1_16G"
-    "@SE9-16:"
-    "bm1688_se9v1_4G"
-    "bm1688_se9v1_8G"
-    "bm1688_se9v1_12G"
-    "bm1688_se9v1_16G"
-    "@SE9-8:"
-    "cv186ah_se9v1_4G"
-    "cv186ah_se9v1_8G"
-    "cv186ah_se9v1_12G"
-    "cv186ah_se9v1_16G"
-    "@SM9-16:"
-    "bm1688_sm9v1_4G"
-    "bm1688_sm9v1_8G"
-    "bm1688_sm9v1_12G"
-    "bm1688_sm9v1_16G"
-    "bm1688_sm9v2_8G"
-    "bm1688_sm9v2_16G"
-    "@SM9-8:"
-    "cv186ah_sm9v1_4G"
-    "cv186ah_sm9v1_8G"
-    "cv186ah_sm9v1_12G"
-    "cv186ah_sm9v1_16G"
-    "cv186ah_sm9v2_4G"
-    "cv186ah_sm9v2_8G"
-    "@SE9B-x"
-    "bm1688_se9b1_4G"
-    "bm1688_se9b1_8G"
-    "bm1688_se9b1_12G"
-    "bm1688_se9b1_16G"
-    "bm1688_se9b2_4G"
-    "bm1688_se9b2_8G"
-    "bm1688_se9b2_12G"
-    "bm1688_se9b2_16G"
-    "bm1688_se9b3_4G"
-    "bm1688_se9b3_8G"
-    "bm1688_se9b3_12G"
-    "bm1688_se9b3_16G"
-    "bm1688_se9b4_4G"
-    "bm1688_se9b4_8G"
-    "bm1688_se9b4_12G"
-    "bm1688_se9b4_16G"
-    "cv186ah_se9b1_4G"
-    "cv186ah_se9b1_8G"
-    "cv186ah_se9b1_12G"
-    "cv186ah_se9b1_16G"
-    "cv186ah_se9b2_4G"
-    "cv186ah_se9b2_8G"
-    "cv186ah_se9b2_12G"
-    "cv186ah_se9b2_16G"
-    "cv186ah_se9b3_4G"
-    "cv186ah_se9b3_8G"
-    "cv186ah_se9b3_12G"
-    "cv186ah_se9b3_16G"
-    "cv186ah_se9b4_4G"
-    "cv186ah_se9b4_8G"
-    "cv186ah_se9b4_12G"
-    "cv186ah_se9b4_16G"
-)
-
-
+# Display grouped DTS types
 echo "Please select the DTS type by entering the corresponding number:"
-index=1
-for dts in "${DTS_TYPES[@]}"; do
-    if [[ $dts == \@* ]]; then 
-        echo "$dts"
-    else
-        echo "$index) $dts"
-    fi
-	let index+=1
+echo "---------------------------------------------------------------"
+
+counter=1
+for group in "${GROUP_ORDER[@]}"; do
+    # Display group header
+    echo "[Group: $group]"
+
+    # Display types in this group
+    IFS='|' read -ra types <<< "${DTS_GROUPS[$group]}"
+    for type in "${types[@]}"; do
+        printf "%2d) %s\n" $counter "$type"
+        ((counter++))
+    done
+
+    # Add empty line between groups
+    echo
 done
 
-read -p "Enter the number (1-$(($index-1))): " DTS_NUMBER
-
-if ! [[ "$DTS_NUMBER" =~ ^[0-9]+$ ]] || [ "$DTS_NUMBER" -lt 1 ] || [ "$DTS_NUMBER" -ge "$index" ]; then
-    echo "Invalid selection. Exiting."
+# Get user selection
+read -p "Enter the number (1-${#DTS_TYPES[@]}): " DTS_NUMBER
+if ! [[ "$DTS_NUMBER" =~ ^[0-9]+$ ]] ||
+   (( DTS_NUMBER < 1 || DTS_NUMBER > ${#DTS_TYPES[@]} )); then
+    echo "Error: Invalid selection. Exiting."
     exit 1
 fi
 
-actual_index=0
-selected_index=0
-for dts in "${DTS_TYPES[@]}"; do
-    if [[ $dts != \$* ]]; then
-        let actual_index+=1
-        if [ "$actual_index" -eq "$DTS_NUMBER" ]; then
-            break
-        fi
-    fi
-    let selected_index+=1
-done
+# Get selected DTS type
+DTS_TYPE="${DTS_TYPES[$((DTS_NUMBER-1))]}"
+echo "Selected DTS type: $DTS_TYPE"
 
-DTS_TYPE="${DTS_TYPES[$selected_index]}"
-echo "You selected: $DTS_TYPE"
+# Write to device
+echo "Writing DTS type to device..."
+echo 0 > /sys/block/mmcblk0boot1/force_ro 2>/dev/null
+dd if=/dev/zero of=$DTS_DEVICE bs=1 count=$DTS_SIZE seek=$DTS_OFFSET 2>/dev/null
+echo -n "$DTS_TYPE" | dd of=$DTS_DEVICE bs=1 seek=$DTS_OFFSET 2>/dev/null
 
-DTS_TYPE="${DTS_TYPES[$selected_index]}"
-echo "You selected: $DTS_TYPE"
-
-DTS_FILE="dts_type.txt"
-DTS_DEVICE="/dev/mmcblk0boot1"
-DTS_OFFSET=160
-DTS_SIZE=32
-
-echo 0 > /sys/block/mmcblk0boot1/force_ro
-dd if=/dev/zero of=$DTS_DEVICE count=$DTS_SIZE bs=1 seek=$DTS_OFFSET
-
-echo -n "$DTS_TYPE" > $DTS_FILE
-dd if=$DTS_FILE of=$DTS_DEVICE count=$DTS_SIZE bs=1 seek=$DTS_OFFSET
-
-dd if=$DTS_DEVICE of=$DTS_FILE bs=1 count=$DTS_SIZE skip=$DTS_OFFSET
-
-READ_BACK_DTS_TYPE=$(cat $DTS_FILE)
-if [ "$READ_BACK_DTS_TYPE" == "$DTS_TYPE" ]; then
-    echo "DTS_TYPE is successfully written and verified: $READ_BACK_DTS_TYPE"
+# Verify write operation
+dd if=$DTS_DEVICE of=$DTS_FILE bs=1 count=$DTS_SIZE skip=$DTS_OFFSET 2>/dev/null
+READ_BACK_DTS_TYPE=$(tr -d '\0' < $DTS_FILE)
+if [[ "$READ_BACK_DTS_TYPE" == "$DTS_TYPE" ]]; then
+    echo "Success: DTS type verified: $READ_BACK_DTS_TYPE"
 else
-    echo "Error: DTS_TYPE verification failed"
+    echo "Error: Verification failed. Expected: '$DTS_TYPE', Got: '$READ_BACK_DTS_TYPE'"
     exit 1
 fi
 
-echo "DTS_TYPE setting and verification completed."
-
+# Cleanup and exit
+echo "DTS type configuration completed successfully."
+rm -f "$DTS_FILE" 2>/dev/null
+exit 0
