@@ -15,7 +15,7 @@ fi
 
 # Parse DTS types from multi.its file
 declare -A DTS_GROUPS  # Store grouped DTS types
-DTS_TYPES=()           # Store all DTS types
+DTS_TYPES=()           # Store all DTS types in display order
 GROUP_ORDER=()         # Maintain group order
 
 while IFS= read -r line; do
@@ -34,7 +34,6 @@ while IFS= read -r line; do
         # Extract group using *_str_* pattern
         if [[ "$dts_type" =~ ^([^_]+)_([^_]+)_(.+)$ ]]; then
             group="${BASH_REMATCH[2]}"  # Middle part is group identifier
-            DTS_TYPES+=("$dts_type")
 
             # Add to group
             if [[ -z "${DTS_GROUPS[$group]}" ]]; then
@@ -53,10 +52,18 @@ while IFS= read -r line; do
 done < "$MULTI_ITS"
 
 # Verify we found DTS types
-if [[ ${#DTS_TYPES[@]} -eq 0 ]]; then
+if [[ ${#GROUP_ORDER[@]} -eq 0 ]]; then
     echo "Error: No DTS types found in $MULTI_ITS"
     exit 1
 fi
+
+# Build DTS_TYPES array in display order (matching what user sees)
+for group in "${GROUP_ORDER[@]}"; do
+    IFS='|' read -ra types <<< "${DTS_GROUPS[$group]}"
+    for type in "${types[@]}"; do
+        DTS_TYPES+=("$type")
+    done
+done
 
 # Device configuration parameters
 DTS_DEVICE="/dev/mmcblk0boot1"
@@ -82,7 +89,12 @@ for group in "${GROUP_ORDER[@]}"; do
     # Display types in this group
     IFS='|' read -ra types <<< "${DTS_GROUPS[$group]}"
     for type in "${types[@]}"; do
-        printf "%2d) %s\n" $counter "$type"
+        # Highlight current selection
+        if [[ "$type" == "$CURRENT_DTS_TYPE" ]]; then
+            printf "%2d) %s [current]\n" $counter "$type"
+        else
+            printf "%2d) %s\n" $counter "$type"
+        fi
         ((counter++))
     done
 
