@@ -35,5 +35,5 @@ fi
 
 
 export PATH=$PATH:/opt/sophon/libsophon-current/bin:/sbin
-export PYTHONPATH=/opt/sophon/libsophon-current/lib:$PYTHONPATH:/opt/sophon/sophon-opencv-latest/opencv-python
+export PYTHONPATH=/opt/sophon/libsophon-current/lib:$PYTHONPATH
 trap 'echo "$(date "+%Y-%m-%d %H:%M:%S") $(whoami) [$$]: $(history 1 | sed "s/^[ ]*[0-9]\+[ ]*//")" > >(logger -p local0.debug)' DEBUG
