@@ -324,9 +324,9 @@
 		compatible = "bitmain,synopsys-sdhc";
 		bus-width = <4>;
 		reg = <0x0 0x50100000 0x0 0x1000>;
-		max-frequency = <125000000>;
+		max-frequency = <100000000>;
 		mmc_init_freq = <200000>;
-		mmc_trans_freq = <125000000>;
+		mmc_trans_freq = <100000000>;
 		64_addressing;
 		has_phy;
 		index = <0x0>;

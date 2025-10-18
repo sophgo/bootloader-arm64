@@ -140,7 +140,7 @@ passwd root设置密码）：
 
       bm1684 login: linaro
       Password:
-      Welcome to Ubuntu 20.04 LTS (GNU/Linux 5.4.202-bm1684 aarch64)
+      Welcome to Ubuntu 20.04 LTS (GNU/Linux 5.4.217-bm1684 aarch64)
 
        * Documentation:  https://help.ubuntu.com
        * Management:     https://landscape.canonical.com
@@ -202,7 +202,7 @@ passwd root设置密码）：
 关机时建议使用sudo poweroff命令，尽量避免直接断电，以免文件系统损坏。\ |image9|
 
 
-核心板有两个网卡，eth0默认为DHCP，故您需要通过上述方法获取IP。eth1默认配置为静态IP：192.168.150.1。
+核心板有两个网卡，其中eth0使用DHCP协议动态获取IP，eth1默认配置为静态IP：192.168.150.1。
 
 软件安装
 ============
@@ -217,158 +217,352 @@ a. 查看Linux kernel版本：bm_version
    .. code-block:: bash
 
       $ bm_version
-      sophon-mw-soc-sophon-ffmpeg : 0.2.3
-      sophon-mw-soc-sophon-opencv : 0.2.3
-      sophon-soc-libsophon : 0.2.3
-      boot_loader_version_bl1: v2.7(release):075b939dc-dirty Built : 14:30:23, Sep 15 2022
-      boot_loader_version_bl2: v2.7(release):075b939dc-dirty Built : 14:30:23, Sep 15 2022
-      boot_loader_version_bl31: v2.7(release):075b939dc-dirty Built : 14:30:23, Sep 15 2022
-      boot_loader_version_uboot: U-Boot 2022.07 075b939dc-dirty (Sep 15 2022 - 14:37:14 +0800) Sophon BM1684
-      KernelVersion : Linux bm1684 5.4.202-bm1684 #2 SMP PREEMPT Wed Jul 6 01:55:57
-      UTC 2022 aarch64 aarch64 aarch64 GNU/Linux
+      SophonSDK version: v23.09 LTS-SP3
+      sophon-soc-libsophon : 0.5.1
+      sophon-soc-libsophon-dev : 0.5.1
+      sophon-mw-soc-sophon-ffmpeg : 0.11.0
+      sophon-mw-soc-sophon-opencv : 0.11.0
+      BL2 v2.7(release):b0dc29c Built : 10:20:22, Aug 15 2024
+      BL31 v2.7(release):b0dc29c Built : 10:20:22, Aug 15 2024
+      U-Boot 2022.10 b0dc29c (Aug 15 2024 - 10:20:18 +0800) Sophon BM1684X
+      KernelVersion : Linux bm1684 5.4.217-bm1684-g3357dba62ec6 #1 SMP Thu Aug 15 10:20:28 CST 2024 aarch64 aarch64 aarch64 GNU/Linux
       HWVersion: 0x00
-      MCUVersion: 0x03
+      MCUVersion: 0x04
 
-   sophon-mw-soc-sophon-ffmpeg、sophon-mw-soc-sophon-opencv和sophon-soc-libsophon后面的信息为SOPHON SDK的版本号，boot_loader_version后面的信息分别为bl1、bl2、bl31和uboot的bootloader版本号及build时间，KernelVersion字段即为Kernel版本信息， 5.4.202表示官方Linux Kernel确切版本号， 后半部分的时间戳代表build时间。
-   MCUVersion字段即为MCU firmware版本号。
+   1. SophonSDK version指定SDK的版本号。
+   2. sophon-mw-soc-sophon-ffmpeg、sophon-mw-soc-sophon-opencv和sophon-soc-libsophon后面的信息是各个组件的版本号。
+   3. BL2、BL31、U-Boot后面的信息分别为bl2、bl31和uboot的bootloader版本号及build时间。
+   4. KernelVersion字段即为Kernel版本信息， 5.4.217表示Kernel版本号， 后半部分的时间戳代表build时间。
+   5. MCUVersion字段即为MCU firmware版本号。
 
+b. 对于我们官网发布的包，SDK版本号和小组件版本之间有对应关系，如下：
+
+   .. list-table:: 版本号对应关系
+      :widths: 25 25 25
+      :header-rows: 1
+
+      * - SDK大版本号
+        - libsophon版本
+        - 多媒体组件版本
+      * - V22.09.02
+        - 0.4.1
+        - 0.3.1
+      * - V22.10.01
+        - 0.4.2
+        - 0.4.0
+      * - V22.11.01
+        - 0.4.3
+        - 0.5.0
+      * - V22.12.01
+        - 0.4.4
+        - 0.5.1
+      * - V23.03.01
+        - 0.4.6
+        - 0.6.0
+      * - V23.05.01
+        - 0.4.8
+        - 0.6.3
+      * - V23.07.01
+        - 0.4.9
+        - 0.7.0
+      * - V23.09 LTS
+        - 0.4.9-LTS
+        - 0.7.1
+      * - V23.09 LTS SP1
+        - 0.4.9-LTS
+        - 0.8.0
+      * - V23.09 LTS SP2
+        - 0.4.9-LTS
+        - 0.8.0
+      * - V23.09 LTS SP3
+        - 0.5.1-LTS
+        - 0.11.0
+      * - V23.09 LTS SP4
+        - 0.5.1-LTS
+        - 0.12.0
+      * - V23.09 LTS SP5
+        - 0.5.1-LTS
+        - 0.14.0
+      * - V23.10.01
+        - 0.5.0
+        - 0.7.3
+      * - V24.04.01
+        - 0.5.1
+        - 0.10.0
 
 软件更新
-------------
+---------------
 
-|Product| 目前提供三种更新方式：SD卡刷机， 文件替换 和 OTA升级。其中SD卡刷机会重写整个eMMC，也即您存储在eMMC的数据全部会丢失。这种方式最为干净可靠，理论上只要您的 |Product| 没有硬件损坏，都可以进行SD卡刷机。文件替换方式是指在Ubuntu下通过替换对应文件的方式分别升级bootloader、kernel和其它软件。这种方式有一定的风险，如不同软件组件之间的版本匹配、文件损坏等。以下分别介绍三种软件更新方式的操作：
+|Product| 目前提供四种更新方式：SD卡刷机、TFTP刷机、文件替换和在线刷机，他们的关系如下
 
-a. SD卡刷机
+.. list-table:: 刷机方式对比
+   :widths: 25 25 25
+   :header-rows: 1
 
-请将SD卡格式化为FAT32格式（如果SD卡上有多个分区，只能使用第一个分区），大小为1GB以上。
+   * - 刷机方式
+     - 刷机成功依赖
+     - 烧录内容
+   * - SD卡刷机
+     - | 1. 设备硬件功能正常
+       | 2. SD卡为MBR+FAT32格式
+     - | 1. 设备flash
+       | 2. 设备emmc
+   * - TFTP刷机
+     - | 1. 设备硬件功能正常
+       | 2. 设备flash中固件正常
+     - | 1. 设备flash
+       | 2. 设备emmc
+   * - 文件替换
+     - | 1. 设备硬件功能正常
+       | 2. flash和emmc正常
+       | 3. 设备软件系统正常
+     - 被替换的部分
+   * - 在线刷机
+     - | 1. 设备硬件功能正常
+       | 2. flash和emmc正常
+       | 3. 设备软件系统正常
+     - | 1. 设备flash
+       | 2. 设备emmc中除分区表和data分区外的部分(可选择为全部分区都刷掉)
 
-请下载 |Product| 最新刷机包，地址请见FAQ节：
+总结如下：
 
-请将下载的压缩包解压到SD卡根目录。确认文件如下（数量不一定相同）：
+1. 其中SD卡刷机、TFTP刷机会重写整个eMMC，也即您存储在eMMC的数据全部会丢失。
+2. SD卡刷机方式最为干净可靠，理论上只要您的没有硬件损坏，都可以进行SD卡刷机。
+3. 在线刷机则要求设备至少能够通过串口或网络方式连接进入终端。
+4. 文件替换方式是指在系统内通过替换对应文件的方式分别升级bootloader、kernel和其它软件。这种方式有一定的风险，如不同软件组件之间的版本匹配、文件损坏等。
 
-   .. image:: ./_static/image18.png
-      :width: 4.20625in
-      :height: 2.49295in
+SD卡刷机
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-请将 |Product| 断电，插入SD卡，并连接串口终端，然后给 |Product| 上电。您将看到 |Product| 自动进入刷机流程：
+   1. 请将SD卡格式化为MBR分区表，且第一个分区是FAT32格式的状态，分区大小需要放下整个刷机包。
 
-   .. image:: ./_static/image19.png
-      :width: 6.27083in
-      :height: 2.69444in
+      1. 如果不方便手动格式化SD卡，则可以通过如下操作制作MBR+FAT32的SD卡：
 
-刷机通常耗时约3分钟，结束后，会看到拔掉SD卡并重启 |Product| 的提示，请依照操作即可：
+         1. 下载压缩包 `sdcard_imgs.zip` https://sophon-file.sophon.cn/sophon-prod-s3/drive/23/11/09/18/sdcard_imgs.zip ，解压后文件类似下图，按照TF卡大小和刷机包大小选择合适的img.gz文件
 
-   .. image:: ./_static/image20.png
-      :width: 4.23438in
-      :height: 0.83192in
+            .. image:: ./_static/image98.png
+               :width: 2.2in
+               :align: center
 
-请注意：刷机后Ubuntu系统第一次启动时会进行文件系统初始化等关键动作，请勿随意断电，待开机进入命令行后使用sudo
-poweroff命令关机。
+            比如4GB的TF卡，则选择其中sdcard.3G.img.gz包
+         2. 访问balenaEtcher工具官网 https://etcher.balena.io/ ，下载工具将选择的img.gz文件写入TF卡
+         3. 格式正确的SD卡制作完毕
+   2. 请下载 |Product| 最新的SD卡刷机包，位置在SDK压缩包中 ``sophon-img_<date>_<hash>`` 目录下的sdcard.tgz。
+   3. 请将下载的压缩包解压到SD卡根目录。确认文件如下（数量不一定相同）：
 
-b. 文件替换
+      .. image:: ./_static/image18.png
+         :width: 4.5in
 
-文件替换均在Ubuntu下执行，您可以选择使用串口或SSH终端。以下分别介绍如何替换各个组件。
 
-替换bootloader：请将您要更新的spi_flash.bin文件上传到 |Product| ，然后执行sudo
-flash_update -i ./spi_flash.bin -b 0x6000000，成功后可以看到如下log：
+   4. 请将 |Product| 断电，插入SD卡，并连接串口终端，然后给 |Product| 上电。您将看到 |Product| 自动进入刷机流程：
 
-   .. image:: ./_static/image21.png
-      :width: 6.26772in
-      :height: 2.13889in
+      .. image:: ./_static/image19.png
+         :width: 6.27083in
+         :height: 2.69444in
 
-可以执行flash_update查看帮助：
+   5. 刷入1GB的包通常耗时约3分钟，可以根据这个数据预估刷机时间，结束后，会看到拔掉SD卡并重启 |Product| 的提示，请依照操作即可，（同时在一些SE5或SE7设备上刷机成功后会有状态灯闪烁以指示刷机完成）：
 
-   .. image:: ./_static/image90.png
-      :width: 8.39in
-      :height: 4.04in
+      .. image:: ./_static/image20.png
+         :width: 4.23438in
+         :height: 0.83192in
 
-替换kernel：将您要更新的emmcboot.itb放入/boot中替换同名文件，再sudo
-reboot即可。
+   6. 请注意：刷机后Ubuntu系统第一次启动时会进行文件系统初始化等关键动作，请勿随意断电，待开机进入命令行后使用sudo poweroff命令关机。
 
-替换bmnnsdk2运行时环境：bmnnsdk2运行时环境位于/system目录下，请将您拿到的更新包（通常是一个名为system.tgz的压缩包）整体替换即可，解压时请留意相对路径。
-替换SophonSDK运行时环境：SophonSDK运行时环境位于/opt目录下，请将您拿到的更新包（通常是一个名为opt.tgz的压缩包）整体替换即可，解压时请留意相对路径。
+TFTP刷机
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. warning::
+   1. 请下载 |Product| 最新的TFTP刷机包，位置在SDK压缩包中 ``sophon-img_<date>_<hash>`` 目录下的tftp.tgz。
+   2. 在PC上安装tftp server，并指定tftp刷机包路径：
 
-   做完上述文件操作后不要马上暴力断电，否则可能会有文件损坏，请执行sync、sudo
-   reboot、sudo poweroff等动作。\ |image10|
+      1. Ubuntu系统：运行： apt-get install tftpd-hpa tftp-hpa ，下载tftp工具；然后查看 /etc/default/tftpd-hpa 文件中的 TFTP_DIRECTORY 路径，将刷机包拷贝至对应路径（您也可以修改这个路径配置， sudo service tftpd-hpa restart 后即可生效）;
+      2. windows系统： 点击链接下载 https://pjo2.github.io/tftpd64/ ，随后打开下载好的 tftpd64.exe 图形界面，并将 Current Directory 设置为tftp刷机包解压后的文件夹。
 
-c. OTA升级
+      .. warning::
+         1. 使用的 PC 推荐尽可能使用 Ubuntu 系统，Windows 下的 tftpd64 对环境比较挑剔，在传输大文件时有时会不稳定，造成升级失败。
+         2. tftp server 搭建好后，您可以用另一台 PC 先测试一下，避免网络、防火墙等配置问题导致刷机失败。
 
-按如下步骤可进行OTA升级:
+   3. 搭建基础网络环境：将需要升级的设备和 PC 机放在同一个交换机下（也可以通过设备LAN口直连PC）。
+   4. 执行刷机步骤：
 
-1. 首先获取待更新版本的SophonSDK压缩包，获取其sophon-img子文件夹下的bsp_update.tgz和system.tgz压缩包。
-   其中bsp_update.tgz主要包含升级脚本（bsp_update.sh）及内核镜像（emmcboot.itb）等内容，解压后的文件如下：
+      1. 将需要升级的设备接上串口终端，启动设备，在出现Hit any key to stop autoboot提示后，按任意键进入uboot指令模式；
+      2. 输入如下指令：
+
+         .. code-block:: bash
+
+            setenv serverip 192.168.150.2
+            setenv ipaddr 192.168.150.1
+            setenv gatewayip 192.168.150.2
+            setenv update_all 0
+            setenv reset_after 1
+            tftp 0x310000000 boot.scr
+            source 0x310000000
+            set netretry yes
+
+         .. warning::
+            指令中的serverip为tftp服务器地址，ipaddr为盒子的ip地址，gatewayip为网关地址，需要根据实际情况进行调整； 在window使用场景下，通常是使用盒子的lan口和PC端进行连接，此时serverip和gatewayip是相同的； 用户可以在执行tftp指令之前先ping一下serverip，确认一下连接状态。
+
+      3. 随后开始刷机，您会看到#号表示的进度。
+      4. 由于通过指令配置了环境变量 reset_after 1 ，在刷机完成后系统将会重新启动。同时，指令 set netretry yes 将传输超时后进行重试，而非直接重新启动设备。需要注意的是，如果刷机失败，系统同样会自动重启。请根据执行结束后的提示来判断刷机是否成功完成。
+
+文件替换
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   文件替换均在Ubuntu系统下执行，您可以选择使用串口或SSH终端。需要替换的内容包括内核镜像、flash固件、TPU驱动和SophonSDK运行时环境等。
+
+   1. 首先下载更新版本的SophonSDK压缩包，获取``sophon-img_<date>_<hash>`` 文件夹下的bsp_update.tgz和system.tgz压缩包。
+      其中bsp_update.tgz主要包含升级脚本（bsp_update.sh）及内核镜像（emmcboot.itb）等内容，解压后的文件如下：
 
          .. image:: ./_static/image94.jpg
 
 
-2. 将两个压缩包拷贝到模组的某一路径如家目录（/home/linaro）下，解压bsp_update.tgz压缩包并进入解压后的目录，执行bsp_update.sh升级脚本。可使用如下命令：
+   2. 将两个压缩包拷贝到模组的某一路径如家目录（/home/linaro）下，解压bsp_update.tgz压缩包并进入解压后的目录，执行bsp_update.sh升级脚本。该步骤会替换boot分区的内核镜像、flash固件，并替换TPU控制模块固件，可使用如下命令：
 
-   .. code-block:: bash
+      .. code-block:: bash
 
-      tar zxvf bsp_update.tgz
-      cd bsp_update
-      sudo ./bsp_update.sh
-
-
-3. 回退至system.tgz所在目录，执行如下命令将system.tgz中的内容解压至/opt/sophon/libsophon-0.5.0目录下：
-
-   .. code-block:: bash
-
-      sudo tar xzf system.tgz -C /opt/sophon/libsophon-0.5.0
-      sudo sync
+         tar zxvf bsp_update.tgz
+         cd bsp_update
+         sudo ./bsp_update.sh
 
 
-4. 关机重启检查是否升级成功（可以通过bm_version查看kernel版本及libsophon的版本信息）。以下为升级前后的对比示例：
+   3. 替换SophonSDK运行时环境。SophonSDK运行时环境位于/opt目录下，回退至system.tgz所在目录，执行如下命令将system.tgz中的内容解压至/opt/sophon/libsophon-current目录下：
 
-   .. image:: ./_static/image95.jpg
+      .. code-block:: bash
 
-   .. image:: ./_static/image96.jpg
-
-
-5. 如有内核开发的需求，需要升级内核开发软件包。同理，从对应版本的SophonSDK压缩包中获取bsp-debs将其拷贝至家目录（/home/linaro）下并在bsp-debs下创建linux-headers-install.sh脚本，脚本内容如下：
-
-   .. code-block:: bash
-
-      #!/bin/bash
-
-      cur_ver=$(uname -r)
-      echo ${cur_ver}
-      sudo mkdir -p /lib/modules/${cur_ver}
-      if [ -e /home/linaro/bsp-debs/linux-headers-${cur_ver}.deb ]; then
-            if [ -d /lib/modules/${cur_ver} ]; then
-                     sudo dpkg -i /home/linaro/bsp-debs/linux-headers-${cur_ver}.deb
-                     sudo mkdir -p /usr/src/linux-headers-${cur_ver}/tools/include/tools
-                     sudo cp /home/linaro/bsp-debs/*.h  /usr/src/linux-headers-${cur_ver}/tools/include/tools
-                     cd /usr/src/linux-headers-${cur_ver}
-                     sudo make prepare0
-                     sudo make scripts
-            else
-                     echo "/lib/modules not match"
-            fi
-      else
-            echo "linux header deb not match"
-      fi
-
-   如果遇到linux-headers-install.sh没有执行权限，使用如下命令增加权限：
-
-   .. code-block:: bash
-
-      chmod +x linux-headers-install.sh.sh
-
-   若脚本执行过程中出现缺少flex等错误，可执行如下命令安装相关环境：
-
-   .. code-block:: bash
-
-      sudo apt install flex bison libssl-dev
+         sudo tar xzf system.tgz -C /opt/sophon/libsophon-current
+         sudo sync
 
 
+   4. 关机重启检查是否升级成功（可以通过bm_version查看kernel版本及libsophon的版本信息）。以下为升级前后的对比示例：
 
-|image11|\ 替换MCU固件：核心板上有一颗MCU负责 |Product| 的上电时序等重要工作，它的固件只能通过下面的命令升级，不能通过SD卡升级。这颗MCU的固件如果烧写错误，会造成 |Product| 无法上电，此时就只能通过专用的烧写器进行修复了，因此请谨慎操作，通常也并不需要对它进行升级。命令：sudo
-mcu-util-aarch64 upgrade 1 0x17 bm1686evb-mcu.bin。升级完成后请执行sudo
-poweroff，待关机动作完成后（串口会打印NOTICE: CPU0
-bm_system_off，并且盒子的风扇声音会突然变大）对盒子进行断电后重新上电。
+      .. image:: ./_static/image95.jpg
+
+      .. image:: ./_static/image96.jpg
+
+
+   5. 如有内核开发的需求，需要升级内核开发软件包。同理，从对应版本的SophonSDK压缩包中获取bsp-debs将其拷贝至家目录（/home/linaro）下并在bsp-debs下创建linux-headers-install.sh脚本，脚本内容如下：
+
+      .. code-block:: bash
+
+         #!/bin/bash
+
+         cur_ver=$(uname -r)
+         echo ${cur_ver}
+         sudo mkdir -p /lib/modules/${cur_ver}
+         if [ -e /home/linaro/bsp-debs/linux-headers-${cur_ver}.deb ]; then
+               if [ -d /lib/modules/${cur_ver} ]; then
+                        sudo dpkg -i /home/linaro/bsp-debs/linux-headers-${cur_ver}.deb
+                        sudo mkdir -p /usr/src/linux-headers-${cur_ver}/tools/include/tools
+                        sudo cp /home/linaro/bsp-debs/*.h  /usr/src/linux-headers-${cur_ver}/tools/include/tools
+                        cd /usr/src/linux-headers-${cur_ver}
+                        sudo make prepare0
+                        sudo make scripts
+               else
+                        echo "/lib/modules not match"
+               fi
+         else
+               echo "linux header deb not match"
+         fi
+
+      如果遇到linux-headers-install.sh没有执行权限，使用如下命令增加权限：
+
+      .. code-block:: bash
+
+         chmod +x linux-headers-install.sh.sh
+
+      若脚本执行过程中出现缺少flex等错误，可执行如下命令安装相关环境：
+
+      .. code-block:: bash
+
+         sudo apt install flex bison libssl-dev
+
+   6. 替换libsophon和sophon-mw相关deb包。将相关包放置在当前工作目录，通过以下命令逐个安装。其中x.y.z为要安装的版本号，arch为目标平台架构（x86_64平台对应amd64，arm平台对应aarch64），请根据实际版本和架构进行替换。
+
+      .. code-block:: bash
+
+         sudo dpkg -i sophon-mw-soc-sophon-ffmpeg_x.y.z_arch.deb
+         sudo dpkg -i sophon-mw-soc-sophon-ffmpeg-dev_x.y.z_arch.deb
+         sudo dpkg -i sophon-mw-soc-sophon-opencv_x.y.z_arch.deb
+         sudo dpkg -i sophon-mw-soc-sophon-opencv-dev_x.y.z_arch.deb
+         sudo dpkg -i sophon-soc-libsophon_x.y.z_arch.deb
+         sudo dpkg -i sophon-soc-libsophon-dev_x.y.z_arch.deb
+
+   .. warning::
+
+      完成上述文件操作后不要直接断电，否则可能会有文件损坏，请执行sync、sudo reboot、sudo poweroff等动作。\ |image10|
+
+在线刷机
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   使用条件
+
+   1. 准备sd卡卡刷包，且sd卡卡刷包可以正常刷机并启动新的系统
+   2. 在执行刷机脚本前，emmc上最后一个分区（通常是data分区）需要有（刷机包大小+100MB）的空闲空间
+   3. 系统中需要有如下命令：``systemd``\ 、\ ``systemd-run``\ 、\ ``tee``\ 、\ ``exec``\ 、\ ``echo``\ 、\ ``bc``\ 、\ ``gdisk``\ 、\ ``mkimage``\ 、\ ``awk``\ 、\ ``sed``\ 、\ ``tr``\ 、\ ``gzip``\ 、\ ``dd``\ 、\ ``sgdisk``\ 、\ ``fdisk``
+
+   使用流程
+
+   1. 将sd卡卡刷包拷贝到设备上并解压
+   2. 检查刷机包中是否有ota_update.sh脚本。如果没有，则推荐其他方案，或联系算能技术人员
+   3. 检查目录格式是否类似如下
+
+      .. code-block:: bash
+
+         linaro@bm1684:/xxxxx$ ls
+         BOOT                boot_emmc-opt.scr        data.12-of-58.gz  data.25-of-58.gz  data.38-of-58.gz  data.50-of-58.gz  gpt.gz              rootfs.12-of-32.gz  rootfs.25-of-32.gz  rootfs.9-of-32.gz
+         boot.1-of-2.gz      boot_emmc-recovery.cmd   data.13-of-58.gz  data.26-of-58.gz  data.39-of-58.gz  data.51-of-58.gz  md5.txt             rootfs.13-of-32.gz  rootfs.26-of-32.gz  rootfs_rw.1-of-2.gz
+         boot.2-of-2.gz      boot_emmc-recovery.scr   data.14-of-58.gz  data.27-of-58.gz  data.4-of-58.gz   data.52-of-58.gz  misc.1-of-1.gz      rootfs.14-of-32.gz  rootfs.27-of-32.gz  rootfs_rw.2-of-2.gz
+         ota_update.sh       ...
+
+   4. 尽可能得关闭业务，尤其是占用最后一个分区的业务或服务。并保存工作文件，OTA服务准备完成后会自动重启设备。
+   5. 以root账户身份执行ota_update.sh脚本，比如命令 ``sudo bash ota_update.sh``，默认情况下OTA服务会保留最后一个分区（data分区）不烧录，如果当前设备和刷机包不满足这个条件，会报错 ``[OTA PANIC] LAST_PART_NOT_FLASH mode, check last part start XXX != XXX``。如果**需要烧录data分区**，需要增加**一个参数说明不需要保留最后一个分区**：``sudo bash ota_update.sh LAST_PART_NOT_FLASH=0``
+
+      .. code-block:: bash
+
+         linaro@bm1684:/xxxxx$ sudo bash ota_update.sh 
+         Running as unit: sophon-ota-update.service
+         Unit sophon-ota-update.service could not be found.
+         [INFO] ota server started, check status use: "systemctl status sophon-ota-update.service --no-page -l"
+         [INFO] server log file: /dev/shm/ota_shell.sh.log
+         [INFO] if ota success, file /dev/shm/ota_success_flag will be created
+         [INFO] else if ota error, file /dev/shm/ota_error_flag will be created
+         [INFO] please wait file /dev/shm/ota_success_flag or /dev/shm/ota_error_flag
+         [WARRNING] ota server will resize last partition on emmc, if error, please check emmc partitions
+         [WARRNING] ota server will stop docker server and all program on last partition
+
+   6. 第五步执行完毕后会直接退出，此时后台会自动启动OTA准备服务。如果OTA准备服务完成，则设备会自动重启。如果文件 ``/dev/shm/ota_error_flag`` 被创建或者有 ``[OTA PANIC]`` 相关的全局广播，则代表发生错误。如下是OTA服务准备过程中的一些信息：
+
+      1. OTA服务的日志会存放到 ``/dev/shm/ota_shell.sh.log`` 中，日志文件会有所有的log，可以用命令 ``sudo tail -f /dev/shm/ota_shell.sh.log`` 监控该文件的最新变更
+      2. OTA服务会停止docker服务
+      3. OTA服务会杀死所有依赖最后一个分区的进程，所以当前终端被杀死是有概率发生的
+      4. 如果文件 ``/dev/shm/ota_error_flag`` 被创建或者有 ``[OTA PANIC]`` 相关的全局广播，需要检查emmc上分区表和最后一个分区的数据是否完整。然后检查 ``/dev/shm/ota_shell.sh.log`` 文件中的报错信息。
+      5. 如果想要中断OTA准备服务，需要执行 ``sudo systemctl stop sophon-ota-update.service``
+      6. OTA准备服务可能会修改刷机包中的 ``gpt.gz`` 文件，用于与设备对齐末尾分区偏移和大小，服务在准备完毕后会自动恢复该文件
+
+   7. 设备重启后会开始OTA刷机过程，刷机期间ota程序会尝试驱动bootloader阶段注册的led灯（status灯和error灯），功能如下：
+
+      1. 在SE5/7上，status灯大多数情况是绿色的，error灯则是其他颜色。并且系统正常启动后长亮的那个是status灯，可以根据这个确定灯的名称
+      2. 正常刷机状态下为status灯灭，error灯亮
+      3. 正常刷机状态下每烧录一个包，error灯会快速地连续闪烁3次
+      4. 刷机过程全部完成后status灯亮，error灯灭
+      5. 刷机出现错误后会按照如下顺序报错：两个灯都灭2s，status灯闪烁一次，error灯闪烁n次，status灯闪烁一次。如果error灯闪烁n次，则对应如下错误：
+
+         1. n=1 从emmc加载刷机脚本错误
+         2. n=2 从emmc加载刷机脚本的格式校验错误
+         3. n=3 fip文件烧录错误
+         4. n=4 从emmc加载刷机包数据错误
+         5. n=5 将数据包解压错误
+         6. n=6 将解压后的数据写入emmc中错误
+
+   8. 刷机完成后设备会再次自动重启，重启后即进入刷机后第一次正常启动的状态。
+
+.. note::
+
+   ota_update工程可以参考\ https://github.com/sophgo/sophon-tools/tree/main/source/pota_update \。
+
+MCU固件在线升级
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   |image11|\ 替换MCU固件：核心板上有一颗MCU负责 |Product| 的上电时序等重要工作，它的固件只能通过下面的命令升级，不能通过SD卡升级。这颗MCU的固件如果烧写错误，会造成 |Product| 无法上电，此时就只能通过专用的烧写器进行修复了，因此请谨慎操作，通常也并不需要对它进行升级。命令：sudo mcu-util-aarch64 upgrade 1 0x17 bm1686evb-mcu.bin。升级完成后请执行sudo poweroff，待关机动作完成后（串口会打印NOTICE: CPU0 bm_system_off，并且盒子的风扇声音会突然变大）对盒子进行断电后重新上电。
 
 系统软件构成
 ================
@@ -445,7 +639,7 @@ poweroff命令，避免暴力下电关机，以免数据丢失。
 修改SN和MAC地址
 -------------------
 
-|Product| 的SN和MAC地址存放在MCU的EEPROM中，你可以通过如下方式进行修改。
+|Product| 的SN和MAC地址存放在MCU的EEPROM中，可以通过如下方式进行修改。
 
 首先需要解锁MCU EEPROM：
 
@@ -643,10 +837,10 @@ sysfs、procfs节点，或top等工具读取。以下仅介绍 |Product| 特有�
       coretemperature: 41
       ------------------------------------------------------------------------
 
-读取BM1684X片上温度
+读取设备温度
 -----------------------
 
-命令：
+读取片上温度：
 
    .. code-block:: bash
 
@@ -662,9 +856,9 @@ sysfs、procfs节点，或top等工具读取。以下仅介绍 |Product| 特有�
 
 Linux的thermal框架会使用这个温度做管理：
 
-1. 普通版模组：当温度升到85度时，NPU频率会降到75%，CPU降频到1.15GHz；当温度回落到80度时，NPU频率会恢复到100%，CPU频率恢复到2.3GHz；当温度升到90度时，NPU频率会降到最低挡位；当温度升到95度时，会自动关机。
+1. 普通版模组：当温度升到85度时，NPU频率会降到初始频率的75%，CPU降频到1.15GHz；当温度回落到80度时，NPU频率会恢复到初始频率，CPU频率恢复到2.3GHz；当温度升到90度时，NPU频率会降到最低挡位(25MHz)；当温度升到95度时，会自动关机。
 
-2. 宽温版模组：当温度升到95度时，NPU频率会降到75%，CPU降频到1.15GHz；当温度回落到90度时，NPU频率会恢复到100%，CPU频率恢复到2.3GHz；当温度升到105度时，NPU频率会降到最低挡位；当温度升到110度时，会自动关机。
+2. 宽温版模组：当温度升到95度时，NPU频率会降到初始频率的75%，CPU降频到1.15GHz；当温度回落到90度时，NPU频率会恢复到初始频率，CPU频率恢复到2.3GHz；当温度升到105度时，NPU频率会降到最低挡位(25MHz)；当温度升到110度时，会自动关机。
 
 另外，片外的MCU也会使用这个温度来做最后的保险机制：
 
@@ -672,10 +866,7 @@ Linux的thermal框架会使用这个温度做管理：
 
 2. 宽温版模组：片上结温大于120度时强制关机。
 
-读取核心板温度
-------------------
-
-命令：
+读取核心板温度：
 
    .. code-block:: bash
 
@@ -690,6 +881,14 @@ Linux的thermal框架会使用这个温度做管理：
 即37.375摄氏度。
 
 核心板温度通常会比前面读取的片上结温内部温度低。
+
+也可以通过
+
+   .. code-block:: bash
+
+      bm_get_temperature
+
+同时获取片上温度和核心板温度。
 
 读取功耗信息
 ----------------
@@ -719,7 +918,7 @@ Linux的thermal框架会使用这个温度做管理：
 
 第一组信息为npu，第二组信息为cpu等。
 
-pmbus 读取的是给npu和cpu供电的传感器的温度，所以更接近核心板温度，如果需要读取温度相关，请参考4.2和4.3。
+pmbus 读取的是给npu和cpu供电的电源芯片的温度，所以更接近核心板温度，如果需要读取温度相关，请参考6.2。
 
 当使用BM1684设备时，命令如下：
 
@@ -731,8 +930,9 @@ pmbus 读取的是给npu和cpu供电的传感器的温度，所以更接近核�
 
 使用GPIO
 ------------
+.. TODO: 补充I2C GPIO使用说明
 
-BM1684X 包含3组GPIO控制器，每个控制32根GPIO，与Linux的设备节点对应如下：
+BM1684X 包含3组GPIO控制器，每个控制32个GPIO，与Linux的设备节点对应如下：
 
 +----------+----------------------+------------+----------------------+
 | GPIO     | Linux设备节点        | GPIO       | GPIO逻辑编号         |
@@ -757,13 +957,48 @@ BM1684X 包含3组GPIO控制器，每个控制32根GPIO，与Linux的设备节�
 
 然后就可以按照标准方式操作/sys/class/gpio/gpio509下的节点了。
 
-请注意，由于pin是复用的，并不是全部96根GPIO都可以使用，请与硬件设计结合确认。
+请注意，由于pin是复用的，并不是全部96个GPIO都可以使用，请与硬件设计结合确认。此外，还需注意设备是否使用了IIC扩展GPIO，如有，则GPIO的逻辑编号可能会有调整，可以通过如下命令确定GPIO逻辑编号的范围：
+
+   .. code-block:: bash
+
+      sudo cat /sys/kernel/debug/gpio
 
 使用UART
 ------------
 
 |Product| 的144pin
-BTB接口上提供了3组UART，其中UART0已用作bootloader和Linux的console端口。
+BTB接口上提供了3组UART（UART0、UART1、UART2），其中UART0已用作bootloader和Linux的console端口，
+对应操作系统设备节点/dev/ttyS0，剩余两个UART（对应/dev/ttyS1和/dev/ttyS2）依具体产品设计，
+一般会引出为RS232或RS485等接口，接口与设备节点的对应关系以具体的产品手册为准。
+
+以UART1为例，在Linux操作系统上，可以通过读写设备节点/dev/ttyS1来进行数据的收发。进行收发前需要通过
+stty命令设置通信的参数，以波特率115200、数据位8位、停止位1位、无奇偶校验、关闭流控，同时关闭几乎所有tty
+对输入输出的额外处理，仅保留最基本的数据收发功能为例，配置的命令如下：
+
+   .. code-block:: bash
+
+      sudo -i  # 切换到root权限
+      stty -F /dev/ttyS1 raw 115200 -echo -onlcr  # 配置ttyS1
+      stty -F /dev/ttyS1 -a  # 显示所有配置项
+
+以上最后一行命令会显示/dev/ttyS1的所有配置项，以横杠开头的功能表示关闭，否则表示打开。
+确认配置无误后，即可使用以下命令进行数据收发测试（没有严格的执行顺序要求）：
+
+   .. code-block:: bash
+
+      sudo -i  # 切换到root权限
+      echo "hello world" > /dev/ttyS1  # 发送ASCII字符串（带换行符）
+      echo "01020304deadbeef" | xxd -p -r > /dev/ttyS1  # 发送十六进制表示的8个字节数据
+      dd if=/dev/ttyS1 of=recv.bin bs=1 count=10  # 等待接收10个字节，存储到recv.bin文件
+      xxd recv.bin  # 以十六进制格式显示recv.bin的内容
+      cat /dev/ttyS1  # 持续等待接收文本行，每接收一行（以换行符分割）更新一次显示
+      xxd -c 4 /dev/ttyS1  # 持续等待接收十六进制数据，每接收4个字节更新一次显示
+
+测试时，如果发现收发数据不一致，建议测量两端设备的电平标准，确保一致。通常PC的UART模块采用TTL电平，即逻辑0对应0V，逻辑1对应3.3V，
+RS232的逻辑1电平为-3V到-15V，逻辑0电平为+3到+15V，而RS485则是差分电压。此外，要注意一端的TX要连接另一端的RX，同理RX应当连接另一端的TX，
+另外两端的地也要连接在一起以确保共地。
+
+TTL和RS232电平可以直接将设备的TX与RX短接，形成本地回环，以测试软件的收发功能是否正常（RS485则不能）。
 
 使用I2C
 -----------
@@ -848,7 +1083,7 @@ BM1684X 板载了16GB DDR，可以分为三类：
 
 1. kernel管理的部分，即可以用malloc、kmalloc等常规API分配出来使用。
 
-2. ION管理的部分，预留给NPU、VPU、VPP使用，需要使用ION的ionctl接口，或使用bmnnsdk2中bmlib库提供的接口分配出来使用。
+2. ION管理的部分，预留给NPU、VPU、VPP使用，需要使用ION的ionctl接口，或使用bmlib库提供的接口分配出来使用。
 
 3. 预留给固件的部分，用户无法使用。
 
@@ -892,15 +1127,87 @@ BM1684X 板载了16GB DDR，可以分为三类：
 ============
 
 因为 |Product| 的底板可以由您自行设计，我们提供了一个BSP SDK以便您对内核和Ubuntu
-20.04系统进行定制，然后生成自己的SD卡或tftp刷机包。由于从V22.09.02开始我们修改了bootloader的代码，导致无法使用tftp从3.0.0及以前的版本升级到V22.09.02及以后的版本，这种情况下请使用SD卡刷机升级。因为 |Product| 核心板是制成品，故bootloader并未开放，如果需要定制请联系技术支持。
+20.04系统进行定制，然后生成自己的SD卡或tftp刷机包。由于从V22.09.02开始我们修改了bootloader的代码，导致无法使用tftp从3.0.0及以前的版本升级到V22.09.02及以后的版本，这种情况下请使用SD卡刷机升级。
 
 如果您只是希望部署自己的业务软件，并不涉及硬件修改，那么出于解耦的考虑，更推荐您把自己的业务软件打包成一个deb安装包。比如包含您的业务软件执行程序、依赖库、开机自启动服务等等，deb安装包里还可以放一个安装时自动执行的脚本，在安装时做一些配置文件修改替换之类的操作。这样您可以单独安装、卸载、升级您的业务软件，避免与我们系统包版本的依赖问题，对产品部署后的批量更新等操作也更友好。deb安装包的制作可以参考Debian\ `官方文档 <https://wiki.debian.org/Packaging/Intro>`__\ ，或其他网上资料。
 
-文件结构
-------------
+基于打包工具自定义刷机包
+----------------------------
+
+如果已经在设备上部署好业务软件并期望批量对其他设备进行部署，可以使用 `socbak` 工具在设备端进行打包操作，生成的刷机包可以用于其他同类设备。仓库链接：https://github.com/sophgo/sophon-tools
+
+最新版本可以从网址：https://github.com/sophgo/sophon-tools/releases/latest 位置下载
+
+如下是使用说明：
+
+1. 确定使用条件
+
+   1. 芯片：BM1684、BM1684X
+   2. SDK版本： `v23.03.01` 之后版本
+   3. 外置存储分区格式尽量保证ext4，且可用空间至少是当前emmc使用总量的2.5倍以上
+
+2. 将外置存储插入目标设备，然后执行如下操作
+
+   .. code-block:: bash
+
+      sudo su
+      cd /
+      mkdir socrepack
+      # 这一步需要根据你的外置存储选择挂载设备路径，但是目标路径必须是/socrepack
+      mount /dev/sda1 /socrepack
+      chmod 777 /socrepack
+      cd /socrepack
+
+3. 然后将从GitHub上下载的 `socbak.zip` 传输到 `/socrepack` 目录下，执行如下命令进行打包
+
+   .. code-block:: bash
+
+      unzip socbak.zip
+      cd socbak
+      export SOC_BAK_ALL_IN_ONE=1
+      sudo -E bash socbak.sh
+
+4. 等待一段时间，执行成功后会生成如下文件
+
+   .. code-block:: bash
+
+      root@sophon:/socrepack/socbak# tree -L 1
+      .
+      ├── binTools
+      ├── output
+      ├── script
+      ├── socbak.sh
+      ├── socbak_log.log
+      └── socbak_md5.txt
+
+      3 directories, 3 files
+
+5. 新的刷机包在 `output/sdcard` 目录下
+
+基于源码自定义刷机包
+------------------------------------------------
+
+获取源码
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. bootloader-arm64仓库 https://github.com/sophgo/bootloader-arm64 编译刷机包的流程文件、ATF源码、UBOOT源码
+2. linux-kernel源码仓库 https://github.com/sophgo/linux-arm64 编译刷机包使用的kernel源码
+3. libsophon源码仓库 https://github.com/sophgo/libsophon 编译刷机包中算法加速驱动和中间件源码
+4. mcu源码仓库 https://github.com/sophgo/mcu 核心板MCU固件源码
+5. BSP_SDK二进制文件，该包中包含了ubuntu系统底包、交叉编译工具链等二进制文件，使用dfss工具下载
+
+   .. code-block:: bash
+
+      pip3 install dfss --upgrade
+      python3 -m dfss --url=open@sophgo.com:/sophon-bsp/BSP_SDK.zip
+
+需要注意的是如果基于v23.09 LTS版本进行修改，需要将bootloader-arm64、linux-arm64及libsophon仓库切换至v23.09-LTS分支。
+
+源码目录结构
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 BSP
-SDK包含两部分：一部分为github网站（https://github.com/sophgo）上发布的源码文件，bootloarder-arm64和linux-arm64；另一部分基本不会改动的二进制文件，为避免影响git效率，是通过NAS发布的。请参考bootloarder-arm64源码文件的README中的描述将两部分合并，将看到如下文件：
+SDK包含两部分：一部分为github网站（https://github.com/sophgo）上发布的源码文件，bootloarder-arm64、linux-arm64和libsophon等；另一部分基本不会改动的二进制文件，为避免影响git效率，是通过NAS发布的。请参考bootloarder-arm64仓库README中的描述准备编译环境，正确的目录结构如下：
 
    ::
 
@@ -916,91 +1223,90 @@ SDK包含两部分：一部分为github网站（https://github.com/sophgo）上�
       ├── distro
       │   └── distro_focal.tgz → Ubuntu 20.04的原始底包
       ├── gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu → 交叉编译工具链
+      ├── libsophon
       └── linux-arm64 → kernel源代码
 
-
 交叉编译
-------------
+~~~~~~~~~~~~~~~~~~~~
 
-推荐在Ubuntu
-20.04系统下进行交叉编译，不支持X86_64以外的架构。请预留至少10GB空闲磁盘空间，并请先安装必要的一些工具：
+推荐在Ubuntu 20.04系统下进行交叉编译，不支持X86_64以外的架构。请预留至少10GB空闲磁盘空间，并请先安装必要的一些工具：
 
 ..
 
    .. code-block:: bash
 
-      sudo apt install cmake libssl-dev fakeroot dpkg-dev device-tree-compiler u-boot-tools
+      sudo apt install bison flex bc rsync kmod cpio sudo \
+                      uuid-dev cmake libssl-dev fakeroot \
+                      dpkg-dev device-tree-compiler u-boot-tools \
+                      uuid-dev libxml2-dev debootstrap \
+                      qemu-user-static kpartx
 
 ..
 
-进入到BSP SDK后，执行如下命令即可编译出SD卡和tftp刷机用的刷机包：
+准备好编译环境后，执行如下命令即可编译出完整的刷机包：
 
-   .. code-block:: bash
+1. 执行 `source bootloader-arm64/scripts/envsetup.sh`
+2. 执行 `build_bsp_without_package` 命令编译fip、uboot、kernel以及一些相关deb包，并且准备好打包刷机包的环境
+3. 拷贝 `sophon-soc-libsophon*.deb` 、 `sophon-mw-soc-sophon-ffmpeg*.deb` 和 `sophon-mw-soc-sophon-opencv*.deb` 这些中间件包到 `install/soc_bm1684/bsp-debs` 下
 
-      source bootloader-arm64/scripts/envsetup.sh
-      build_bsp
-      # build_update tftp 必须在 build_bsp之后执行
-      build_update tftp
+   1. `sophon-soc-libsophon*.deb` 是tpu驱动和runtime包，需要编译kernel生成的headers文件+libsophon源码进行编译出包(编译方法见libsophon仓库readme)
+   2. `sophon-mw-soc-sophon-ffmpeg*.deb` 和 `sophon-mw-soc-sophon-opencv*.deb` 是多媒体相关的runtime包，由于只依赖系统，所以可以选择与SophonSDK版本对应的版本，无需重新编译。可以从解压后的SophonSDK包中的 ``sophon-img_<date>_<hash>/bsp-debs`` 目录获取
 
-因为脚本中使用了sudo，编译过程中可能会提示您输入当前用户密码。第一次编译时可能遇到各种问题，如结果不符合预期，请仔细检查编译log，如果有遇到提示某某工具找不到的话，用apt
-install安装即可。
+4. 执行 `build_package` 命令打包刷机包，执行成功后会在 `install/soc_bm1684/bsp-debs` 下生成sdcard目录和tftp目录，对应sd卡刷机包和tftp刷机包
 
 编译结果在install/soc_bm1684目录下，重点有如下几个文件（夹）：
 
    ::
 
-      sdcard → SD卡刷机包，请参阅2.2节的使用说明a；
+      sdcard → SD卡刷机包，请参阅4.2节的使用说明a；
 
-      tftp → tftp刷机包，请参阅算能官方网站文档中心的Sophon设备和SDK使用
-      常见问题及解答相关章节的使用说明；
+      tftp → tftp刷机包，请参阅4.2节的使用说明b；
 
-      emmcboot.itb → kernel和ramdisk、dtb打包在一起，请参阅2.2节的使用说明b；
+      emmcboot.itb → kernel和ramdisk、dtb打包在一起，请参阅4.2节的使用说明c；
 
-      spi_flash.bin → bootloader，请参阅2.2节的使用说明b；
+      spi_flash.bin → bootloader；
 
       rootfs → 根文件系统内容；
 
-如果只是想更新内核的话，可以用如下命令：
+编译流程解析
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-   .. code-block:: bash
+   .. image:: ./_static/image97.png
+      :width: 8in
+      :height: 3in
 
-      build_kernel
-      build_ramdisk uclibc emmc
+上图为刷机包编译流程的图形化说明，整体流程如下：
 
-即可得到新的emmcboot.itb。不建议您直接到linux-arm64目录下手敲make，除非您非常清楚如何操作。
+1. 编译uboot
+2. 编译tfa
+3. 编译spi_flash生成工具
+4. 使用uboot固件和tfa固件生成flash固件
+5. 编译kernel
+6. 编译ramdisk
 
-内核的编译结果在如下路径：
+   1. 编译emmc启动ramdisk
+   2. 编译恢复模式remdisk
 
-   ::
+7. 生成emmc上boot分区内容
+8. 编译相关deb包
+9. 生成根文件系统（使用qemu）
+10. 生成其他分区压缩包
+11. 生成sd卡刷机包
+12. 生成tgz升级补丁包
+13. 生成tftp刷机包
 
-      linux-arm64/build/bm1684/normal
-
-编译出的ko可以在如下路径找到：
-
-   ::
-
-      linux-arm64/build/bm1684/normal/modules/lib/modules/5.4.202-bm1684/kernel
-
-两个路径下的内容是一样的，默认已经打进刷机包。
-
-编译出的linux-header安装包（用于在板卡上编译kernel
-module）可以在如下路径找到：
-
-   ::
-
-      linux-arm64/build/bm1684/normal/debs
-
-默认已经打进刷机包，即板卡上的/home/linaro/bsp-debs目录。
+源码修改说明
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 修改kernel
---------------
+:::::::::::::::::::::::::::::::::::::::::::::
 
 kernel的配置文件在：
 
    linux-arm64/arch/arm64/configs/bitmain_bm1684_normal_defconfig
 
 请注意修改kernel
-config可能会造成您的kernel与我们通过二进制发布的驱动文件（板上/opt/sophon/libsophon-current/data/下的bmtpu.ko、vpu.ko、jpu.ko）无法兼容。
+config可能会造成您的kernel与我们通过二进制发布的驱动文件（板上/opt/sophon/libsophon-current/data/下的bmtpu.ko、vpu.ko、jpu.ko）无法兼容，因此在重新编译内核后请参考libsophon仓库的说明重新编译得到 `sophon-soc-libsophon*.deb` 并进行替换。
 
 标准版 |Product| 使用的设备树文件在：
 
@@ -1018,7 +1324,7 @@ tree的修改。请替换到板卡的/boot目录下并重启即可。
 
 要注意的是，如果您把自己的emmcboot.itb部署到了板卡上，可能会造成板卡上预装的内容与您当前的内核镜像版本不一致。如果遇到兼容性问题，请把您编译主机上的install/soc_bm1684/rootfs下的/home/linaro/linux-dev和/lib/module两个目录也一起替换到板卡上即可。使用tftp或SD卡刷机包的话通常不会有这个问题，因为刷机包生成时总是会同步更新这些文件。
 
-如果您使用的是 |Product| 的某种变体，可以通过如下方式找到对应的device tree文件：
+如果您使用的是 |Product| 的其他产品，可以通过如下方式找到对应的device tree源文件：
 
    观察开机后UART log里u-boot打印的日志:
 
@@ -1038,24 +1344,22 @@ tree的修改。请替换到板卡的/boot目录下并重启即可。
          ...
 
    关注 Selecting config 这一行，
-   即可知道这块板子对应的device tree源文件是在linux-arm64/arch/arm64/boot/dts/bitmain/目录下的**bm1684x_evb_v0.0.dts**。
+   即可知道设备对应的device tree源文件为linux-arm64/arch/arm64/boot/dts/bitmain/目录下的 **bm1684x_evb_v0.0.dts**。
 
 修改Ubuntu 20.04
---------------------
+:::::::::::::::::::::::::::::::::::::::::::::
 
 方式一：利用Ubuntu系统源码包进行修改
 
-Ubuntu 20.04系统的生成过程是这样：
+设备使用的Ubuntu 20.04系统的生成过程如下：
 
-1. distro/distro_focal.tgz是Ubuntu官方纯净版底包。
+1. 解压distro/distro_focal.tgz作为底包。
 
 2. bootloader-arm64/distro/overlay下包含了 |Product| 对底包的修改，会覆盖到底包的同名路径。
 
 3. kernel编译的过程中也会把ko等文件更新进去。
 
-4. 如果install/soc_bm1684目录下有system.tgz文件，则刷机包生成过程中会把它作为/system目录下的内容。
-
-5. install/soc_bm1684目录下有data.tgz文件，则刷机包生成过程中会把它作为/data目录下的内容。
+4. install/soc_bm1684目录下有data.tgz文件，则刷机包生成过程中会把它作为/data目录下的内容。
 
 所以您可以在overlay/bm1684加入您自己的改动，比如放入一些工具软件，修改以太网配置文件等等，然后重新生成刷机包。
 
@@ -1124,9 +1428,9 @@ b. 将deb包直接放到bootloader-arm64/distro/sophgo-fs/root/post_install/debs
 
 
 定制化软件包
---------------------
+:::::::::::::::::::::::::::::::::::::::::::::
 
-您可以通过以下操作获取您所需要的特定的软件包:
+如果您只想在既有刷机包的基础上添加/修改一些基础的软件包或文件，没有修改内核等源码的需求，那么可以通过以下操作获取您所需要的刷机包:
 
 1. 从官网获取sdcard.tgz基础软件包。
 
@@ -1164,99 +1468,41 @@ b. 将deb包直接放到bootloader-arm64/distro/sophgo-fs/root/post_install/debs
       build_update sdcard  // 重新编译sdcard刷机包
       build_update tftp    // 重新编译tftp刷机包
 
-如何通过github代码构建安装包
--------------------------------
-
-1.从http://219.142.246.77:65000/sharing/5ajzpas1H下载工具链和Ubuntu base。
-
-2.将它们放在与bootloader-arm64和linux-arm64同一级别的目录下，然后解压缩工具链，不需要解压缩发行版，你将得到以下文件夹：
-
-    .. code-block:: bash
-
-        .
-        ├── bootloader-arm64
-        ├── distro
-        │   └── distro_focal.tgz
-        ├── gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu
-        └── linux-arm64
-
-3.执行以下命令
-
-    .. code-block:: bash
-
-       sudo apt install bison flex bc rsync kmod cpio sudo \
-       uuid-dev cmake libssl-dev fakeroot \
-       dpkg-dev device-tree-compiler u-boot-tools \
-       uuid-dev libxml2-dev debootstrap \
-       qemu-user-static kpartx
-
-4.编译envsetup.sh文件
-
-    .. code-block:: bash
-
-       source bootloader-arm64/scripts/envsetup.sh
-
-5.创建bsp-debs文件包
-
-    .. code-block:: bash
-
-       build_bsp_without_package
-
-6.从源码编译SoC版本。首先您需要编译SoC BSP，请参考BSP的编译指导。
-
-7.在GitHub官网https://github.com/sophgo/libsophon.git下载libsophon，参考BSP的编译指导编译SoC BSP。在SoC模式下编译以获取libsophon*.deb文件包。
-
-8.在https://developer.sophgo.com/site/index/material/all/all.html网站下载SDK，下载多媒体文件多媒体文件sophon-mw-soc-sophon-ffmpeg*.deb ， sophon-mw-soc-sophon-opencv*.deb。
-
-9.拷贝Sophon-soc-lib sophon*.deb、sophon-mw-soc-sophon-ffmpeg*.deb和Sophon-mw-soc-sophon-opencv*.deb 软件包到 soc_bm1684/bsp-debs目录下。
-
-10.执行以下命令，即可得到sdcard刷机包。
-
-    .. code-block:: bash
-
-       build_ package
-
-在 |Product| 上编译内核模块
--------------------------------
-
-您也可以选择直接在 |Product| 板卡上直接编译kernel
-module，可以省去上述搭建交叉编译环境的麻烦。步骤如下：
-
-1. uname
-   -r得到kernel版本号，与/home/linaro/bsp-debs和/lib/modules里面的文件名比较，确保一致
-
-2. 因为kernel在交叉编译环境下做make
-   bindeb-pkg的缺陷，需要再额外做如下处理：
-
-   a. 用date命令检查当前系统时间，如果跟实际时间相差太多，请设置为当前时间，如
-
-      .. code-block:: bash
-
-         sudo date -s "01:01:01 2021-03-01"
-
-   b. 检查是否存在/home/linaro/bsp-debs/install.sh，如果有的话，执行它即可
-
-   c. 如果没有的话，需要手工操作：
-
-      .. code-block:: bash
-
-         sudo dpkg -i /home/linaro/bsp-debs/linux-headers-*.deb
-         sudo mkdir -p /usr/src/linux-headers-$(uname -r)/tools/include/tools
-         sudo cp /home/linaro/linux-dev/*.h /usr/src/linux-headers-$(uname-r)/tools/include/tools
-         cd /usr/src/linux-headers-$(uname -r)
-         sudo apt update
-         sudo apt-get install -y build-essential bc bison flex libssl-dev
-         sudo make scripts
-
-3. 回到您的driver目录，make ko吧
 
 修改分区表
---------------
+:::::::::::::::::::::::::::::::::::::::::::::
 
-|Product| 使用GPT分区表。分区表的配置文件在bootloader-arm64/scripts/partition32G.xml，其中依次描述了每个分区的大小信息。不建议您修改分区的顺序和个数，以及readonly和format属性，以免与其它一些预装脚本中的写法发生冲突。您可以修改每个分区的大小。最后一个分区的大小不需要凑满eMMC实际容量，可以把它设成一个比较小的值，只要足够存放您准备预装的文件（即data.tgz解开后的内容）就可以。刷机后第一次开机时，会有一个脚本将这个分区自动扩大到填满eMMC的全部剩余可用空间。
+|Product| 使用GPT分区表。分区表的配置文件位于bootloader-arm64/scripts/partition32G.xml，文件描述了各个分区的大小等信息。
+
+不建议您修改分区的顺、数量以及readonly和format属性，以免与其它一些预装工具的设定发生冲突。
+
+您可以修改每个分区的大小。最后一个分区的大小不需要凑满eMMC实际容量，可以把它设成一个比较小的值，只要足够存放您准备预装的文件（即data.tgz解压后的内容）即可。
+
+刷机后第一次开机时，resize-helper服务会将自动将最后一个分区大小扩大到填满eMMC的全部剩余可用空间。
+
+内容解析如下：
+
+   .. code-block:: xml
+
+      <physical_partition size_in_kb="20971520">
+            <partition label="BOOT"       size_in_kb="131072"  readonly="false"  format="1" />
+            <partition label="RECOVERY"   size_in_kb="3145728"  readonly="false" format="2" />
+            <partition label="MISC"       size_in_kb="10240"  readonly="false"   format="0" />
+            <partition label="ROOTFS"     size_in_kb="2621440" readonly="true"   format="2" />
+            <partition label="ROOTFS_RW"  size_in_kb="6291456" readonly="false"  format="2" />
+            <partition label="OPT"        size_in_kb="2097152" readonly="false"  format="2" />
+            <partition label="DATA"       size_in_kb="4194304" readonly="false"  format="2" />
+      </physical_partition>
+
+1. 其中第一行代表总分区表大小，对于32GB emmc设备，推荐最大30000000，对于64GB emmc设备，推荐最大55000000
+
+2. 然后修改下面的各个分区大小到目标大小
+
+注： 不要轻易将BOOT分区的大小缩小
+
 
 修改u-boot
---------------
+:::::::::::::::::::::::::::::::::::::::::::::
 
 u-boot的配置文件在：
 
@@ -1279,7 +1525,6 @@ u-boot的配置文件在：
    .. code-block:: bash
 
       build_fip
-
 
 得到新的spi_flash.bin，请将此文件放置到板卡上，参考2.2.b中的方式用flash_update工具更新后重启系统即可。
 
@@ -1306,6 +1551,39 @@ tree，并非kernel使用的device tree：
 
    关注 Selecting config 这一行，
    即可知道这块板子对应的device tree源文件是在u-boot/arch/arm/dts/ 目录下的 **bitmain-bm1684x-evb-v0.0.dts**.
+
+在 |Product| 上编译内核模块
+-------------------------------
+
+您也可以选择直接在 |Product| 板卡上直接编译内核模块。步骤如下：
+
+1. uname
+   -r得到kernel版本号，与/home/linaro/bsp-debs和/lib/modules目录下的文件夹名称比较，确保一致
+
+2. 因为kernel在交叉编译环境下做make
+   bindeb-pkg的缺陷，需要再额外做如下处理：
+
+   a. 用date命令检查当前系统时间，如果跟实际时间相差太多，请设置为当前时间，如
+
+      .. code-block:: bash
+
+         sudo date -s "01:01:01 2021-03-01"
+
+   b. 检查是否存在/home/linaro/bsp-debs/install.sh，如果有的话，执行脚本即可
+
+   c. 如果没有的话，需要手动执行以下命令：
+
+      .. code-block:: bash
+
+         sudo dpkg -i /home/linaro/bsp-debs/linux-headers-*.deb
+         sudo mkdir -p /usr/src/linux-headers-$(uname -r)/tools/include/tools
+         sudo cp /home/linaro/linux-dev/*.h /usr/src/linux-headers-$(uname-r)/tools/include/tools
+         cd /usr/src/linux-headers-$(uname -r)
+         sudo apt update
+         sudo apt-get install -y build-essential bc bison flex libssl-dev
+         sudo make scripts
+
+3. 回到您的driver目录，编译即可
 
 修改板卡预制的内存布局
 -----------------------------
@@ -1681,34 +1959,6 @@ tree，并非kernel使用的device tree：
 
 （2）目前只能对NPU、VPU、VPP三个内存区域进行操作，其中NPU在DDR0上、VPU在DDR1上、VPP在DDR2上。
 
-选择板卡预制的内存布局
------------------------------
-
-BM1684当前默认的内存布局可能不适合部分yolo等较大模型的精度测试，所以我们提供了一种定制的内存布局，让操作系统能够扩大
-使用的内存，方便客户进行精度测试。
-首先需要确认当前板卡使用的pcb_version，可以通过
-
-      .. code-block:: bash
-
-         cat /proc/device-tree/info/file-name
-
-获取当前板卡使用的device-tree的名字，然后打开/boot/multi.its文件，搜索当前板卡的device-tree名字，找到当前device-tree对应
-的fdt-pcb后面的数字，这个数字就是pcb_version号。
-获取到pcb_version号后，可以通过如下方式进行切换内存布局，下述方式以pcb_version为7为例，如果使用其他型号的板卡，请自己将extra-后面的数字换成真正的pcb_verison。
-
-
-      .. code-block:: bash
-
-         sudo apt update
-         sudo apt install u-boot-tools
-         echo "set memory_model 0" > extra-7.cmd
-         mkimage -A arm64 -O linux -T script -C none -a 0 -e 0 -n \
-             "Distro Boot Script" -d extra-7.cmd extra-7.scr
-         sudo cp extra-7.scr /boot
-         sudo reboot
-
-如上会选中u-boot中pcb_version变量为7的板卡的第0个预制的内存布局，如果想要恢复此板卡默认的内存布局，删除/boot/extra-7.scr后重启即可。
-
 1684x kdump-crash使用说明
 -----------------------------
 
@@ -1970,3 +2220,25 @@ BM1684X系列计算模组使用systemd实现核心服务bmrt_setup的开机自�
       WantedBy=multi-user.target
 
 在bmrt_setup.sh脚本中，我们加载了VPU、JPU以及NPU等关键驱动，所以请您把自定义的服务放在这个服务后面执行，或者在您的业务逻辑中等待驱动加载完成（可以使用systemd-analyze plot > boot.svg 生成一张启动详细信息矢量图，然后用图像浏览器或者网页浏览器打开查看所有服务的启动顺序和耗时）。
+
+麒麟系统版本刷机包使用说明
+-----------------------------
+
+.. note::
+
+   SDK压缩包中的麒麟刷机包为试用版，仅供24小时测试验证使用。激活请联系算能销售。
+
+获取和安装方式
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+麒麟版本的刷机包在SDK压缩包中sophon-img/other-rootfs/kylinos目录下，版本为 **KYLIN Embedded Linux V10 (SP1)** 。刷机方式和ubuntu20.04相同，参考上文 **软件安装** 章节。
+
+HDMI页面
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+HDMI页面默认为配网UI，与ubuntu20.04相同。但麒麟版本默认安装了麒麟桌面，执行 **sudo apt install --reinstall lightdm** 并重启设备切换到桌面模式。如果需要关闭，执行 **sudo rm /etc/systemd/system/display-manager.service** 后重启即可
+
+配网方式
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+与ubuntu20.04相比，麒麟系统的网络管理组件是NetworkManager，需要使用nmcli和nmtui工具进行配网

@@ -55,7 +55,7 @@ DEVICE=$(udevadm info --query=path --name=${ROOT_DEVICE} | awk -F'/' '{print $(N
 DEVICE="/dev/${DEVICE}"
 # find the last partition
 # LAST_DEVICE=$(ls ${DEVICE}p* | tail -1)
-LAST_DEVICE=/dev/$(lsblk -o NAME ${DEVICE} | tail -n 1 | sed 's|└─||g')
+LAST_DEVICE=/dev/$(lsblk -l -o NAME ${DEVICE} | tail -n 1)
 PART_ENTRY_NUMBER=$(udevadm info --query=property --name=${LAST_DEVICE} | grep '^ID_PART_ENTRY_NUMBER=' | cut -d'=' -f2)
 
 if [ "$PART_TABLE_TYPE" = "gpt" ]; then

@@ -36,7 +36,35 @@ function invoke_board_setup() {
     test -x "$setup" && "$setup"
 }
 
+monitor_memory() {
+	local THRESHOLD=$((160 * 1024))
+	local avail_mem
+	avail_mem=$(grep MemAvailable /proc/meminfo | awk '{print $2}')
+	if [ "$avail_mem" -le "$THRESHOLD" ]; then
+		local TOP_PID
+		TOP_PID=$(ps aux --sort=-%mem | awk 'NR==2 {print $2}')
+		TOP_CMD=$(ps -p ${TOP_PID} -o cmd=)
+		local LOGFILE="/var/log/mem_monitor.log"
+		local TS
+		TS=$(date '+%Y-%m-%d %H:%M:%S')
+		echo "----------------------------------------" >> "$LOGFILE"
+		echo "[$TS] memory info:" >> "$LOGFILE"
+		ps aux --sort=-%mem | head -n 20 >> "$LOGFILE"
+		cat /proc/meminfo >> "$LOGFILE"
+		kill -9 "$TOP_PID"
+		wall "Warrning: free mem < 160MB, kill (PID: $TOP_PID) (CMD: $TOP_CMD) !"
+		echo "Warrning: free mem < 160MB, kill (PID: $TOP_PID) (CMD: $TOP_CMD) !" >> "$LOGFILE"
+		echo "----------------------------------------" >> "$LOGFILE"
+	fi
+}
+monitor_memory_str=$(declare -f monitor_memory | gzip -c - | base64)
+
 echo load bmrt ko ...
 load_ko
 invoke_board_setup
+
+systemd-run --unit=sophgo-monitor-memory /usr/bin/bash -c \
+"source /dev/stdin <<< \$(echo \"$monitor_memory_str\" | base64 -d | gzip -d -c -); while true; do monitor_memory; sleep 2; done"
+systemctl status sophgo-monitor-memory.service -l --no-page
+
 exit 0
