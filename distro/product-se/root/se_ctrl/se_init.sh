@@ -254,6 +254,8 @@ function se_init()
 				echo "        renderer: networkd" | sudo tee -a  $device_path
 				echo "        ethernets:" | sudo tee -a  $device_path
 				bm_set_ip eth0 $coreip 255.255.255.0 ${core}.200 "8.8.8.8,114.114.114.114"
+				systemctl restart remote-fs.target
+				systemctl restart *.mount
 				# set ntp conf
 				#cp /etc/systemd/timesyncd.conf.bak /etc/systemd/timesyncd.conf
 				exist=$(grep "${core}.200" /etc/systemd/timesyncd.conf | wc -l)

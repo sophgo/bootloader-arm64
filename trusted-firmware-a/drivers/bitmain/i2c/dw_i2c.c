@@ -244,9 +244,6 @@ static int i2c_xfer_finish(struct i2c_regs *i2c_base)
 {
 	ulong start_stop_det;
 
-	/* send stop bit */
-	writel(1 << 9, &i2c_base->ic_cmd_data);
-
 	start_stop_det = get_timer(0);
 
 	while (1) {
@@ -325,6 +322,12 @@ static int designware_i2c_xfer(struct dw_i2c *i2c, struct i2c_msg *msg,
 			}
 		}
 	}
+
+	if (k == 0)
+		return 0;
+
+	/* set stop bit */
+	cmd_buf[k - 1] |= (1 << 9);
 
 	j = 0;
 	wait = 0;

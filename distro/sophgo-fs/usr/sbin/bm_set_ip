@@ -79,13 +79,14 @@ else
 			nmcli con delete "static-${device}"
 		fi
 		nmcli con add type ethernet con-name "static-${device}" ifname ${device} ipv4.method manual ipv4.addresses ${ip}/${shortMask}
-		if [ "$gateway" != "" ] && [ "$device" == "enp3s0" ];then
+		if [ "$gateway" != "" ];then
 			nmcli con modify "static-${device}" ipv4.gateway $gateway
 		fi
 		if [ "$dns" != "" ];then
 			nmcli con modify "static-${device}" ipv4.dns $dns
 		fi
 		nmcli connection modify "static-${device}" connection.autoconnect yes
+		nmcli connection modify "static-${device}" connection.autoconnect-priority 10
 		nmcli con up "static-${device}"
 	else
 		echo "debian"

@@ -241,6 +241,24 @@ void update_registers_for_mcu(void)
 {
 	static struct bm_sc7pro_sbus_regs_t regs;
 	uint8_t remote_temp, local_temp;
+	unsigned char mcu_type = 0;
+	static int skip;
+
+	if (skip == 1) {
+		NOTICE("no need to update registers, skip\n");
+		return;
+	}
+
+	if (bm_get_chip_id() == CHIP_BM1684) {
+		skip = 1;
+		return;
+	}
+
+	i2c_smbus_read_byte(MCU_I2C_DEV, MCU_DEV_ADDR, HW_TYPE_REG, &mcu_type);
+	if (mcu_type == MCU_BM1684X_EVB) {
+		skip = 1;
+		return;
+	}
 
 	regs.reserved_a[0] += 1;
 	if (mmio_read_32(BM1684X_DRIVER_PROBE_FLAG) == 1) {
