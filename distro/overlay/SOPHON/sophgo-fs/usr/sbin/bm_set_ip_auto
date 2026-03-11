@@ -11,7 +11,7 @@ device=$1
 
 is_ubuntu=$(cat /etc/os-release | grep Ubuntu |wc -l)
 is_kylinos=$(cat /etc/os-release | grep kylinos |wc -l)
-
+is_debian=$(cat /etc/os-release | grep Debian |wc -l)
 
 if [ $is_ubuntu -gt 1 ];then
 	echo "ubuntu"
@@ -45,6 +45,36 @@ if [ $is_ubuntu -gt 1 ];then
 	sudo sync
 	sudo netplan apply
 
+elif [ $is_debian -gt 1 ];then
+    echo "debian"
+        device_path="/etc/netplan/01-netcfg.yaml"
+
+        eth_num=$(grep -inr "$device:" $device_path | awk -F : '{print $1}')
+        num=$(($eth_num+5))
+        if [ ! $eth_num = "" ];then
+                for ((i=1; i<=6; i++))
+                do
+                        num=$(($eth_num+$i))
+                        c_str=$(sed -n "${num}p" $device_path | awk -F : '{print$1}')
+                        echo $c_str
+                        if [[ $c_str =~ "dhcp" ]] || [[ $c_str =~ "addresses" ]] || [[ $c_str =~ "gateway4" ]] || [[ $c_str =~ "nameservers" ]] || [[ $c_str =~ "optional" ]];then
+                                d_str="${num}d"
+                        else
+                                break;
+                        fi
+                done
+                echo "$eth_num,$d_str"
+                sudo sed -i "$eth_num,$d_str" $device_path
+ 		sudo sync
+        fi
+        echo "add network config"
+        echo "                ${device}:" | sudo tee -a $device_path
+        echo "                        dhcp4: yes" | sudo tee -a  $device_path
+        echo "                        addresses: []" | sudo tee -a  $device_path
+        echo "                        dhcp-identifier: mac" | sudo tee -a  $device_path
+        echo "                        optional: yes" | sudo tee -a  $device_path
+	sudo sync
+	sudo netplan apply
 
 else
 	if [ $is_kylinos -gt 1 ];then

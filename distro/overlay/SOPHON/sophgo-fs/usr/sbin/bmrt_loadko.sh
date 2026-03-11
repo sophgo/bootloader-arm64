@@ -177,6 +177,64 @@ function load_soph_ldc_ko()
         fi
 }
 
+#####for device SDK ######
+function load_soph_vi_ko()
+{
+        if [ -f /mnt/system/ko/soph_vi.ko ]; then
+        	echo load soph_vi ko ...
+                insmod /mnt/system/ko/soph_vi.ko
+        fi
+}
+
+function load_soph_hdmi_ko()
+{
+        if [ -f /mnt/system/ko/soph_hdmi.ko ]; then
+        	echo load soph_hdmi ko ...
+                insmod /mnt/system/ko/soph_hdmi.ko
+        fi
+}
+
+function load_soph_snsr_i2c_ko()
+{
+        if [ -f /mnt/system/ko/soph_snsr_i2c.ko ]; then
+        	echo load soph_vo ko ...
+                insmod /mnt/system/ko/soph_snsr_i2c.ko
+        fi
+}
+
+function load_soph_vo_ko()
+{
+        if [ -f /mnt/system/ko/soph_vo.ko ]; then
+        	echo load soph_vo ko ...
+                insmod /mnt/system/ko/soph_vo.ko
+        fi
+}
+
+function load_soph_mipi_rx_ko()
+{
+        if [ -f /mnt/system/ko/soph_mipi_rx.ko ]; then
+        	echo load soph_mipi_rx ko ...
+                insmod /mnt/system/ko/soph_mipi_rx.ko
+        fi
+}
+
+function load_soph_rgn_ko()
+{
+        if [ -f /mnt/system/ko/soph_rgn.ko ]; then
+        	echo load soph_rgn ko ...
+                insmod /mnt/system/ko/soph_rgn.ko
+        fi
+}
+
+function load_soph_mipi_tx_ko()
+{
+        if [ -f /mnt/system/ko/soph_mipi_tx.ko ]; then
+        	echo load soph_mipi_tx ko ...
+                insmod /mnt/system/ko/soph_mipi_tx.ko
+        fi
+}
+#####end######
+
 function load_ethernet_ko()
 {
         echo load ethernet ko ...
@@ -272,6 +330,17 @@ load_soph_vpss_ko
 load_soph_dwa_ko
 load_soph_clock_cooling_ko
 load_soph_vc_drv_ko
+####device sdk begin#####
+if [ -d "/opt/sophon/middleware" ]; then
+load_soph_vi_ko
+load_soph_vo_ko
+load_soph_mipi_tx_ko
+load_soph_mipi_rx_ko
+load_soph_hdmi_ko
+load_soph_snsr_i2c_ko
+load_soph_rgn_ko
+fi
+####device sdk end#######
 load_soph_rtc_ko
 load_soph_ive_ko
 echo load bmrt ko ...
@@ -299,6 +368,15 @@ echo "load.sh starting..."
 ./sbin/load.sh -d soph-vpss
 ./sbin/load.sh -d soph_vc_dec
 ./sbin/load.sh -d soph_vc_enc
+if [ -d "/opt/sophon/middleware" ]; then
+./sbin/load.sh -d soph_vi
+./sbin/load.sh -d soph_vo
+./sbin/load.sh -d soph_mipi_rx
+./sbin/load.sh -d soph_mipi_tx
+./sbin/load.sh -d soph_snsr_i2c
+./sbin/load.sh -d soph_hdmi
+./sbin/load.sh -d soph_rgn
+fi
 ./sbin/load.sh -p /dev/dri/ -d card0
 ./sbin/load.sh -d soph-dpu
 ./sbin/load.sh -d soph-dwa
