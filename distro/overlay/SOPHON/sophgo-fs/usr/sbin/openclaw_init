@@ -1,5 +1,4 @@
 #!/bin/bash
-
 set -e
 
 # Paths
@@ -38,6 +37,7 @@ install_openclaw_deb_if_needed() {
     fi
 
     echo_info "OpenClaw package not detected. Installing from $OPENCLAW_DEB ..."
+    sudo sync && echo 1 | sudo tee /proc/sys/vm/drop_caches
     dpkg -i "$OPENCLAW_DEB"
     echo_info "OpenClaw deb installation completed."
 }
