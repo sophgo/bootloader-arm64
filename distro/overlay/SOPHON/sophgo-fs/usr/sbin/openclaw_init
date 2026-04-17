@@ -1,0 +1,378 @@
+#!/bin/bash
+
+set -e
+
+# Paths
+CONF_D_DIR="/etc/nginx/conf.d"
+PROXY_CONF="${CONF_D_DIR}/proxy.conf"
+OPENCLAW_JSON="/root/.openclaw/openclaw.json"
+OPENCLAW_DEB="/home/linaro/bsp-debs/openclaw.deb"
+
+# Color output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+echo_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
+echo_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
+echo_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+
+# Check root
+if [ "$EUID" -ne 0 ]; then
+    echo_error "Please run this script as root or using sudo."
+    exit 1
+fi
+
+# Check and install OpenClaw package from local deb if needed
+install_openclaw_deb_if_needed() {
+    if dpkg -s openclaw &> /dev/null; then
+        echo_info "OpenClaw package is already installed. Skipping local deb installation."
+        return 0
+    fi
+
+    if [ ! -f "$OPENCLAW_DEB" ]; then
+        echo_warn "OpenClaw package not installed, and deb file not found: $OPENCLAW_DEB"
+        echo_warn "Skipping local deb installation."
+        return 0
+    fi
+
+    echo_info "OpenClaw package not detected. Installing from $OPENCLAW_DEB ..."
+    dpkg -i "$OPENCLAW_DEB"
+    echo_info "OpenClaw deb installation completed."
+}
+
+# Check nginx
+if ! command -v nginx &> /dev/null; then
+    echo_error "nginx not found. Please install nginx first."
+    exit 1
+fi
+
+if [ ! -d "$CONF_D_DIR" ]; then
+    echo_error "Directory $CONF_D_DIR does not exist. Please verify nginx installation."
+    exit 1
+fi
+
+# ------------------------------------------------------------
+# Function 1: Configure Nginx reverse proxy (only if proxy.conf does not exist)
+# ------------------------------------------------------------
+configure_nginx_proxy() {
+    if [ -f "$PROXY_CONF" ]; then
+        echo_info "Nginx config file already exists: $PROXY_CONF"
+        echo_info "Skipping Nginx configuration step."
+        return 0
+    fi
+
+    echo_info "Nginx config file not found. Creating..."
+    cat > "$PROXY_CONF" << 'EOF'
+# Place inside http block
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+upstream openclaw {
+    server 127.0.0.1:18789;
+}
+
+server {
+    listen 8090;
+    server_name _;
+
+    set $proxy_host "127.0.0.1:18789";
+    set $proxy_origin "http://127.0.0.1:18789";
+
+    location / {
+        proxy_pass http://openclaw;
+        proxy_http_version 1.1;
+        proxy_set_header Host $proxy_host;
+        proxy_set_header Origin $proxy_origin;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_buffering off;
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+    }
+
+    location /socket.io/ {
+        proxy_pass http://openclaw/socket.io/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header Host $host;
+        proxy_set_header Origin $proxy_origin;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_buffering off;
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+    }
+}
+EOF
+
+    echo_info "Config file written: $PROXY_CONF"
+    echo_info "Testing nginx syntax..."
+    if nginx -t; then
+        echo_info "Syntax test passed. Reloading nginx..."
+        systemctl reload nginx || service nginx reload
+        echo_info "Nginx reloaded successfully."
+    else
+        echo_error "Nginx config test failed. Please check the configuration."
+        rm -f "$PROXY_CONF"
+        exit 1
+    fi
+}
+
+# ------------------------------------------------------------
+# JSON helper functions (no jq dependency, prefer python3)
+# ------------------------------------------------------------
+get_providers_from_json() {
+    if command -v python3 &> /dev/null; then
+        python3 -c "
+import json, sys
+try:
+    with open('$OPENCLAW_JSON') as f:
+        data = json.load(f)
+    providers = list(data.get('models', {}).get('providers', {}).keys())
+    print('\n'.join(providers))
+except Exception:
+    pass
+" 2>/dev/null && return 0
+    fi
+    grep -oE '"([^"]+)":\s*\{' "$OPENCLAW_JSON" 2>/dev/null | sed 's/":\s*{//' | sed 's/"//g'
+}
+
+get_api_key_for_provider() {
+    local provider="$1"
+    if command -v python3 &> /dev/null; then
+        python3 -c "
+import json, sys
+try:
+    with open('$OPENCLAW_JSON') as f:
+        data = json.load(f)
+    key = data.get('models', {}).get('providers', {}).get('$provider', {}).get('apiKey', '')
+    print(key if key else '')
+except Exception:
+    pass
+" 2>/dev/null && return 0
+    fi
+    sed -n "/\"$provider\":[[:space:]]*{/,/}/p" "$OPENCLAW_JSON" | \
+        grep -oE '"apiKey"[[:space:]]*:[[:space:]]*"([^"]*)"' | \
+        head -1 | sed 's/"apiKey"[[:space:]]*:[[:space:]]*"//; s/"//'
+}
+
+set_api_key_for_provider() {
+    local provider="$1"
+    local new_key="$2"
+    local backup_file="${OPENCLAW_JSON}.backup.$(date +%Y%m%d_%H%M%S)"
+    cp -p "$OPENCLAW_JSON" "$backup_file"
+    echo_info "Backed up original config to $backup_file"
+
+    if command -v python3 &> /dev/null; then
+        python3 -c "
+import json, sys
+with open('$OPENCLAW_JSON', 'r') as f:
+    data = json.load(f)
+data.setdefault('models', {}).setdefault('providers', {}).setdefault('$provider', {})['apiKey'] = '$new_key'
+with open('$OPENCLAW_JSON', 'w') as f:
+    json.dump(data, f, indent=2)
+" 2>/dev/null && return 0
+    fi
+
+    local escaped_key=$(echo "$new_key" | sed 's/[&/\]/\\&/g')
+    if grep -q "\"$provider\":[[:space:]]*{" "$OPENCLAW_JSON" && \
+       sed -n "/\"$provider\":[[:space:]]*{/,/}/p" "$OPENCLAW_JSON" | grep -q '"apiKey"'; then
+        sed -i "/\"$provider\":[[:space:]]*{/,/}/ s/\"apiKey\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/\"apiKey\": \"$escaped_key\"/" "$OPENCLAW_JSON"
+    else
+        sed -i "/\"$provider\":[[:space:]]*{/,/}/ {
+            /}/ {
+                i\    \"apiKey\": \"$escaped_key\",
+            }
+        }" "$OPENCLAW_JSON"
+    fi
+    echo_warn "Updated API key using sed. Please manually verify JSON format if needed."
+}
+
+get_current_model() {
+    local provider="$1"
+    if command -v python3 &> /dev/null; then
+        python3 -c "
+import json, sys
+with open('$OPENCLAW_JSON') as f:
+    data = json.load(f)
+primary = data.get('agents', {}).get('defaults', {}).get('model', {}).get('primary')
+if primary:
+    print(primary)
+    sys.exit(0)
+provider_data = data.get('models', {}).get('providers', {}).get('$provider', {})
+models = provider_data.get('models', [])
+if models:
+    print(models[0].get('id', 'unknown'))
+else:
+    print('unknown')
+" 2>/dev/null && return 0
+    fi
+    local model=$(grep -A5 '"agents"' "$OPENCLAW_JSON" | grep -A5 '"defaults"' | grep -A5 '"model"' | grep '"primary"' | head -1 | sed 's/.*"primary"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+    if [ -z "$model" ]; then
+        model=$(sed -n "/\"$provider\":[[:space:]]*{/,/}/p" "$OPENCLAW_JSON" | grep -A10 '"models"' | grep '"id"' | head -1 | sed 's/.*"id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+    fi
+    echo "${model:-unknown}"
+}
+
+# Extract gateway token (gateway.auth.token or gateway.token)
+get_gateway_token() {
+    if command -v python3 &> /dev/null; then
+        python3 -c "
+import json, sys
+try:
+    with open('$OPENCLAW_JSON') as f:
+        data = json.load(f)
+    token = data.get('gateway', {}).get('auth', {}).get('token')
+    if not token:
+        token = data.get('gateway', {}).get('token')
+    print(token if token else '')
+except Exception:
+    pass
+" 2>/dev/null && return 0
+    fi
+    local token=$(grep -o '"gateway"[[:space:]]*:[[:space:]]*{[^}]*"auth"[[:space:]]*:[[:space:]]*{[^}]*"token"[[:space:]]*:[[:space:]]*"\([^"]*\)"' "$OPENCLAW_JSON" | head -1 | sed 's/.*"token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+    if [ -z "$token" ]; then
+        token=$(grep -o '"gateway"[[:space:]]*:[[:space:]]*{[^}]*"token"[[:space:]]*:[[:space:]]*"\([^"]*\)"' "$OPENCLAW_JSON" | head -1 | sed 's/.*"token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+    fi
+    echo "$token"
+}
+
+# ------------------------------------------------------------
+# Get local IP (prefer eth0)
+# ------------------------------------------------------------
+get_local_ip() {
+    local ip=$(ip -4 addr show eth0 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -1)
+    if [ -n "$ip" ]; then
+        echo "$ip"
+        return 0
+    fi
+    ip=$(hostname -I 2>/dev/null | awk '{print $1}')
+    if [ -n "$ip" ]; then
+        echo "$ip"
+        return 0
+    fi
+    ip=$(ip route get 1 2>/dev/null | grep -oP 'src \K\S+' | head -1)
+    if [ -n "$ip" ]; then
+        echo "$ip"
+        return 0
+    fi
+    echo "127.0.0.1"
+}
+
+# ------------------------------------------------------------
+# Print access URLs
+# ------------------------------------------------------------
+print_access_url() {
+    local ip=$(get_local_ip)
+    local token=$(get_gateway_token)
+    if [ -z "$token" ]; then
+        echo_warn "Gateway token not found. Access URL will not include token parameter."
+        echo_info "Direct backend access: http://${ip}:18789/"
+        echo_info "Via Nginx proxy: http://${ip}:8090/"
+    else
+        echo_info "========================================="
+        echo_info "OpenClaw gateway is ready. Access via the following URLs:"
+        echo_info "   Direct backend: http://${ip}:18789/?token=${token}"
+        echo_info "   Nginx proxy: http://${ip}:8090/?token=${token}"
+        echo_info "========================================="
+    fi
+}
+
+# ------------------------------------------------------------
+# Configure OpenClaw (model provider + API key)
+# ------------------------------------------------------------
+configure_openclaw() {
+    if [ ! -f "$OPENCLAW_JSON" ]; then
+        echo_error "OpenClaw config file not found: $OPENCLAW_JSON"
+        exit 1
+    fi
+
+    local providers=$(get_providers_from_json)
+    if [ -z "$providers" ]; then
+        echo_error "Failed to parse any model providers from $OPENCLAW_JSON."
+        exit 1
+    fi
+
+    mapfile -t provider_array <<< "$providers"
+    local selected_provider=""
+
+    if [ ${#provider_array[@]} -eq 1 ]; then
+        selected_provider="${provider_array[0]}"
+        echo_info "Detected single model provider: $selected_provider"
+    else
+        echo_info "Detected multiple model providers:"
+        for i in "${!provider_array[@]}"; do
+            echo "  $((i+1)). ${provider_array[$i]}"
+        done
+        read -p "Select a provider to configure API key (1-${#provider_array[@]}): " choice
+        if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#provider_array[@]}" ]; then
+            selected_provider="${provider_array[$((choice-1))]}"
+        else
+            echo_error "Invalid choice."
+            exit 1
+        fi
+    fi
+
+    echo_info "Selected provider: $selected_provider"
+    local current_model=$(get_current_model "$selected_provider")
+    echo_info "Current model in use: $current_model"
+
+    local current_key=$(get_api_key_for_provider "$selected_provider")
+    if [ -n "$current_key" ] && [ "$current_key" != "null" ]; then
+        echo_info "API key already configured for this provider (hidden). No changes needed."
+    else
+        echo_warn "API key not configured or empty for this provider."
+        read -p "Enter new API key: " new_key
+        if [ -z "$new_key" ]; then
+            echo_error "API key cannot be empty."
+            exit 1
+        fi
+        set_api_key_for_provider "$selected_provider" "$new_key"
+        echo_info "API key updated and saved."
+    fi
+}
+
+# ------------------------------------------------------------
+# Start OpenClaw gateway in foreground (not background)
+# ------------------------------------------------------------
+start_openclaw_gateway_foreground() {
+    if ! command -v openclaw &> /dev/null; then
+        echo_error "openclaw command not found. Please ensure OpenClaw is installed and in PATH."
+        exit 1
+    fi
+
+    if pgrep -f "openclaw gateway" > /dev/null; then
+        echo_warn "Detected an existing OpenClaw gateway process running."
+        read -p "Stop the old process and restart? (y/N): " restart_choice
+        if [[ "$restart_choice" =~ ^[Yy]$ ]]; then
+            echo_info "Stopping old process..."
+            pkill -f "openclaw gateway" || true
+            sleep 2
+        else
+            echo_info "Keeping existing gateway. Script finished."
+            exit 0
+        fi
+    fi
+
+    echo_info "Starting OpenClaw gateway in foreground (press Ctrl+C to stop)..."
+    echo_info "Command: openclaw gateway --allow-unconfigured"
+    exec openclaw gateway --allow-unconfigured
+}
+
+# ------------------------------------------------------------
+# Main
+# ------------------------------------------------------------
+install_openclaw_deb_if_needed
+configure_nginx_proxy
+configure_openclaw
+print_access_url
+start_openclaw_gateway_foreground
