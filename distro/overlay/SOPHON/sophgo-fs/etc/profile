@@ -36,3 +36,8 @@ fi
 
 export PATH=$PATH:/opt/sophon/libsophon-current/bin:/sbin
 export PYTHONPATH=/opt/sophon/libsophon-current/lib:$PYTHONPATH
+
+if [ -d "/opt/sophon/middleware" ]; then
+    export PATH=$PATH:/opt/sophon/middleware/bin
+fi
+

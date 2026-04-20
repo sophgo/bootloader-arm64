@@ -111,6 +111,12 @@ if [ -f "/etc/systemd/system/bmveth.service" ]; then
 fi
 
 install_prepackages
+
+# Ensure multimedia self-check script is executable for systemd service
+if [ -f /usr/sbin/bm_multimedia_self_check.sh ]; then
+    chmod +x /usr/sbin/bm_multimedia_self_check.sh
+fi
+
 if [ -f /root/se_ctrl/se_init.sh ]; then
 	source /root/se_ctrl/se_init.sh
 	se_init
@@ -130,3 +136,12 @@ if [ -f "/etc/systemd/system/retrain.service" ]; then
 	systemctl start retrain.service
 fi
 
+# read eMMC CID to /etc/machine-id for generate unique mac addr
+CID_FILE=$(ls /sys/class/mmc_host/mmc0/mmc0\:*/cid 2>/dev/null | head -1)
+if [ -f "$CID_FILE" ]; then
+	CID_VALUE=$(cat "$CID_FILE" 2>/dev/null)
+	if [ -n "$CID_VALUE" ]; then
+		echo "$CID_VALUE" > /etc/machine-id
+		chmod 0444 /etc/machine-id
+	fi
+fi
