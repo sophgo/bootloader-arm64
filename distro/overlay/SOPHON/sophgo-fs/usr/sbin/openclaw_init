@@ -1,11 +1,18 @@
 #!/bin/bash
+<<<<<<< HEAD
+=======
+
+>>>>>>> a09cd5a04... [fix](system):add openclaw
 set -e
 
 # Paths
 CONF_D_DIR="/etc/nginx/conf.d"
 PROXY_CONF="${CONF_D_DIR}/proxy.conf"
 OPENCLAW_JSON="/root/.openclaw/openclaw.json"
+<<<<<<< HEAD
 OPENCLAW_DEB="/home/linaro/bsp-debs/openclaw.deb"
+=======
+>>>>>>> a09cd5a04... [fix](system):add openclaw
 
 # Color output
 RED='\033[0;31m'
@@ -23,6 +30,7 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+<<<<<<< HEAD
 # Check and install OpenClaw package from local deb if needed
 install_openclaw_deb_if_needed() {
     if dpkg -s openclaw &> /dev/null; then
@@ -42,6 +50,8 @@ install_openclaw_deb_if_needed() {
     echo_info "OpenClaw deb installation completed."
 }
 
+=======
+>>>>>>> a09cd5a04... [fix](system):add openclaw
 # Check nginx
 if ! command -v nginx &> /dev/null; then
     echo_error "nginx not found. Please install nginx first."
@@ -223,6 +233,66 @@ else:
     echo "${model:-unknown}"
 }
 
+<<<<<<< HEAD
+=======
+# Function to get current model id for a provider
+get_model_for_provider() {
+    local provider="$1"
+    if command -v python3 &> /dev/null; then
+        python3 -c "
+import json, sys
+try:
+    with open('$OPENCLAW_JSON') as f:
+        data = json.load(f)
+    models = data.get('models', {}).get('providers', {}).get('$provider', {}).get('models', [])
+    if models:
+        print(models[0].get('id', 'null'))
+    else:
+        print('null')
+except Exception:
+    print('null')
+" 2>/dev/null && return 0
+    fi
+    local model=$(sed -n "/\"$provider\":[[:space:]]*{/,/}/p" "$OPENCLAW_JSON" | grep -A10 '"models"' | grep '"id"' | head -1 | sed 's/.*"id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+    echo "${model:-null}"
+}
+
+
+# Function to set model id, name and primary for a provider
+set_model_for_provider() {
+    local provider="$1"
+    local model_id="$2"
+    local backup_file="${OPENCLAW_JSON}.backup.$(date +%Y%m%d_%H%M%S)"
+    cp -p "$OPENCLAW_JSON" "$backup_file"
+    echo_info "Backed up original config to $backup_file"
+
+    if command -v python3 &> /dev/null; then
+        python3 -c "
+import json, sys
+with open('$OPENCLAW_JSON', 'r') as f:
+    data = json.load(f)
+# Update model id and name
+models = data.get('models', {}).get('providers', {}).get('$provider', {}).get('models', [])
+if models:
+    models[0]['id'] = '$model_id'
+    models[0]['name'] = '$model_id'
+# Update primary model
+primary_value = '${provider}/${model_id}'
+data.setdefault('agents', {}).setdefault('defaults', {}).setdefault('model', {})['primary'] = primary_value
+with open('$OPENCLAW_JSON', 'w') as f:
+    json.dump(data, f, indent=2)
+" 2>/dev/null && return 0
+    fi
+
+    local escaped_id=$(echo "$model_id" | sed 's/[&/\]/\\&/g')
+    sed -i "/\"$provider\":[[:space:]]*{/,/}/ s/\"id\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/\"id\": \"$escaped_id\"/" "$OPENCLAW_JSON"
+    sed -i "/\"$provider\":[[:space:]]*{/,/}/ s/\"name\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/\"name\": \"$escaped_id\"/" "$OPENCLAW_JSON"
+    local escaped_primary=$(echo "${provider}/${model_id}" | sed 's/[&/\]/\\&/g')
+    sed -i "/\"primary\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/s/\"primary\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/\"primary\": \"$escaped_primary\"/" "$OPENCLAW_JSON"
+    echo_warn "Updated model config using sed. Please manually verify JSON format if needed."
+}
+
+>>>>>>> a09cd5a04... [fix](system):add openclaw
 # Extract gateway token (gateway.auth.token or gateway.token)
 get_gateway_token() {
     if command -v python3 &> /dev/null; then
@@ -288,7 +358,11 @@ print_access_url() {
 }
 
 # ------------------------------------------------------------
+<<<<<<< HEAD
 # Configure OpenClaw (model provider + API key)
+=======
+# Configure OpenClaw (model provider + model + API key)
+>>>>>>> a09cd5a04... [fix](system):add openclaw
 # ------------------------------------------------------------
 configure_openclaw() {
     if [ ! -f "$OPENCLAW_JSON" ]; then
@@ -323,8 +397,29 @@ configure_openclaw() {
     fi
 
     echo_info "Selected provider: $selected_provider"
+<<<<<<< HEAD
     local current_model=$(get_current_model "$selected_provider")
     echo_info "Current model in use: $current_model"
+=======
+
+    # Configure model
+    local current_model=$(get_model_for_provider "$selected_provider")
+    if [ -n "$current_model" ] && [ "$current_model" != "null" ]; then
+        echo_info "Model already configured: $current_model"
+    else
+        echo_warn "Model not configured for provider: $selected_provider"
+        if [ "$selected_provider" = "sophnet" ]; then
+            echo_info "Please visit https://www.sophnet.com to view available models"
+        fi
+        read -p "Enter model ID (e.g., DeepSeek-V3.2, GLM-4.7, Qwen3-8B): " new_model
+        if [ -z "$new_model" ]; then
+            echo_error "Model ID cannot be empty."
+            exit 1
+        fi
+        set_model_for_provider "$selected_provider" "$new_model"
+        echo_info "Model configured: $selected_provider/$new_model"
+    fi
+>>>>>>> a09cd5a04... [fix](system):add openclaw
 
     local current_key=$(get_api_key_for_provider "$selected_provider")
     if [ -n "$current_key" ] && [ "$current_key" != "null" ]; then
@@ -371,8 +466,15 @@ start_openclaw_gateway_foreground() {
 # ------------------------------------------------------------
 # Main
 # ------------------------------------------------------------
+<<<<<<< HEAD
 install_openclaw_deb_if_needed
 configure_nginx_proxy
 configure_openclaw
 print_access_url
 start_openclaw_gateway_foreground
+=======
+configure_nginx_proxy
+configure_openclaw
+print_access_url
+start_openclaw_gateway_foreground
+>>>>>>> a09cd5a04... [fix](system):add openclaw
