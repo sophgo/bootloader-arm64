@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
+#include <stdlib.h>
 #include <lib/mmio.h>
 #include <common/debug.h>
 #include <platform_def.h>
@@ -15,14 +16,24 @@
 #include <lib/fatfs/ff.h>
 #include "lpddr.h"
 #include "lpddr_init.h"
+#include "lpddr_pmu_train_string.h"
+#include <lib/cli.h>
 
-#ifdef LPDDR_DEUBG
+// #define LPDDR_DEBUG
+#ifdef LPDDR_DEBUG
 #define lpddr_print(fmt, ...) printf(fmt, ##__VA_ARGS__)
 #else
 #define lpddr_print(fmt, ...)
 #endif
 #define T1D 0
 #define T2D 1
+
+// #define LPDDR_FW_DEBUG
+#ifdef LPDDR_FW_DEBUG
+#define lpddr_fw_print(fmt, ...) printf(fmt, ##__VA_ARGS__)
+#else
+#define lpddr_fw_print(fmt, ...)
+#endif
 
 /*
  * this file is for configuring the DDR sub-system for:
@@ -155,6 +166,48 @@ static uint32_t dwc_get_mail(uint32_t cfg_base, uint32_t mode)
 
 static void dwc_decode_stream_msg(uint32_t cfg_base, uint32_t train_2d)
 {
+#ifdef LPDDR_DEBUG
+	uint32_t i;
+	uint32_t str_stream_index = dwc_get_mail(cfg_base, STREAM_MSG);
+	uint16_t length = 0;
+
+	uint32_t __attribute((unused)) stream[32];
+	const struct train_msg *messages;
+	const char *ptr = NULL;
+
+	length = str_stream_index & 0xffff;
+
+	for (i = 0; i < length; ++i)
+		stream[i] = dwc_get_mail(cfg_base, STREAM_MSG);
+
+	if (train_2d) {
+		messages = stream_messages_2d;
+		for (i = 0; i < get_stream_messages_2d_num(); i++) {
+			if (messages[i].index == str_stream_index) {
+				ptr = messages[i].msg;
+				break;
+			}
+		}
+	} else {
+		messages = stream_messages_1d;
+		for (i = 0; i < get_stream_messages_1d_num(); i++) {
+			if (messages[i].index == str_stream_index) {
+				ptr = messages[i].msg;
+				break;
+			}
+		}
+	}
+
+	if (ptr != NULL) {
+		lpddr_fw_print(ptr, stream[0], stream[1], stream[2], stream[3], stream[4],
+			       stream[5], stream[6], stream[7], stream[8], stream[9], stream[10],
+			       stream[11], stream[12], stream[13], stream[14], stream[15],
+			       stream[16], stream[17], stream[18], stream[19], stream[20],
+			       stream[21], stream[22], stream[23], stream[24], stream[25],
+			       stream[26], stream[27], stream[28], stream[29], stream[30],
+			       stream[31]);
+	}
+#else
 	uint32_t i, args __attribute__((unused));
 	uint32_t str_stream_index = dwc_get_mail(cfg_base, STREAM_MSG);
 
@@ -166,13 +219,24 @@ static void dwc_decode_stream_msg(uint32_t cfg_base, uint32_t train_2d)
 		lpddr_print("args 0x%02x\n", args);
 		i++;
 	}
+#endif
 }
 
-static void dwc_decode_major_msg(uint32_t msg)
+static void dwc_decode_major_msg(uint32_t message)
 {
+#ifdef LPDDR_DEBUG
+	const struct train_msg *messages;
+
+	messages = major_messages;
+	for (int i = 0; i < get_major_messages_num(); i++) {
+		if (messages[i].index == message)
+			lpddr_fw_print("major_message type = 0x%x: %s\n", message, messages[i].msg);
+	}
+#else
 	lpddr_print("dwc phy message major message type: 0x%x, %s\n", msg,
-		    msg == FW_COMPLET_SUCCESS ? "success" :
-						msg == FW_COMPLET_FAILED ? "failed" : "unknown");
+		msg == FW_COMPLET_SUCCESS ? "success" :
+					msg == FW_COMPLET_FAILED ? "failed" : "unknown");
+#endif
 }
 
 #define mask_train_result(v, index, phase, result)	\
@@ -886,6 +950,8 @@ void bm_ddr_init_asic(void)
 	case BM1684X_M2_CUST02_V0_0:
 	case BM1684X_SM7_CUST_V1:
 	case BM1684X_SM7_CUST_V2:
+	case BM1684X_SM7_CUST_V3:
+	case BM1684X_SE7_V3_0:
 		rank = GROUP_RANK(RANK2, RANK2);
 		freq = FREQ_4000M;
 		break;
@@ -947,7 +1013,13 @@ void bm_ddr_init_asic(void)
 
 	ddr_pll_setting(freq);
 
+#if defined(LPDDR_DEBUG) || defined(LPDDR_FW_DEBUG)
+	bm_wdt_stop();
+#endif
+
+#ifndef LPDDR_FW_DEBUG
 start:
+#endif
 	dwc_pre_setting(is_lpddr4, GROUP0_RANK(rank), freq, GROUP0);
 	ddr_group_init(GROUP0);
 
@@ -958,7 +1030,24 @@ start:
 		failmap = 0;
 		fail_count++;
 		ERROR("Lpddr train %d times still fail, retry!\n", fail_count);
+
+		rank = GROUP_RANK(RANK1, RANK1);
+		NOTICE("ddr change to 1R + 1R, use r17 dram\n");
+		for (int count = 0; count < ARRAY_SIZE(addrmap_1rank); count++) {
+			if (addrmap_1rank[count].offset == 0x00000200) {
+				addrmap_1rank[count].value = 0x00000018;
+			}
+			if (addrmap_1rank[count].offset == 0x0000021c) {
+				addrmap_1rank[count].value = 0x00000f07;
+			}
+		}
+
+		if (fail_count == 2)
+			NOTICE("please check two type of dram\n");
+
+#ifndef LPDDR_FW_DEBUG
 		goto start;
+#endif
 	}
 
 	dwc_phy_enter_mission();
@@ -977,5 +1066,6 @@ start:
 	NOTICE("Done.\n");
 	/* wait for ddr stable */
 	mdelay(200);
+	// cli_loop(0);
 }
 

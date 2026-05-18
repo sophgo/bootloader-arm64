@@ -1,0 +1,15 @@
+[Unit]
+Description=Load firmware for Renesas uPD72020x USB3.0 host.
+DefaultDependencies=false
+Before=systemd-modules-load.service bmrt_loadko.service bmrt_setup.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/upd72020x-load/upd72020x-check-and-init
+Restart=no
+Environment="UPD72020X_FW=/usr/sbin/upd72020x-load/K2026090.mem"
+Environment="UPD72020X_CMD=/usr/sbin/upd72020x-load/upd72020x-load"
+
+[Install]
+WantedBy=remote-fs.target

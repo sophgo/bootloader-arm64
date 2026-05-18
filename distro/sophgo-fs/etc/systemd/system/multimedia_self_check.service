@@ -1,0 +1,14 @@
+[Unit]
+Description=Run sophon multimedia self-check after bmrt_setup.
+After=bmrt_setup.service
+Requires=bmrt_setup.service
+
+[Service]
+User=root
+ExecStart=/usr/sbin/bm_multimedia_self_check.sh
+Type=oneshot
+StandardOutput=tty
+StandardError=tty
+
+[Install]
+WantedBy=multi-user.target

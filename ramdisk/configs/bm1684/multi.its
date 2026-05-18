@@ -621,6 +621,26 @@
 				algo = "sha1";
 			};
 		};
+		fdt-pcb147 {
+			description = "for BM1684X SM7 CUST V3";
+			data = /incbin/("./bm1684x_sm7_cust_v3.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
+		fdt-pcb148 {
+			description = "for BM1684X SE7 V3_0";
+			data = /incbin/("./bm1684x_se7_v3.0.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash {
+				algo = "sha1";
+			};
+		};
 	};
 
 	configurations {
@@ -1267,6 +1287,30 @@
 			kernel = "kernel";
 			ramdisk = "ramdisk";
 			fdt = "fdt-pcb146";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb147 {
+			description = "for BM1684X SM7 CUST V3";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb147";
+			signature {
+				algo = "sha1,rsa2048";
+				key-name-hint = "vboot";
+				sign-images = "fdt", "ramdisk", "kernel";
+			};
+		};
+
+		config-pcb148 {
+			description = "for BM1684X SE7 V3_0";
+			kernel = "kernel";
+			ramdisk = "ramdisk";
+			fdt = "fdt-pcb148";
 			signature {
 				algo = "sha1,rsa2048";
 				key-name-hint = "vboot";

@@ -97,6 +97,57 @@ int plat_cli_cmd_process(int flag, int argc, char *const argv[])
 	return -1;
 }
 
+static bool drambasetest_addr(uint64_t baseaddr, uint64_t testlen)
+{
+	uint64_t data, data1;
+	uint64_t address;
+	uint64_t i;
+	uint64_t test_count = 0;
+	uint8_t read_error;
+	bool bRet;
+
+	bRet = false;
+	test_count = (testlen / 8); // read 8 bytes every time
+	address = baseaddr;
+	printf("BaseAddress = 0x%lx, length = 0x%lx, test_count = 0x%lx, pattern = address\r\n",
+	       address, testlen, test_count);
+
+	//write each test unit the value with address
+	for (i = 0; i < test_count; i++) {
+		mmio_write_64(address + i * 8, (address + i * 8));
+		//dma_flush_dcache_range(address + i * 8, 8);
+		flush_dcache_range(address + i * 8, 8);
+		if ((i & 0xFFFF) == 0)
+			printf("write address 0x%lx = 0x%lx\r\n", address + i * 8, mmio_read_64(address + i * 8));
+	}
+	printf("each test unit has been written the value with address\r\n");
+
+	//compare each test unit with the value of address
+	for (i = 0; i < test_count; i++) {
+		data = mmio_read_64(address + i * 8);
+		data1 = mmio_read_64(address + i * 8);
+		//printf("read addr 0x%lx , 1st read data = 0x%x , 2nd read data = 0x%x\r\n",
+		//address + i, data, data1);
+		if (data != data1) {
+			read_error = 1;
+			printf("READ error! address 0x%lx = 0x%lx , should be 0x%lx\r\n",
+			       (address + i * 8), data, (address + i * 8));
+			bRet = true;
+			//return bRet;
+		} else {
+			read_error = 0;
+		}
+		if (read_error == 0 && data != (address + i * 8)) {
+			printf("WRITE error! address 0x%lx = 0x%lx , should be 0x%lx\r\n",
+			       (address + i * 8), data, (address + i * 8));
+			bRet = true;
+			//return bRet;
+		}
+	}
+
+	return bRet;
+}
+
 /*
  * return non-zero will exit command line
  */
@@ -142,6 +193,22 @@ static int cmd_process(int flag, int argc, char *const argv[])
 			goto out;
 		addr = simple_strtoul(argv[1], NULL, 16);
 		NOTICE("0x%lx: 0x%08x\n", addr, mmio_read_32(addr));
+	} else if (test_cmd("mem_addr")) {
+		uint64_t baseaddr, testlen;
+		bool bret = true;
+
+		if (argc < 3)
+			goto out;
+		baseaddr = simple_strtoul(argv[1], NULL, 16);
+		testlen = simple_strtoul(argv[2], NULL, 16);
+
+		printf("test_base_addr = 0x%lx\r\n", baseaddr);
+		printf("test_len = 0x%lx\r\n", testlen);
+
+		bret = drambasetest_addr(baseaddr, testlen);
+		if (!bret)
+			printf("no error\r\n");
+
 	} else if (test_cmd("reset")) {
 		if (argc < 2)
 			plat_sys_reset(1);

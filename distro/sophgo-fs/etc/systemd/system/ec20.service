@@ -7,7 +7,7 @@ After=dev-ttyUSB1.device
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/quectel-CM -f /tmp/quectel-CM_log
+ExecStart=/usr/sbin/autotelecomm_scripts/quectel-CM -f /tmp/quectel-CM_log
 Restart=on-failure
 KillMode=process
 

@@ -199,7 +199,7 @@ static int bm_get_board_info(void)
 				type = BM1684X_SM7M_V0_0_CUST_V1;
 			break;
 		case MCU_BM1684X_SM7M_V1_0:
-			if (hw_ver == 0x11)
+			if (hw_ver == 0x11 || hw_ver == 0x33)
 				type = BM1684X_SM7M_V1_0;
 			break;
 		case MCU_BM1684X_SM7M_V1_2:
@@ -230,6 +230,12 @@ static int bm_get_board_info(void)
 			break;
 		case MCU_BM1684X_M2_V2:
 			type = BM1684X_M2_CUST02_V0_0;
+			break;
+		case MCU_BM1684X_SM7_CUST_V3:
+			type = BM1684X_SM7_CUST_V3;
+			break;
+		case MCU_BM1684X_SE7_V3_0:
+			type = BM1684X_SE7_V3_0;
 			break;
 		default:
 			ERROR("unknown board type %u\n", mcu_type);

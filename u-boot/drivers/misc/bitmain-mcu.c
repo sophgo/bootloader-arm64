@@ -125,6 +125,10 @@ static const struct mcu_feature mcu_list[] = {
 		.cmd = 0x14,
 	},
 	{
+		MCU_BM1684X_SM7M_V1_2, "EVB", "BM1684X", "STM32",
+		.cmd = 0x14,
+	},
+	{
 		MCU_BM1684X_SE7_V2_0, "EVB", "BM1684X", "STM32",
 		.cmd = 0x14,
 	},
@@ -144,7 +148,14 @@ static const struct mcu_feature mcu_list[] = {
 		MCU_BM1684X_SM7_CUST_V2, "EVB", "BM1684X", "STM32",
 		.cmd = 0x14,
 	},
-
+	{
+		MCU_BM1684X_SM7_CUST_V3, "EVB", "BM1684X", "CW32",
+		.cmd = 0x14,
+	},
+	{
+		BM1684X_SE7_V3_0, "SE7_V3_0", "BM1684X", "STM32",
+		.cmd = 0x14,
+	},
 };
 
 static void mcu_show(struct udevice *i2c, const struct mcu_feature * const f)
