@@ -1,0 +1,6 @@
+[Unit]
+Description=Hourly rotation of log files
+
+[Service]
+Type=oneshot
+ExecStart=/bin/systemctl start logrotate.service

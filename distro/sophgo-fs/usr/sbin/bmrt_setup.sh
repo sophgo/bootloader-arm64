@@ -165,5 +165,6 @@ else
 fi
 
 bash /usr/sbin/get_info server_logs_path /recovery/get_info_logs 150
-
+systemctl enable logrotate-hourly.timer
+systemctl start logrotate-hourly.timer
 echo "bmrt_setup finish done!!!"

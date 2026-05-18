@@ -459,5 +459,6 @@ const struct flash_info spi_nor_ids[] = {
 	/* XTX Technology (Shenzhen) Limited */
 	{ INFO("xt25f128b", 0x0b4018, 0, 64 * 1024, 256, SECT_4K | SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ) },
 #endif
+	{ INFO("hce25wq128ms", 0xc86518, 0, 64 * 1024, 256, SECT_4K | SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ) },
 	{ },
 };

@@ -12,6 +12,10 @@ DISTRO_MD5=${DISTRO_MD5:-28ad82b4cf01327b1f81d3d193923424} # target distro md5
 KERNEL_VARIANT=${KERNEL_VARIANT:-normal} # normal; mininum
 PRODUCT=${PRODUCT:-} # se6; cust01; cust02
 
+# for build kylinos
+# export DISTRO=kylinos
+# export DISTRO_MD5=9b940f3803cd557afa1cf8db415fe10c
+
 if [ "$CHIP" == "qemu" ]; then
 	DEBUG=1
 fi
@@ -331,7 +335,7 @@ function build_kernel()
 
 		mkdir ./debs
 		cp ../linux-image-${KERNELRELEASE}_*.deb ./debs/linux-image-${KERNELRELEASE}.deb
-		cp ../linux-image-${KERNELRELEASE}-dbg_*.deb ./debs/linux-image-${KERNELRELEASE}-dbg.deb
+		#cp ../linux-image-${KERNELRELEASE}-dbg_*.deb ./debs/linux-image-${KERNELRELEASE}-dbg.deb
 		cp ../linux-headers-${KERNELRELEASE}_*.deb ./debs/linux-headers-${KERNELRELEASE}.deb
 		rm -f $DEB_INSTALL_DIR/linux-*.deb
 		install_debs "./debs/*.deb"
@@ -1215,7 +1219,6 @@ rm -rf /debs
 dpkg -i /home/linaro/bsp-debs/sophgo-bsp-images_*.deb
 dpkg -i /home/linaro/bsp-debs/sophgo-bsp-tools_*.deb
 dpkg -i /home/linaro/bsp-debs/sophgo-bsp-rootfs_*.deb
-dpkg -i /home/linaro/bsp-debs/sophgo-bsp-qt5_*.deb
 
 dpkg -i /home/linaro/bsp-debs/sophon-soc-libsophon*.deb
 dpkg -i /home/linaro/bsp-debs/sophon-mw-soc-sophon-ffmpeg*.deb
@@ -1229,15 +1232,18 @@ if [ "$os_release" = "Kylin" ]; then
 	echo "linaro:linaro" | chpasswd
 	usermod -a -G sudo linaro
 	chown linaro.linaro -R /home/linaro
+	echo -e "LC_ALL=C.UTF-8\n" > /etc/default/locale
+	dpkg -i /home/linaro/bsp-debs/sophgo-bsp-evdi-usb-hdmi_*.deb
+	mv /etc/systemd/system/display-manager.service /etc/systemd/system/display-manager.service.bak
+else
+	dpkg -i /home/linaro/bsp-debs/sophgo-bsp-qt5_*.deb
 fi
 if [ -f /home/linaro/bsp-debs/sophgo-se_*.deb  ]; then
 	echo "install se6 deb"
 	dpkg -i /home/linaro/bsp-debs/sophgo-se_*.deb
 else
-	if [ "$os_release" != "Kylin" ]; then
-		echo "not se6 and not kylin, try install hdmi and system deb"
-		dpkg -i /home/linaro/bsp-debs/sophgo-hdmi_*.deb
-	fi
+	echo "not se6, try install hdmi and system deb"
+	dpkg -i /home/linaro/bsp-debs/sophgo-hdmi_*.deb
 fi
 
 exit
@@ -1411,6 +1417,7 @@ function build_update()
 
 	pushd $OUTPUT_DIR/$1
 	cp $SCRIPTS_DIR/local_update.sh .
+	cp $SCRIPTS_DIR/ota_update.sh .
 	md5sum * > md5.txt
 	popd
 
@@ -1442,6 +1449,7 @@ function build_update()
 
 		mv $OUTPUT_DIR/sdcard $OUTPUT_DIR/se_ctl_sdcard
 		cp $SCRIPTS_DIR/local_update.sh $OUTPUT_DIR/se_ctl_sdcard
+		cp $SCRIPTS_DIR/ota_update.sh $OUTPUT_DIR/se_ctl_sdcard
 		pushd $OUTPUT_DIR/se_ctl_sdcard
 		md5sum * > md5.txt
 		popd

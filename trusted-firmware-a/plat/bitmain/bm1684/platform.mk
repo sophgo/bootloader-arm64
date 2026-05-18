@@ -75,6 +75,10 @@ BL2_SOURCES		+=	drivers/io/io_storage.c			\
 				plat/bitmain/${BM_CHIP}/bm_pcie.c		\
 				common/desc_image_load.c			\
 				lib/crc/crc16.c					\
+				lib/cli/cli_readline.c			\
+				lib/cli/cli_simple.c			\
+				lib/ymodem/ymodem.c			\
+				lib/ymodem/xyzModem.c			\
 				${FATFS_LIB_SOURCES}
 
 include drivers/arm/gic/v2/gicv2.mk
@@ -117,3 +121,15 @@ ERRATA_A53_1530924		:= 1
 
 DEFINES += -DCONFIG_ARCH_BITMAIN -DCONFIG_ARCH_BM1684
 export HOSTCCFLAGS_custom += -DCONFIG_ARCH_BITMAIN -DCONFIG_ARCH_BM1684
+
+LPDDR_DEBUG ?= 0
+LPDDR_FW_DEBUG ?= 0
+
+ifeq ($(LPDDR_DEBUG), 1)
+    BL2_SOURCES += plat/bitmain/${BM_CHIP}/lpddr_pmu_train_string.c
+    DEFINES += -DLPDDR_DEBUG
+endif
+
+ifeq ($(LPDDR_FW_DEBUG), 1)
+    DEFINES += -DLPDDR_FW_DEBUG
+endif

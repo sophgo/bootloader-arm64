@@ -384,7 +384,7 @@ setup:
 			/* if driver was not installed, we update smbus registers so bmc can
 			 * still read board temprature and other stuff
 			 */
-			update_registers_for_mcu();
+			// update_registers_for_mcu();
 
 			if (mmio_read_32(BOOT_ARGS_REG) & FIP_LOADED) {
 				NOTICE("FIP is in position\n");

@@ -480,6 +480,12 @@ static void select_board(void)
 	case BM1684X_SM7_CUST_V1:
 		env_set("dtb_name", "bm1684x_sm7_cust_v1.dtb");
 		break;
+	case BM1684X_SM7_CUST_V3:
+		env_set("dtb_name", "bm1684x_sm7_cust_v3.dtb");
+		break;
+	case BM1684X_SE7_V3_0:
+		env_set("dtb_name", "bm1684x_se7_v3_0.dtb");
+		break;
 	default:
 		printf("unknown board type %d\n", board_type);
 	}
@@ -579,6 +585,8 @@ static const char * const board_names[] = {
 	[BM1684X_M2_CUST02_V0_0] = "bitmain-bm1684x-m2-cust02-v0.0",
 	[BM1684X_SM7_CUST_V1] = "bitmain-bm1684x-sm7-cust-v1",
 	[BM1684X_SM7_CUST_V2] = "bitmain-bm1684x-sm7-cust-v2",
+	[BM1684X_SM7_CUST_V3] = "bitmain-bm1684x-sm7-cust-v3",
+	[BM1684X_SE7_V3_0] = "bitmain-bm1684x-se7-v3.0",
 };
 
 int board_fit_config_name_match(const char *name)

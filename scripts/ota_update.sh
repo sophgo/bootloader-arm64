@@ -50,14 +50,20 @@ function panic() {
     fi
     if [[ "$LAST_PART_NOT_FLASH" == "1" ]] || [[ "$LAST_PART_NOT_FLASH" == "LAST_PART_NOT_FLASH" \
 ]]; then
-        if [ -f $WORK_DIR/sdcard/gpt.gz.bak ]; then
-            mv $WORK_DIR/sdcard/gpt.gz.bak $WORK_DIR/sdcard/gpt.gz
+        if [ -f $WORK_DIR/gpt.gz.ota_update_bak ]; then
+            mv $WORK_DIR/gpt.gz.ota_update_bak $WORK_DIR/gpt.gz
         fi
     fi
     popd &>/dev/null
     touch /dev/shm/ota_error_flag
     wall "[OTA PANIC] $@"
     exit 1
+}
+
+function file_validate() {
+    local file
+    file=$(eval echo \$1)
+    [ -r ${file} ] || panic "$i \"$file\" is not readable"
 }
 
 # 必须是root账户
@@ -104,6 +110,16 @@ otaenvsetup_str="setenv otaenvset  ';'
 "
 fi
 
+# 检查参数
+for arg in "$@"; do
+    case $arg in
+        LAST_PART_NOT_FLASH=*)
+            LAST_PART_NOT_FLASH="${arg#*=}"
+            shift
+            ;;
+    esac
+done
+
 # 启动后台服务，依赖systemd
 DDR_SHELL_FILE="/dev/shm/ota_shell.sh"
 SHELL_FILE="$(readlink -f "${BASH_SOURCE[0]}")"
@@ -140,25 +156,30 @@ LOGFILE="$(readlink -f "${BASH_SOURCE[0]}").log"
 rm -f $LOGFILE*
 exec > >(tee -a "$LOGFILE") 2>&1
 
-echo "[INFO] ota update tool, version: v1.2.0"
+echo "[INFO] ota update tool, version: v1.3.1"
 
-WORK_DIR="$1"
-echo "[INFO] work dir: $WORK_DIR"
-cd $WORK_DIR
-
-if [[ "$2" == "LAST_PART_NOT_FLASH" ]]; then
-    LAST_PART_NOT_FLASH="1"
-    echo "[INFO] LAST_PART_NOT_FLASH mode enable"
+WORK_DIR=""
+if [ ! -d ${1}/sdcard ]; then
+    echo "[INFO] cannot find sdcard, maybe in sdcard ..."
+    md5file=$(find ${1} -type f -name "*md5*")
+    file_validate ${md5file}
+    file_validate ${1}/BOOT
+    file_validate ${1}/boot.scr
+    WORK_DIR=$(realpath ${1})
 else
+    WORK_DIR="$1"/sdcard
+fi
+echo "[INFO] work dir: $WORK_DIR"
+pushd $WORK_DIR || panic "cannot pushd $WORK_DIR, please check files healthy"
+
+LAST_PART_NOT_FLASH="1"
+if [[ "$2" == "0" ]]; then
     LAST_PART_NOT_FLASH="0"
     echo "[INFO] LAST_PART_NOT_FLASH mode disable"
+else
+    LAST_PART_NOT_FLASH="1"
+    echo "[INFO] LAST_PART_NOT_FLASH mode enable"
 fi
-
-function file_validate() {
-    local file
-    file=$(eval echo \$1)
-    [ -r ${file} ] || panic "$i \"$file\" is not readable"
-}
 
 # 记录系统信息
 echo "-----------------------------------------------------------"
@@ -173,11 +194,6 @@ lsusb >>"$LOGFILE"
 lspci >>"$LOGFILE"
 top -n1 >>"$LOGFILE"
 
-pushd sdcard
-if [[ "$?" != "0" ]]; then
-    panic "cannot pushd $WORK_DIR/sdcard, please check files healthy"
-fi
-
 # 使用MD5文件进行刷机包校验
 echo "[INFO] md5 check start"
 md5file=$(find . -type f -name "*md5*")
@@ -185,9 +201,24 @@ file_validate ${md5file}
 md5sum -c ${md5file} &>>"$LOGFILE" || panic "md5 check error!!!"
 echo "[INFO] md5 check success"
 
+ota_cleanup() {
+    wall "[OTA INFO] clean ..."
+    echo "[INFO] clean ..."
+	if [[ "$LAST_PART_NOT_FLASH" == "1" ]]; then
+        if [ -f $WORK_DIR/gpt.gz.ota_update_bak ]; then
+            mv $WORK_DIR/gpt.gz.ota_update_bak $WORK_DIR/gpt.gz
+        fi
+    fi
+	exit 0
+}
+trap ota_cleanup EXIT SIGHUP SIGINT SIGQUIT SIGTERM
+
 # 确定刷机包大小和刷机后占空空间
 echo "[INFO] check update size check start"
 set >>"$LOGFILE"
+if [[ "$(find . -type f -name "partition*xml" | wc -l)" != "1" ]]; then
+    panic "Unable to find one and only one partition.xml file."
+fi
 xmlfile=$(find . -type f -name "partition*xml")
 file_validate ${xmlfile}
 OTA_NEW_PACKAGE_GPT_PART_SIZE_KB=$(cat ${xmlfile} | grep "<physical_partition " | awk -F'"' '{print \
@@ -325,7 +356,7 @@ echo "[INFO] Check fip file and chip type success"
 # 缩小最后一个分区，空出刷机包大小的空间
 echo "[INFO] resize last part to write update pack start"
 set >>"$LOGFILE"
-OTA_LAST_DEVICE=/dev/$(lsblk -o NAME /dev/mmcblk0 | tail -n1 | sed 's|└─||g')
+OTA_LAST_DEVICE=/dev/$(lsblk -l -o NAME /dev/mmcblk0 | tail -n1)
 OTA_LAST_DEVICE_MOUNT_POINT=$(df | grep "${OTA_LAST_DEVICE}" | awk -F' ' '{print $6}')
 OTA_LAST_DEVICE_SIZE_KB=$(echo "$(lsblk -b ${OTA_LAST_DEVICE} | tail -n1 | awk -F' ' '{print $4}') \
 / 1024" | bc)
@@ -347,10 +378,12 @@ fuser -mk "${OTA_LAST_DEVICE}"
 fuser -mk "${OTA_LAST_DEVICE}"
 fuser -mk "${OTA_LAST_DEVICE}"
 fuser -mk "${OTA_LAST_DEVICE}"
-sleep 5
-fuser -mk "${OTA_LAST_DEVICE}"
 echo "[INFO] kill process of ${OTA_LAST_DEVICE_MOUNT_POINT} success"
-umount -f ${OTA_LAST_DEVICE}
+for i in {1..50}; do
+    fuser -mk "${OTA_LAST_DEVICE}"
+    umount -f "${OTA_LAST_DEVICE}"
+    df | grep "${OTA_LAST_DEVICE}"
+done
 if [[ "$(df | grep ${OTA_LAST_DEVICE} | wc -l)" != "0" ]]; then
     panic "umount ${OTA_LAST_DEVICE} error!!!"
 fi
@@ -361,9 +394,9 @@ if [[ "$?" != "0" ]]; then
 eMMC partition is healthy"
 fi
 mount -a
-cd $WORK_DIR/sdcard
+cd $WORK_DIR
 if [[ "$?" != "0" ]]; then
-    panic "cannot cd $WORK_DIR/sdcard, please check files healthy"
+    panic "cannot cd $WORK_DIR, please check files healthy"
 fi
 echo "[INFO] resize last part to write update pack success"
 
@@ -383,7 +416,7 @@ RT_END}\n0700\nw\nY\n" | gdisk ${OTA_GPT_TEMP_DISK_FILE}
     gdisk -l ${OTA_GPT_TEMP_DISK_FILE}
     dd if=${OTA_GPT_TEMP_DISK_FILE} of=${OTA_GPT_TEMP_FILE} bs=1 count=17408 || panic "dd sparse \
 file new info ${OTA_GPT_TEMP_DISK_FILE} to gpt file ${OTA_GPT_TEMP_FILE} error"
-    mv gpt.gz gpt.gz.bak
+    mv gpt.gz gpt.gz.ota_update_bak
     gzip -c ${OTA_GPT_TEMP_FILE} >gpt.gz || panic "gzip file ${OTA_GPT_TEMP_FILE} to gpt.gz error"
     sync
 fi
@@ -529,6 +562,7 @@ echo Program fip.bin done
 " >>$OTA_UPDATE_SCRIPT_FILE
 elif [[ "${CPU_MODEL}" == "bm1688" ]] || [[ "${CPU_MODEL}" == "cv186ah" ]]; then
     echo "
+cmp.b 0x05207f82 0x05207f83 1; if test \$? -eq 1; then setenv consoledev ttyS2; fi
 echo Program $OTA_FIP_FILE start
 mmc dev 0
 mmc read \${ramdisk_addr_r} ${OTA_FIP_WRITE_OFFSET} ${OTA_FIP_WRITE_SIZE}
@@ -749,8 +783,8 @@ echo "[INFO] chack pack md5sum on emmc success"
 
 set >>"$LOGFILE"
 if [[ "$LAST_PART_NOT_FLASH" == "1" ]]; then
-    if [ -f gpt.gz.bak ]; then
-        mv gpt.gz.bak gpt.gz
+    if [ -f gpt.gz.ota_update_bak ]; then
+        mv gpt.gz.ota_update_bak gpt.gz
     fi
 fi
 popd #sdcard
@@ -759,7 +793,7 @@ echo "[INFO] Upgrade preparation is complete. Please restart the device to begin
 touch /dev/shm/ota_success_flag
 sync
 # You can uncomment the line below to automatically reboot after the OTA preparation is complete.
-# reboot -f
+reboot -f
 while true; do
     wall "[OTA] Upgrade preparation is complete. Please restart the device to begin the upgrade."
     sleep 5
