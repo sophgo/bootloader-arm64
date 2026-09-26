@@ -6,6 +6,11 @@ After=basic.target
 User=root
 ExecStart=/usr/sbin/bmrt_loadko.sh
 Type=oneshot
+TimeoutStartSec=90
+TimeoutStopSec=10
+Restart=no
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=network.target

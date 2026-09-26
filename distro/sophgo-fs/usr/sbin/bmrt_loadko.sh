@@ -1,4 +1,27 @@
 #!/bin/bash
+LOAD_FAIL=0
+INSMOD_BIN=$(command -v insmod)
+echo 0 > /proc/sys/kernel/panic 2>/dev/null || true
+echo 0 > /proc/sys/kernel/panic_on_oops 2>/dev/null || true
+insmod() {
+	local rc=0 err msg
+	echo "bmrt_loadko: insmod $*"
+	err=$("$INSMOD_BIN" "$@" 2>&1)
+	rc=$?
+	if [ -n "$err" ]; then
+		printf '%s\n' "$err"
+	fi
+	if [ "$rc" -ne 0 ]; then
+		msg="bmrt_loadko: insmod failed rc=$rc $*"
+		if [ -n "$err" ]; then
+			msg="$msg: $(printf '%s' "$err" | tr '\n' ' ')"
+		fi
+		echo "$msg"
+		echo "$msg" > /dev/console
+		LOAD_FAIL=1
+	fi
+	return 0
+}
 function load_ko()
 {
 	if [ -f /opt/sophon/libsophon-current/data/bmtpu.ko ]; then
@@ -39,4 +62,8 @@ function invoke_board_setup() {
 echo load bmrt ko ...
 load_ko
 invoke_board_setup
+if [ "$LOAD_FAIL" -ne 0 ]; then
+	echo "bmrt_loadko: driver load failed"
+	exit 1
+fi
 exit 0

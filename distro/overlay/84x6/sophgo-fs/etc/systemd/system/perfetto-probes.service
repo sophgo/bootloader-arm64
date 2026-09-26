@@ -1,0 +1,12 @@
+[Unit]
+Description=perfetto trace daemon
+After=local-fs.target perfetto-traced.service
+Requires=perfetto-traced.service
+ 
+[Service]
+Type=simple
+User=root
+ExecStart=/sbin/traced_probes
+ 
+[Install]
+WantedBy=multi-user.target

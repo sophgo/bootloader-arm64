@@ -1,0 +1,11 @@
+[Unit]
+Description=Bsl Service
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/bsl_hack_bm.sh
+Type=oneshot
+
+[Install]
+WantedBy=default.target
+

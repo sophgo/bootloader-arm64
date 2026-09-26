@@ -1,0 +1,488 @@
+#!/bin/bash
+LOAD_FAIL=0
+INSMOD_BIN=$(command -v insmod)
+echo 0 > /proc/sys/kernel/panic 2>/dev/null || true
+echo 0 > /proc/sys/kernel/panic_on_oops 2>/dev/null || true
+insmod() {
+	local rc=0 err msg
+	echo "bmrt_loadko: insmod $*"
+	err=$("$INSMOD_BIN" "$@" 2>&1)
+	rc=$?
+	if [ -n "$err" ]; then
+		printf '%s\n' "$err"
+	fi
+	if [ "$rc" -ne 0 ]; then
+		msg="bmrt_loadko: insmod failed rc=$rc $*"
+		if [ -n "$err" ]; then
+			msg="$msg: $(printf '%s' "$err" | tr '\n' ' ')"
+		fi
+		echo "$msg"
+		echo "$msg" > /dev/console
+		LOAD_FAIL=1
+	fi
+	return 0
+}
+function link_to_firmware()
+{
+	local src="$1"
+	local dest="/lib/firmware/$(basename "$src")"
+
+	if [ -L "$dest" ]; then
+		[ "$(readlink "$dest")" = "$src" ] && return 0
+		ln -sf "$src" "$dest"
+		return
+	fi
+
+	[ -e "$dest" ] && return 0
+
+	ln -s "$src" "$dest"
+}
+
+function load_ko()
+{
+	if [ -f /opt/sophon/libsophon-current/data/bmtpu.ko ]; then
+		mkdir -p /lib/firmware
+		data_dir=/opt/sophon/libsophon-current/data
+		for bin in "$data_dir"/*.bin; do
+			[ -f "$bin" ] || continue
+			link_to_firmware "$bin"
+		done
+		tpu_module_dir=/opt/sophon/libsophon-current/lib/tpu_module
+		if [ -d "$tpu_module_dir" ]; then
+			for so in "$tpu_module_dir"/lib*_kernel_module.so; do
+				[ -f "$so" ] || continue
+				link_to_firmware "$so"
+			done
+		fi
+		insmod /opt/sophon/libsophon-current/data/bmtpu.ko
+	fi
+
+	if [ -f /opt/sophon/libsophon-current/data/load.sh ]; then
+		pushd /opt/sophon/libsophon-current/data
+		chmod +x load.sh
+		chmod +x unload.sh
+		./load.sh
+		popd
+	fi
+
+	if [ -f /opt/sophon/libsophon-current/data/load_jpu.sh ]; then
+		pushd /opt/sophon/libsophon-current/data
+		chmod +x load_jpu.sh
+		chmod +x unload_jpu.sh
+		./load_jpu.sh
+		popd
+	fi
+}
+
+function load_soph_base_ko()
+{
+	echo load soph_base ko ...
+	if [ -f /mnt/system/ko/soph_base.ko ]; then
+		insmod /mnt/system/ko/soph_base.ko
+	fi
+}
+
+function load_soph_2d_engine_ko()
+{
+	echo load soph_2d_engine ko ...
+	if [ -f /mnt/system/ko/soph_2d_engine.ko ]; then
+		insmod /mnt/system/ko/soph_2d_engine.ko
+	fi
+}
+
+function load_soph_pwm_ko()
+{
+	echo load soph_pwm ko ...
+	if [ -f /mnt/system/ko/soph_pwm.ko ]; then
+		insmod /mnt/system/ko/soph_pwm.ko
+	fi
+}
+
+function load_soph_saradc_ko()
+{
+	echo load soph_saradc ko ...
+	if [ -f /mnt/system/ko/soph_saradc.ko ]; then
+		insmod /mnt/system/ko/soph_saradc.ko
+	fi
+}
+
+function load_soph_clock_cooling_ko()
+{
+	echo load soph_clock_cooling ko ...
+	if [ -f /mnt/system/ko/soph_clock_cooling.ko ]; then
+		insmod /mnt/system/ko/soph_clock_cooling.ko
+	fi
+}
+
+function load_soph_dpu_ko()
+{
+	echo load soph_dpu ko ...
+	if [ -f /mnt/system/ko/soph_dpu.ko ]; then
+		insmod /mnt/system/ko/soph_dpu.ko
+	fi
+}
+
+function load_soph_dwa_ko()
+{
+	echo load soph_dwa ko ...
+	if [ -f /mnt/system/ko/soph_dwa.ko ]; then
+		insmod /mnt/system/ko/soph_dwa.ko
+	fi
+}
+
+function load_soph_ive_ko()
+{
+	echo load soph_ive ko ...
+	if [ -f /mnt/system/ko/soph_ive.ko ]; then
+		insmod /mnt/system/ko/soph_ive.ko
+	fi
+}
+
+function load_soph_rtc_ko()
+{
+	echo load soph_rtc ko ...
+	if [ -f /mnt/system/ko/soph_rtc.ko ]; then
+		insmod /mnt/system/ko/soph_rtc.ko
+	fi
+}
+
+function load_soph_stitch_ko()
+{
+	echo load soph_stitch ko ...
+	if [ -f /mnt/system/ko/soph_stitch.ko ]; then
+		insmod /mnt/system/ko/soph_stitch.ko
+	fi
+}
+
+function load_soph_sys_ko()
+{
+	echo load soph_sys ko ...
+	if [ -f /mnt/system/ko/soph_sys.ko ]; then
+		insmod /mnt/system/ko/soph_sys.ko
+	fi
+}
+
+function load_soph_vpss_ko()
+{
+	echo load soph_vpss ko...
+	if [ -f /mnt/system/ko/soph_vpss.ko ]; then
+		insmod /mnt/system/ko/soph_vpss.ko
+	fi
+}
+
+function load_soph_drm_ko()
+{
+	echo load soph_drm ko	...
+	if [ -f /mnt/system/ko/soph_drm.ko ]; then
+		insmod /mnt/system/ko/soph_drm.ko
+	fi
+}
+
+function load_g_serial_ko()
+{
+	echo load g_serial ko...
+	if [ -f /mnt/system/ko/g_serial.ko ]; then
+		insmod /mnt/system/ko/g_serial.ko
+	fi
+}
+
+function load_usb_f_obex_ko()
+{
+	echo load usb_f_obex ko ...
+	if [ -f /mnt/system/ko/usb_f_obex.ko ]; then
+		insmod /mnt/system/ko/usb_f_obex.ko
+	fi
+}
+
+function load_usb_f_serial_ko()
+{
+	echo load usb_f_serial ko ...
+	if [ -f /mnt/system/ko/usb_f_serial.ko ]; then
+		insmod /mnt/system/ko/usb_f_serial.ko
+	fi
+}
+
+function load_soph_vc_drv_ko()
+{
+	echo load soph_vc_drv ko	...
+	if [ -f /mnt/system/ko/soph_vc_drv.ko ]; then
+		insmod /mnt/system/ko/soph_vc_drv.ko
+	fi
+}
+
+function load_soph_ldc_ko()
+{
+        echo load soph_ldc ko ...
+        if [ -f /mnt/system/ko/soph_ldc.ko ]; then
+                insmod /mnt/system/ko/soph_ldc.ko
+        fi
+}
+
+#####for device SDK ######
+function load_soph_vi_ko()
+{
+        if [ -f /mnt/system/ko/soph_vi.ko ]; then
+        	echo load soph_vi ko ...
+                insmod /mnt/system/ko/soph_vi.ko
+        fi
+}
+
+function load_soph_hdmi_ko()
+{
+        if [ -f /mnt/system/ko/soph_hdmi.ko ]; then
+        	echo load soph_hdmi ko ...
+                insmod /mnt/system/ko/soph_hdmi.ko
+        fi
+}
+
+function load_soph_snsr_i2c_ko()
+{
+        if [ -f /mnt/system/ko/soph_snsr_i2c.ko ]; then
+        	echo load soph_vo ko ...
+                insmod /mnt/system/ko/soph_snsr_i2c.ko
+        fi
+}
+
+function load_soph_vo_ko()
+{
+        if [ -f /mnt/system/ko/soph_vo.ko ]; then
+        	echo load soph_vo ko ...
+                insmod /mnt/system/ko/soph_vo.ko
+        fi
+}
+
+function load_soph_mipi_rx_ko()
+{
+        if [ -f /mnt/system/ko/soph_mipi_rx.ko ]; then
+        	echo load soph_mipi_rx ko ...
+                insmod /mnt/system/ko/soph_mipi_rx.ko
+        fi
+}
+
+function load_soph_rgn_ko()
+{
+        if [ -f /mnt/system/ko/soph_rgn.ko ]; then
+        	echo load soph_rgn ko ...
+                insmod /mnt/system/ko/soph_rgn.ko
+        fi
+}
+
+function load_soph_mipi_tx_ko()
+{
+        if [ -f /mnt/system/ko/soph_mipi_tx.ko ]; then
+        	echo load soph_mipi_tx ko ...
+                insmod /mnt/system/ko/soph_mipi_tx.ko
+        fi
+}
+
+function is_84x6_series()
+{
+	local id=""
+	if [ "$(id -u)" -eq 0 ]; then
+		id=$(busybox devmem 0x28100000 32 2>/dev/null || true)
+	else
+		id=$(sudo busybox devmem 0x28100000 32 2>/dev/null || true)
+	fi
+	id=$(printf '%s' "$id" | tr '[:upper:]' '[:lower:]' | tr -d ' \t\r\n')
+	[ "$id" = "0x16940000" ]
+}
+
+function load_soph_cv84x2_dvfs_pmbus_ko()
+{
+	if ! is_84x6_series; then
+		return 0
+	fi
+	echo load soph_cv84x2_dvfs_pmbus ko ...
+	if [ -f /mnt/system/ko/soph_cv84x2_dvfs_pmbus.ko ]; then
+		insmod /mnt/system/ko/soph_cv84x2_dvfs_pmbus.ko
+	fi
+}
+#####end######
+
+function load_ethernet_ko()
+{
+        echo load ethernet ko ...
+        if [ -f /mnt/system/ko/r8169.ko ]; then
+                insmod /mnt/system/ko/r8169.ko
+        fi
+        if [ -f /mnt/system/ko/igb.ko ]; then
+                insmod /mnt/system/ko/igb.ko
+        fi
+}
+
+function load_spacc_ko()
+{
+	echo load spacc ko ...
+	if [ -f /mnt/system/ko/sophon_spacc.ko ]; then
+		insmod /mnt/system/ko/sophon_spacc.ko
+	fi
+}
+
+function load_80211_ko()
+{
+        echo load cfg80211.ko ...
+        if [ -f /mnt/system/ko/cfg80211.ko ]; then
+                insmod /mnt/system/ko/cfg80211.ko
+        fi
+        echo load mac80211.ko ...
+        if [ -f /mnt/system/ko/mac80211.ko ]; then
+                insmod /mnt/system/ko/mac80211.ko
+        fi
+
+	if lsusb | grep -q "0bda:c812"; then
+	    if [ -f /mnt/system/ko/rtl8822cu.ko ]; then
+	        insmod /mnt/system/ko/rtl8822cu.ko
+	    fi
+        fi
+}
+
+function load_wifi_ko()
+{
+	echo load aic8800 wifi ko ...
+	if lsusb | grep -q "a69c:8d80"; then
+		if [ -f /mnt/system/ko/aic_load_fw.ko ]; then
+			insmod /mnt/system/ko/aic_load_fw.ko
+		fi
+		sleep 1
+		if [ -f /mnt/system/ko/aic8800_fdrv.ko ]; then
+			insmod /mnt/system/ko/aic8800_fdrv.ko
+		fi
+		sleep 1
+		if [ -f /mnt/system/ko/aic_btusb.ko ]; then
+			insmod /mnt/system/ko/aic_btusb.ko
+		fi
+	fi
+
+	if lsusb | grep -q "0bda:c812"; then
+		if [ -f /mnt/system/ko/rtl8822cu.ko ]; then
+			insmod /mnt/system/ko/rtl8822cu.ko
+		fi
+	fi
+}
+
+monitor_memory() {
+	local THRESHOLD=$((160 * 1024))
+	local avail_mem
+	avail_mem=$(grep MemAvailable /proc/meminfo | awk '{print $2}')
+	if [ "$avail_mem" -le "$THRESHOLD" ]; then
+		local TOP_PID
+		TOP_PID=$(ps aux --sort=-%mem | awk 'NR==2 {print $2}')
+		TOP_CMD=$(ps -p ${TOP_PID} -o cmd=)
+		local LOGFILE="/var/log/mem_monitor.log"
+		local TS
+		TS=$(date '+%Y-%m-%d %H:%M:%S')
+		echo "----------------------------------------" >> "$LOGFILE"
+		echo "[$TS] memory info:" >> "$LOGFILE"
+		ps aux --sort=-%mem | head -n 20 >> "$LOGFILE"
+		cat /proc/meminfo >> "$LOGFILE"
+		kill -9 "$TOP_PID"
+		wall "Warrning: free mem < 160MB, kill (PID: $TOP_PID) (CMD: $TOP_CMD) !"
+		echo "Warrning: free mem < 160MB, kill (PID: $TOP_PID) (CMD: $TOP_CMD) !" >> "$LOGFILE"
+		echo "----------------------------------------" >> "$LOGFILE"
+	fi
+}
+monitor_memory_str=$(declare -f monitor_memory | gzip -c - | base64)
+
+if [ -e /etc/init/P99boottime ]; then
+	/etc/init/P99boottime start
+fi
+
+load_80211_ko
+load_soph_base_ko
+load_soph_sys_ko
+load_soph_vpss_ko
+load_soph_dwa_ko
+load_soph_clock_cooling_ko
+load_soph_vc_drv_ko
+####device sdk begin#####
+if [ -d "/opt/sophon/middleware" ]; then
+load_soph_vi_ko
+load_soph_vo_ko
+load_soph_mipi_tx_ko
+load_soph_mipi_rx_ko
+load_soph_hdmi_ko
+load_soph_snsr_i2c_ko
+load_soph_rgn_ko
+fi
+####device sdk end#######
+load_soph_rtc_ko
+load_soph_ive_ko
+echo load bmrt ko ...
+load_ko
+load_soph_cv84x2_dvfs_pmbus_ko
+load_soph_2d_engine_ko
+load_soph_pwm_ko
+load_soph_saradc_ko
+load_soph_dpu_ko
+load_soph_stitch_ko
+load_soph_drm_ko
+# load_g_serial_ko
+# load_usb_f_obex_ko
+# load_usb_f_serial_ko
+load_soph_ldc_ko
+load_ethernet_ko
+load_spacc_ko
+load_wifi_ko
+
+# modify permission for drivers
+echo "load.sh starting..."
+./sbin/load.sh -d soph-base
+./sbin/load.sh -d soph-sys
+./sbin/load.sh -d soph-tde0
+./sbin/load.sh -d soph-tde1
+./sbin/load.sh -d soph-vpss
+./sbin/load.sh -d soph_vc_dec
+./sbin/load.sh -d soph_vc_enc
+if [ -d "/opt/sophon/middleware" ]; then
+./sbin/load.sh -d soph_vi
+./sbin/load.sh -d soph_vo
+./sbin/load.sh -d soph_mipi_rx
+./sbin/load.sh -d soph_mipi_tx
+./sbin/load.sh -d soph_snsr_i2c
+./sbin/load.sh -d soph_hdmi
+./sbin/load.sh -d soph_rgn
+fi
+./sbin/load.sh -p /dev/dri/ -d card0
+./sbin/load.sh -d soph-dpu
+./sbin/load.sh -d soph-dwa
+./sbin/load.sh -d soph-ive
+./sbin/load.sh -d soph-stitch
+./sbin/load.sh -d soph-ldc
+./sbin/load.sh -d spacc
+./sbin/load.sh -p /dev/snd/ -d controlC0
+./sbin/load.sh -p /dev/snd/ -d controlC1
+./sbin/load.sh -p /dev/snd/ -d controlC2
+./sbin/load.sh -p /dev/snd/ -d pcmC0D0c
+./sbin/load.sh -p /dev/snd/ -d pcmC0D1c
+./sbin/load.sh -p /dev/snd/ -d pcmC1D0p
+./sbin/load.sh -p /dev/snd/ -d pcmC1D1p
+./sbin/load.sh -p /dev/snd/ -d pcmC2D0p
+./sbin/load.sh -p /dev/snd/ -d timer
+for file in $(find /dev/ -name video*);do
+	file_name=${file##*/}
+	./sbin/load.sh -d $file_name
+done
+
+for((i=0;i<=7;i++));do
+	cmd="/sys/class/net/eth0/queues/rx-$i/rps_cpus"
+	if [ -f $cmd ]; then
+		echo f > $cmd
+		echo 2048 > /sys/class/net/eth0/queues/rx-$i/rps_flow_cnt
+	fi
+
+	cmd="/sys/class/net/eth1/queues/rx-$i/rps_cpus"
+	if [ -f $cmd ]; then
+		echo f > $cmd
+		echo 2048 > /sys/class/net/eth1/queues/rx-$i/rps_flow_cnt
+	fi
+done
+
+systemd-run --unit=sophgo-monitor-memory /usr/bin/bash -c \
+"source /dev/stdin <<< \$(echo \"$monitor_memory_str\" | base64 -d | gzip -d -c -); while true; do monitor_memory; sleep 2; done"
+systemctl status sophgo-monitor-memory.service -l --no-page
+
+if [ "$LOAD_FAIL" -ne 0 ]; then
+	echo "bmrt_loadko: driver load failed"
+	exit 1
+fi
+exit 0

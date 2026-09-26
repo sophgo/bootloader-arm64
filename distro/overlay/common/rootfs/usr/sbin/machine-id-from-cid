@@ -1,0 +1,26 @@
+#!/bin/bash
+is_valid_id() {
+	echo "$1" | grep -Eq '^[0-9a-f]{32}$'
+}
+CID_FILE=$(ls /sys/class/mmc_host/mmc0/mmc0:*/cid 2>/dev/null | head -1)
+CID_VALUE=""
+if [ -f "$CID_FILE" ]; then
+	CID_VALUE=$(tr -d '\n\r ' < "$CID_FILE" 2>/dev/null | tr 'A-F' 'a-f')
+fi
+CURRENT=$(tr -d '\n\r ' < /etc/machine-id 2>/dev/null | tr 'A-F' 'a-f')
+if mountpoint -q /etc/machine-id; then
+	if is_valid_id "$CID_VALUE"; then
+		printf '%s\n' "$CID_VALUE" > /run/machine-id
+	fi
+	exit 0
+fi
+if is_valid_id "$CURRENT"; then
+	exit 0
+fi
+if ! is_valid_id "$CID_VALUE"; then
+	exit 0
+fi
+chmod 0644 /etc/machine-id 2>/dev/null || true
+printf '%s\n' "$CID_VALUE" > /etc/machine-id
+chmod 0444 /etc/machine-id 2>/dev/null || true
+exit 0

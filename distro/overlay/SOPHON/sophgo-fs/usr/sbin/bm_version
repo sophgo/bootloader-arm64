@@ -1,7 +1,20 @@
 #!/bin/bash
 
 chip=$(cat /factory/OEMconfig.ini | grep "CHIP =" | awk -F= '{print $2}' | sed 's/^ *//')
-echo "SophonSDK($chip) 2.2"
+cpu_model=$(awk -F': ' '/^model name/{print $2; exit}' /proc/cpuinfo | tr '[:upper:]' '[:lower:]' | tr -d ' \t\r\n')
+hw_chip=""
+case "$cpu_model" in
+    bm1688) hw_chip="BM1688" ;;
+    cv186ah) hw_chip="CV186AH" ;;
+    cv84x2) hw_chip="CV84X2" ;;
+    cv84x4) hw_chip="CV84X4" ;;
+    cv84x6) hw_chip="CV84X6" ;;
+esac
+if [ -n "$hw_chip" ]; then
+    echo "SophonSDK($hw_chip) 2.3"
+else
+    echo "SophonSDK($chip) 2.3"
+fi
 
 #soc mode
 dpkg -l | grep sophon-soc-libsophon | awk '{printf "%s : %s\n",$2,$3}'

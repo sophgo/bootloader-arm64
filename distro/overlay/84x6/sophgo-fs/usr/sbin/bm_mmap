@@ -1,0 +1,171 @@
+#!/bin/bash
+
+DDR_START="100000000"
+
+DDR_INFO=$(show_ddr)
+DDR_SIZE_GB=$(echo "$DDR_INFO" | grep -oP 'SIZE:\K\d+GB' | cut -d'G' -f1)
+DDR_WIDTH=$(echo "$DDR_INFO" | grep -oP 'DDR_WIDTH:\K\d+bit')
+
+DDR_TOTAL_BYTES=$((DDR_SIZE_GB * 1024 * 1024 * 1024))
+DDR_TOTAL_MB=$((DDR_SIZE_GB * 1024))
+DDR_END_HEX=$(printf "%x" $((0x$DDR_START + DDR_TOTAL_BYTES - 1)))
+
+MEMORY_REGIONS=(
+    "/sys/firmware/devicetree/base/reserved-memory/ion_vpp_mem/reg"
+    "/sys/firmware/devicetree/base/reserved-memory/ion_npu_mem/reg"
+    "/sys/firmware/devicetree/base/reserved-memory/scalar_mem/reg"
+)
+
+declare -A REGION_NAMES=(
+    ["ion_vpp_mem"]="VPP ION"
+    ["ion_npu_mem"]="NPU ION"
+    ["scalar_mem"]="Scalar"
+)
+
+format_address() {
+    local addr="$1"
+    echo "0x$(echo "$addr" | sed 's/^0*//')"
+}
+
+parse_reg_file() {
+    local file_path="$1"
+    local hex_data=$(hexdump -Cv "$file_path" 2>/dev/null | head -1)
+    
+    if [ -z "$hex_data" ]; then
+        echo "error:fail read reg file - $file_path" >&2
+        return 1
+    fi
+    
+    local start_hex=$(echo "$hex_data" | awk '{print $2$3$4$5$6$7$8$9}')
+    local size_hex=$(echo "$hex_data" | awk '{print $10$11$12$13$14$15$16$17}')
+    
+    start_hex=$(echo "$start_hex" | tr -d ' ')
+    size_hex=$(echo "$size_hex" | tr -d ' ')
+    
+    local start_dec=$((0x$start_hex))
+    local size_dec=$((0x$size_hex))
+    local end_dec=$((start_dec + size_dec - 1))
+    local end_hex=$(printf "%x" $end_dec)
+    
+    start_hex=$(format_address "$start_hex")
+    end_hex=$(format_address "$end_hex")
+    
+    echo "$start_hex $end_hex $size_dec"
+}
+
+declare -A MEMORY_INFO
+declare -a ALL_REGIONS
+
+for region_file in "${MEMORY_REGIONS[@]}"; do
+    if [ -f "$region_file" ]; then
+        region_name=$(basename $(dirname "$region_file"))
+        region_data=$(parse_reg_file "$region_file")
+        
+        if [ -n "$region_data" ]; then
+            MEMORY_INFO["$region_name,start"]=$(echo $region_data | awk '{print $1}')
+            MEMORY_INFO["$region_name,end"]=$(echo $region_data | awk '{print $2}')
+            MEMORY_INFO["$region_name,size"]=$(echo $region_data | awk '{print $3}')
+            
+            ALL_REGIONS+=("$region_name")
+        fi
+    else
+        echo "warning:file not exit - $region_file" >&2
+    fi
+done
+
+if [ ${#ALL_REGIONS[@]} -eq 0 ]; then
+    echo "error: can't find anything" >&2
+    exit 1
+fi
+
+TOTAL_ALLOCATED=0
+for region in "${ALL_REGIONS[@]}"; do
+    TOTAL_ALLOCATED=$((TOTAL_ALLOCATED + ${MEMORY_INFO["$region,size"]}))
+done
+
+TOTAL_FREE=$((DDR_TOTAL_BYTES - TOTAL_ALLOCATED))
+
+echo ""
+echo "DDR Memory Map (${DDR_SIZE_GB}GB):"
+echo ""
+
+BAR_HEIGHT=50  
+
+declare -A REGION_BAR_INFO
+for region in "${ALL_REGIONS[@]}"; do
+    start_hex=${MEMORY_INFO["$region,start"]}
+    end_hex=${MEMORY_INFO["$region,end"]}
+    size_dec=${MEMORY_INFO["$region,size"]}
+    
+    start_offset=$((0x$(echo "$start_hex" | sed 's/^0x//') - 0x$(echo "$DDR_START" | sed 's/^0x//')))
+    end_offset=$((0x$(echo "$end_hex" | sed 's/^0x//') - 0x$(echo "$DDR_START" | sed 's/^0x//')))
+    
+    bar_start=$(echo "scale=0; $start_offset * $BAR_HEIGHT / $DDR_TOTAL_BYTES" | bc -l)
+    bar_end=$(echo "scale=0; $end_offset * $BAR_HEIGHT / $DDR_TOTAL_BYTES" | bc -l)
+    bar_height=$((bar_end - bar_start))
+    
+    if [ $bar_height -eq 0 ]; then
+        bar_height=1
+    fi
+    
+    REGION_BAR_INFO["$region,start"]=$bar_start
+    REGION_BAR_INFO["$region,height"]=$bar_height
+    REGION_BAR_INFO["$region,size_mb"]=$(echo "scale=2; $size_dec / 1024 / 1024" | bc -l)
+done
+
+system_bar_height=$(echo "scale=0; $TOTAL_FREE * $BAR_HEIGHT / $DDR_TOTAL_BYTES" | bc -l)
+
+echo "    +----------------+----------------------------------------+"
+echo "    |                | DDR Max Size: ${DDR_SIZE_GB}GB (0x$(format_address "$DDR_END_HEX"))"
+echo "    +----------------+----------------------------------------+"
+
+current_line=$BAR_HEIGHT
+
+sorted_regions=($(for region in "${ALL_REGIONS[@]}"; do
+    start_dec=$((0x$(echo "${MEMORY_INFO["$region,start"]}" | sed 's/^0x//')))
+    echo "$start_dec $region"
+done | sort -nr | awk '{print $2}'))
+
+system_memory_size_shown=false
+
+for region in "${sorted_regions[@]}"; do
+    bar_start=${REGION_BAR_INFO["$region,start"]}
+    bar_height=${REGION_BAR_INFO["$region,height"]}
+    size_mb=${REGION_BAR_INFO["$region,size_mb"]}
+    start_hex=${MEMORY_INFO["$region,start"]}
+    end_hex=${MEMORY_INFO["$region,end"]}
+    
+    region_display_name=${REGION_NAMES["$region"]}
+    
+    current_line=$((current_line - bar_height))
+    
+    echo "    |****************| $region_display_name End: $end_hex"
+    
+    for ((i=1; i<bar_height-1; i++)); do
+        echo "    |****************|"
+        ((current_line--))
+    done
+    
+    echo "    |****************| $region_display_name Start: $start_hex"
+    echo "    |****************| Size: ${size_mb} MB"
+    
+    current_line=$((current_line - 1))
+    
+    echo "    |----------------|"
+done
+
+if [ $system_bar_height -gt 0 ]; then
+    system_mb=$(echo "scale=2; $TOTAL_FREE / 1024 / 1024" | bc -l)
+    echo "    |                | System Memory: ${system_mb} MB"
+    
+    for ((i=1; i<system_bar_height-1; i++)); do
+        echo "    |                |"
+        ((current_line--))
+    done
+else
+    system_mb=$(echo "scale=2; $TOTAL_FREE / 1024 / 1024" | bc -l)
+    echo "    |                | System Memory: ${system_mb} MB"
+fi
+
+echo "    |                | 0x$(format_address "$DDR_START")"
+echo "    +----------------+----------------------------------------+"

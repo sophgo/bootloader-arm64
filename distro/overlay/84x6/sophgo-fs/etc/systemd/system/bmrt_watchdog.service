@@ -1,0 +1,12 @@
+[Unit]
+Description=setup sophon runtime env.
+After=basic.target
+
+[Service]
+User=root
+ExecStart=/bin/true
+ExecStop=/usr/sbin/bmrt_watchdog.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

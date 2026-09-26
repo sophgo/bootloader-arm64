@@ -1,0 +1,11 @@
+[Unit]
+Description=Sophon Boot Reason Service
+After=basic.target
+
+[Service]
+User=root
+ExecStart=/usr/sbin/boot_reason.sh
+Type=oneshot
+
+[Install]
+WantedBy=multi-user.target

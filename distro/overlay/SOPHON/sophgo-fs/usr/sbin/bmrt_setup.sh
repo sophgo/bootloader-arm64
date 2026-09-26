@@ -35,6 +35,9 @@ function install_prepackages()
 
 		debs_num=$(ls /root/post_install/debs/*.deb | wc -l)
 		if [  -d /root/post_install/debs ] && [ $debs_num -gt 0 ] ; then
+			mkdir -p /run/systemd/system/SophonHDMIStatus.service.d
+			printf '[Unit]\nAfter=\nAfter=network.target\n' > /run/systemd/system/SophonHDMIStatus.service.d/bmrt-setup.conf
+			systemctl daemon-reload || true
 			dpkg -i -R /root/post_install/debs
 
 			while [ $? -ne 0 ];
@@ -42,6 +45,8 @@ function install_prepackages()
 				sleep 2
 				dpkg -i -R /root/post_install/debs
 			done
+			rm -rf /run/systemd/system/SophonHDMIStatus.service.d
+			systemctl daemon-reload || true
 		fi
 		# configure docker
 		if [ -f /lib/systemd/system/docker.service ]; then
@@ -136,12 +141,9 @@ if [ -f "/etc/systemd/system/retrain.service" ]; then
 	systemctl start retrain.service
 fi
 
-# read eMMC CID to /etc/machine-id for generate unique mac addr
-CID_FILE=$(ls /sys/class/mmc_host/mmc0/mmc0\:*/cid 2>/dev/null | head -1)
-if [ -f "$CID_FILE" ]; then
-	CID_VALUE=$(cat "$CID_FILE" 2>/dev/null)
-	if [ -n "$CID_VALUE" ]; then
-		echo "$CID_VALUE" > /etc/machine-id
-		chmod 0444 /etc/machine-id
-	fi
+if [ -f "/data/ota/service/ota-upgrade-ab.service" ]; then
+	systemctl link /data/ota/service/ota-upgrade-ab.service
+	systemctl enable ota-upgrade-ab.service
+	systemctl start ota-upgrade-ab.service
 fi
+

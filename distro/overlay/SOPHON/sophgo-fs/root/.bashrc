@@ -93,6 +93,9 @@ fi
 export PATH=$PATH:/opt/sophon/libsophon-current/bin:/opt/sophon/sophon-ffmpeg-latest/bin
 export PYTHONPATH=/opt/sophon/libsophon-current/lib:$PYTHONPATH:/opt/sophon/sophon-ffmpeg-latest/lib
 
+if [ -r /etc/profile.d/serial-console.sh ]; then
+    . /etc/profile.d/serial-console.sh
+fi
 # enable programmable completion features (you don't need to enable
 # this, if it's already enabled in /etc/bash.bashrc and /etc/profile
 # sources /etc/bash.bashrc).

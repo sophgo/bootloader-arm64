@@ -54,12 +54,12 @@ DEVICE=$(udevadm info --query=path --name=${ROOT_DEVICE} | awk -F'/' '{print $(N
 DEVICE="/dev/${DEVICE}"
 # find the last partition
 if [ "$DEVICE" == "/dev/sda" ]; then
-	LAST_DEVICE=$(ls ${DEVICE}* | tail -1)
+	LAST_DEVICE=$(ls -v ${DEVICE}* | tail -1)
 else
-	LAST_DEVICE=$(ls ${DEVICE}p* | tail -1)
+	LAST_DEVICE=$(ls -v ${DEVICE}p* | tail -1)
 fi
-PART_ENTRY_NUMBER=$(udevadm info --query=property --name=${LAST_DEVICE} | grep '^ID_PART_ENTRY_NUMBER=' | cut -d'=' -f2)
-
+# PART_ENTRY_NUMBER=$(udevadm info --query=property --name=${LAST_DEVICE} | grep '^ID_PART_ENTRY_NUMBER=' | cut -d'=' -f2)
+PART_ENTRY_NUMBER=$(echo "$LAST_DEVICE" | grep -oE '[0-9]+$')
 if [ "$PART_TABLE_TYPE" = "gpt" ]; then
 	${SGDISK} -e ${DEVICE}
 	${PARTPROBE}
