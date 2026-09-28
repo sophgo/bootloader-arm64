@@ -101,6 +101,9 @@ function load_soph_pwm_ko()
 function load_soph_saradc_ko()
 {
 	echo load soph_saradc ko ...
+	if lsmod | grep -q "^soph_saradc "; then
+		return 0
+	fi
 	if [ -f /mnt/system/ko/soph_saradc.ko ]; then
 		insmod /mnt/system/ko/soph_saradc.ko
 	fi
