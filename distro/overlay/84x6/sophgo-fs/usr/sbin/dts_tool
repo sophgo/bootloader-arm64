@@ -1,0 +1,136 @@
+#!/bin/bash
+
+# Check if running as root
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root" 
+   exit 1
+fi
+
+# Verify multi.its file exists
+MULTI_ITS="/boot/multi.its"
+if [[ ! -f "$MULTI_ITS" ]]; then
+   echo "Error: $MULTI_ITS not found!"
+   exit 1
+fi
+
+# Parse DTS types from multi.its file
+declare -A DTS_GROUPS  # Store grouped DTS types
+DTS_TYPES=()           # Store all DTS types in display order
+GROUP_ORDER=()         # Maintain group order
+
+while IFS= read -r line; do
+    # Detect fdt-* device tree nodes
+    if [[ $line =~ ^[[:space:]]*fdt-[^[:space:]]+[[:space:]]*\{ ]]; then
+        in_fdt=1
+        continue
+    fi
+
+    # Extract data line within fdt node
+    if (( in_fdt )) && [[ $line =~ data[[:space:]]*=[[:space:]]*/incbin/\(\"\./([^\"]+\.dtb)\" ]]; then
+        # Get .dtb filename and remove extension
+        dts_file="${BASH_REMATCH[1]}"
+        dts_type="${dts_file%.dtb}"
+
+        # Extract group using *_str_* pattern
+        if [[ "$dts_type" =~ ^([^_]+)_([^_]+)_(.+)$ ]]; then
+            group="${BASH_REMATCH[2]}"  # Middle part is group identifier
+
+            # Add to group
+            if [[ -z "${DTS_GROUPS[$group]}" ]]; then
+                DTS_GROUPS["$group"]="$dts_type"
+                GROUP_ORDER+=("$group")  # Track group order
+            else
+                DTS_GROUPS["$group"]+="|$dts_type"  # Separate types with |
+            fi
+        fi
+
+        in_fdt=0
+    fi
+
+    # Exit node at closing brace
+    [[ $line =~ ^[[:space:]]*\}[[:space:]]*$ ]] && in_fdt=0
+done < "$MULTI_ITS"
+
+# Verify we found DTS types
+if [[ ${#GROUP_ORDER[@]} -eq 0 ]]; then
+    echo "Error: No DTS types found in $MULTI_ITS"
+    exit 1
+fi
+
+# Build DTS_TYPES array in display order (matching what user sees)
+for group in "${GROUP_ORDER[@]}"; do
+    IFS='|' read -ra types <<< "${DTS_GROUPS[$group]}"
+    for type in "${types[@]}"; do
+        DTS_TYPES+=("$type")
+    done
+done
+
+# Device configuration parameters
+DTS_DEVICE="/dev/mmcblk0boot1"
+DTS_OFFSET=160
+DTS_SIZE=32
+DTS_FILE="current_dts_type.txt"
+
+# Read current DTS type from device
+echo "Reading current DTS type from device..."
+dd if=$DTS_DEVICE of=$DTS_FILE bs=1 count=$DTS_SIZE skip=$DTS_OFFSET 2>/dev/null
+CURRENT_DTS_TYPE=$(tr -d '\0' < $DTS_FILE)
+echo "Current DTS type: ${CURRENT_DTS_TYPE:-<empty>}"
+
+# Display grouped DTS types
+echo "Please select the DTS type by entering the corresponding number:"
+echo "---------------------------------------------------------------"
+
+counter=1
+for group in "${GROUP_ORDER[@]}"; do
+    # Display group header
+    echo "[Group: $group]"
+
+    # Display types in this group
+    IFS='|' read -ra types <<< "${DTS_GROUPS[$group]}"
+    for type in "${types[@]}"; do
+        # Highlight current selection
+        if [[ "$type" == "$CURRENT_DTS_TYPE" ]]; then
+            printf "%2d) %s [current]\n" $counter "$type"
+        else
+            printf "%2d) %s\n" $counter "$type"
+        fi
+        ((counter++))
+    done
+
+    # Add empty line between groups
+    echo
+done
+
+# Get user selection
+read -p "Enter the number (1-${#DTS_TYPES[@]}): " DTS_NUMBER
+if ! [[ "$DTS_NUMBER" =~ ^[0-9]+$ ]] ||
+   (( DTS_NUMBER < 1 || DTS_NUMBER > ${#DTS_TYPES[@]} )); then
+    echo "Error: Invalid selection. Exiting."
+    exit 1
+fi
+
+# Get selected DTS type
+DTS_TYPE="${DTS_TYPES[$((DTS_NUMBER-1))]}"
+echo "Selected DTS type: $DTS_TYPE"
+
+# Write to device
+echo "Writing DTS type to device..."
+echo 0 > /sys/block/mmcblk0boot1/force_ro 2>/dev/null
+dd if=/dev/zero of=$DTS_DEVICE bs=1 count=$DTS_SIZE seek=$DTS_OFFSET 2>/dev/null
+echo -n "$DTS_TYPE" | dd of=$DTS_DEVICE bs=1 seek=$DTS_OFFSET 2>/dev/null
+
+# Verify write operation
+dd if=$DTS_DEVICE of=$DTS_FILE bs=1 count=$DTS_SIZE skip=$DTS_OFFSET 2>/dev/null
+READ_BACK_DTS_TYPE=$(tr -d '\0' < $DTS_FILE)
+if [[ "$READ_BACK_DTS_TYPE" == "$DTS_TYPE" ]]; then
+    echo "Success: DTS type verified: $READ_BACK_DTS_TYPE"
+else
+    echo "Error: Verification failed. Expected: '$DTS_TYPE', Got: '$READ_BACK_DTS_TYPE'"
+    exit 1
+fi
+
+# Cleanup and exit
+echo "DTS type configuration completed successfully."
+rm -f "$DTS_FILE" 2>/dev/null
+exit 0

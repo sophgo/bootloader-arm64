@@ -1,18 +1,11 @@
 #!/bin/bash
-<<<<<<< HEAD
-=======
-
->>>>>>> a09cd5a04... [fix](system):add openclaw
 set -e
 
 # Paths
 CONF_D_DIR="/etc/nginx/conf.d"
 PROXY_CONF="${CONF_D_DIR}/proxy.conf"
 OPENCLAW_JSON="/root/.openclaw/openclaw.json"
-<<<<<<< HEAD
 OPENCLAW_DEB="/home/linaro/bsp-debs/openclaw.deb"
-=======
->>>>>>> a09cd5a04... [fix](system):add openclaw
 
 # Color output
 RED='\033[0;31m'
@@ -30,7 +23,6 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-<<<<<<< HEAD
 # Check and install OpenClaw package from local deb if needed
 install_openclaw_deb_if_needed() {
     if dpkg -s openclaw &> /dev/null; then
@@ -50,8 +42,6 @@ install_openclaw_deb_if_needed() {
     echo_info "OpenClaw deb installation completed."
 }
 
-=======
->>>>>>> a09cd5a04... [fix](system):add openclaw
 # Check nginx
 if ! command -v nginx &> /dev/null; then
     echo_error "nginx not found. Please install nginx first."
@@ -233,8 +223,6 @@ else:
     echo "${model:-unknown}"
 }
 
-<<<<<<< HEAD
-=======
 # Function to get current model id for a provider
 get_model_for_provider() {
     local provider="$1"
@@ -292,7 +280,6 @@ with open('$OPENCLAW_JSON', 'w') as f:
     echo_warn "Updated model config using sed. Please manually verify JSON format if needed."
 }
 
->>>>>>> a09cd5a04... [fix](system):add openclaw
 # Extract gateway token (gateway.auth.token or gateway.token)
 get_gateway_token() {
     if command -v python3 &> /dev/null; then
@@ -358,11 +345,7 @@ print_access_url() {
 }
 
 # ------------------------------------------------------------
-<<<<<<< HEAD
-# Configure OpenClaw (model provider + API key)
-=======
 # Configure OpenClaw (model provider + model + API key)
->>>>>>> a09cd5a04... [fix](system):add openclaw
 # ------------------------------------------------------------
 configure_openclaw() {
     if [ ! -f "$OPENCLAW_JSON" ]; then
@@ -397,10 +380,6 @@ configure_openclaw() {
     fi
 
     echo_info "Selected provider: $selected_provider"
-<<<<<<< HEAD
-    local current_model=$(get_current_model "$selected_provider")
-    echo_info "Current model in use: $current_model"
-=======
 
     # Configure model
     local current_model=$(get_model_for_provider "$selected_provider")
@@ -419,7 +398,6 @@ configure_openclaw() {
         set_model_for_provider "$selected_provider" "$new_model"
         echo_info "Model configured: $selected_provider/$new_model"
     fi
->>>>>>> a09cd5a04... [fix](system):add openclaw
 
     local current_key=$(get_api_key_for_provider "$selected_provider")
     if [ -n "$current_key" ] && [ "$current_key" != "null" ]; then
@@ -466,15 +444,8 @@ start_openclaw_gateway_foreground() {
 # ------------------------------------------------------------
 # Main
 # ------------------------------------------------------------
-<<<<<<< HEAD
 install_openclaw_deb_if_needed
 configure_nginx_proxy
 configure_openclaw
 print_access_url
 start_openclaw_gateway_foreground
-=======
-configure_nginx_proxy
-configure_openclaw
-print_access_url
-start_openclaw_gateway_foreground
->>>>>>> a09cd5a04... [fix](system):add openclaw

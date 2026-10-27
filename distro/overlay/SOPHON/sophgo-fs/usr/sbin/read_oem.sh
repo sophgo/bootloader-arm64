@@ -8,7 +8,7 @@ OEM_file="/factory/OEMconfig.ini"
 
 echo "[base]" > $OEM_file
 
-echo 0 > /sys/block/mmcblk0boot1/force_ro
+# echo 0 > /sys/block/mmcblk0boot1/force_ro
 
 dd if=/dev/mmcblk0boot1 of=sn.bin count=17 bs=1 skip=0
 sn=$(xxd -p sn.bin | xxd -r -p && echo '')
@@ -130,4 +130,4 @@ rm -f chip.bin
 # echo "PASSWORD = $password" >> $OEM_file
 # rm -f password.bin
 
-echo 1 > /sys/block/mmcblk0boot1/force_ro
+# echo 1 > /sys/block/mmcblk0boot1/force_ro

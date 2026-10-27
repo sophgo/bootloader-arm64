@@ -1,0 +1,10 @@
+[Unit]
+Description=Set machine-id from eMMC CID
+DefaultDependencies=no
+Before=systemd-journald.service systemd-journal-flush.service sysinit.target
+After=-.mount
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/machine-id-from-cid

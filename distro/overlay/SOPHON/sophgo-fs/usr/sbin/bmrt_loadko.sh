@@ -1,18 +1,59 @@
 #!/bin/bash
+LOAD_FAIL=0
+INSMOD_BIN=$(command -v insmod)
+echo 0 > /proc/sys/kernel/panic 2>/dev/null || true
+echo 0 > /proc/sys/kernel/panic_on_oops 2>/dev/null || true
+insmod() {
+	local rc=0 err msg
+	echo "bmrt_loadko: insmod $*"
+	err=$("$INSMOD_BIN" "$@" 2>&1)
+	rc=$?
+	if [ -n "$err" ]; then
+		printf '%s\n' "$err"
+	fi
+	if [ "$rc" -ne 0 ]; then
+		msg="bmrt_loadko: insmod failed rc=$rc $*"
+		if [ -n "$err" ]; then
+			msg="$msg: $(printf '%s' "$err" | tr '\n' ' ')"
+		fi
+		echo "$msg"
+		echo "$msg" > /dev/console
+		LOAD_FAIL=1
+	fi
+	return 0
+}
+function link_to_firmware()
+{
+	local src="$1"
+	local dest="/lib/firmware/$(basename "$src")"
+
+	if [ -L "$dest" ]; then
+		[ "$(readlink "$dest")" = "$src" ] && return 0
+		ln -sf "$src" "$dest"
+		return
+	fi
+
+	[ -e "$dest" ] && return 0
+
+	ln -s "$src" "$dest"
+}
+
 function load_ko()
 {
 	if [ -f /opt/sophon/libsophon-current/data/bmtpu.ko ]; then
 		mkdir -p /lib/firmware
-		ln -s /opt/sophon/libsophon-current/data/bm1688_firmware0.bin \
-			/lib/firmware/bm1688_firmware0.bin
-		ln -s /opt/sophon/libsophon-current/data/bm1688_firmware1.bin \
-			/lib/firmware/bm1688_firmware1.bin
-		ln -s /opt/sophon/libsophon-current/data/bm1688_firmware0_os.bin \
-			/lib/firmware/bm1688_firmware0_os.bin
-		ln -s /opt/sophon/libsophon-current/data/bm1688_firmware1_os.bin \
-			/lib/firmware/bm1688_firmware1_os.bin
-		ln -s /opt/sophon/libsophon-current/lib/tpu_module/libbm1688_kernel_module.so \
-			/lib/firmware/libbm1688_kernel_module.so
+		data_dir=/opt/sophon/libsophon-current/data
+		for bin in "$data_dir"/*.bin; do
+			[ -f "$bin" ] || continue
+			link_to_firmware "$bin"
+		done
+		tpu_module_dir=/opt/sophon/libsophon-current/lib/tpu_module
+		if [ -d "$tpu_module_dir" ]; then
+			for so in "$tpu_module_dir"/lib*_kernel_module.so; do
+				[ -f "$so" ] || continue
+				link_to_firmware "$so"
+			done
+		fi
 		insmod /opt/sophon/libsophon-current/data/bmtpu.ko
 	fi
 
@@ -60,6 +101,9 @@ function load_soph_pwm_ko()
 function load_soph_saradc_ko()
 {
 	echo load soph_saradc ko ...
+	if lsmod | grep -q "^soph_saradc "; then
+		return 0
+	fi
 	if [ -f /mnt/system/ko/soph_saradc.ko ]; then
 		insmod /mnt/system/ko/soph_saradc.ko
 	fi
@@ -416,4 +460,8 @@ systemd-run --unit=sophgo-monitor-memory /usr/bin/bash -c \
 "source /dev/stdin <<< \$(echo \"$monitor_memory_str\" | base64 -d | gzip -d -c -); while true; do monitor_memory; sleep 2; done"
 systemctl status sophgo-monitor-memory.service -l --no-page
 
+if [ "$LOAD_FAIL" -ne 0 ]; then
+	echo "bmrt_loadko: driver load failed"
+	exit 1
+fi
 exit 0
